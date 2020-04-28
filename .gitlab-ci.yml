@@ -6,7 +6,7 @@ pages:
   - python3 -V
   - cd docs
   - pip3 install -r requirements.txt
-  - make html
+  - sphinx-build -b html source build
   - mv build/html/ ../public/
   artifacts:
     paths:
