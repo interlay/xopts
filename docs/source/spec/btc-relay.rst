@@ -1,4 +1,6 @@
 BTC Relay
 =========
 
-Goes here.
+
+https://interlay.gitlab.io/polkabtc-spec/btcrelay-spec/
+
