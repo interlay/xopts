@@ -39,5 +39,8 @@
     "typechain-target-truffle": "^1.0.2",
     "typechain-target-web3-v1": "^1.0.4",
     "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "uikit": "^3.4.4"
   }
 }
