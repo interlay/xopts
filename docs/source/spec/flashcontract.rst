@@ -1,4 +1,7 @@
-Flash Contract (User)
-=====================
+
+.. _xflash-sc:
+
+XFlash Contract 
+=================
 
 Goes here.

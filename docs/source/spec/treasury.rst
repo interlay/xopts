@@ -1,3 +1,6 @@
+
+.. _treasury:
+
 Treasury
 ========
 
