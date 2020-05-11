@@ -24,6 +24,7 @@ XFLASH extends the native capabilities of Ethereum to execute flash loans. Speci
 * [Node]()
 * [Typescript]()
 * [Buidler]()
+* [money-legos](https://github.com/studydefi/money-legos)
 
 ## Getting Started
 
@@ -45,13 +46,13 @@ npm install
 Compile the XFLASH contracts.
 
 ```bash
-npm compile
+npm run compile
 ```
 
 Deploy the XFLASH contracts.
 
 ```bash
-npm deploy
+npm run deploy
 ```
 
 ### Development environment
@@ -59,7 +60,7 @@ npm deploy
 Compile contracts and create the [TypeChain](https://github.com/ethereum-ts/TypeChain) interfaces.
 
 ```bash
-npm build
+npm run build
 ```
 
 Run tests.
@@ -70,7 +71,6 @@ npm test
 
 
 ## Usage
-
 
 
 
