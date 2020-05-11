@@ -4,7 +4,10 @@
   "description": "Bitcoin-backed flash loans on Ethereum.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  	"build": "npm run compile && npx buidler typechain",
+	"compile": "npx buidler compile",
+	"test": "npx buidler test",
+	"deploy": "npx buidler run --network default scripts/deploy.ts"
   },
   "repository": {
     "type": "git",

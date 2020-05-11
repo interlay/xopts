@@ -19,11 +19,60 @@ XFLASH extends the native capabilities of Ethereum to execute flash loans. Speci
 * Remove the necessity to provide collateral for the backing of Bitcoin-backed tokens
 * Build an entirely trustless system by utilizing SPV proofs
 
+### Built with
+
+* [Node]()
+* [Typescript]()
+* [Buidler]()
+
 ## Getting Started
 
+Make sure you have [node](https://nodejs.org/en/) installed. Generally, we also recommend managing different version of node via version manager like [NVM](https://github.com/nvm-sh/nvm).
+
+First, clone this repository and enter into its root folder.
+
+```bash
+git clone git@gitlab.com:interlay/xflash.git
+cd xflash
+```
+
+Next, install the required node packages.
+
+```bash
+npm install
+```
+
+Compile the XFLASH contracts.
+
+```bash
+npm compile
+```
+
+Deploy the XFLASH contracts.
+
+```bash
+npm deploy
+```
+
+### Development environment
+
+Compile contracts and create the [TypeChain](https://github.com/ethereum-ts/TypeChain) interfaces.
+
+```bash
+npm build
+```
+
+Run tests.
+
+```bash
+npm test
+```
 
 
 ## Usage
+
+
+
 
 ## Roadmap
 
