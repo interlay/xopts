@@ -14,6 +14,7 @@ XFlash does *not* rely on any previously suggested backing mechanisms to bring B
 XFlash Protocols
 ================
 
+.. _mint-protocol:
 
 Mint (Solo)
 -----------
@@ -87,6 +88,7 @@ Post-conditions
 
 There are only 90 ``flashBTC`` left in the smart contract, Alice has regained full control over her ``BTC`` and can withdraw any earned ``ETH`` fees from the smart contract.
 
+.. _flashloan-protocol:
 
 FlashLoan
 ---------
