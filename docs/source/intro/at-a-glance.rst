@@ -14,6 +14,7 @@ XFlash does *not* rely on any previously suggested backing mechanisms to bring B
 XFlash Protocols
 ================
 
+.. _mint-protocol:
 
 Mint (Solo)
 -----------
@@ -52,7 +53,7 @@ Alice controls 10 ``flashBTC`` on Ethereum.
 .. note:: There is likely no need for a complex crowdfunded minting on the Bitcoin side: we simply consider the entire XFlash balance as a liquidity pool. The more ``BTC`` you lock, the higher the fraction of the return you get, similar to a staking pool (we do not differentiate between "whose" ``flashBTC`` were actually used for flash loans).
 
 
-
+.. _flashloan-protocol:
 
 FlashLoan
 ---------
