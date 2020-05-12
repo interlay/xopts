@@ -7,6 +7,7 @@ Welcome to XFLASH's documentation!
    :caption: Introduction
    
    intro/at-a-glance
+   intro/flows
    intro/architecture
    
 .. toctree::
