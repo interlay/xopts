@@ -5,7 +5,7 @@ import "@nomiclabs/buidler/console.sol";
 contract LendingPool {
 
 
-    constructor(address treasury) {
+    constructor(address treasury) public {
 
     }
 
