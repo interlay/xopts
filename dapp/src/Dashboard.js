@@ -33,6 +33,12 @@ class DashTable extends Component {
                   <a href="/view" class="badge badge-info mx-2">
                     View
                   </a>
+                  <a
+                    onClick={console.log("clicked")}
+                    class="badge badge-success mx-2"
+                  >
+                    Extend
+                  </a>
                 </th>
               </tr>
               <tr>
@@ -148,6 +154,12 @@ export default class Dashboard extends Component {
               <button type="button" class="btn btn-secondary my-4">
                 Total Return &nbsp;
                 <span class="badge badge-light">4.2%</span>
+              </button>
+            </Col>
+            <Col>
+              <button type="button" class="btn btn-secondary my-4">
+                Pending Mint &nbsp;
+                <span class="badge badge-light">1 BTC</span>
               </button>
             </Col>
           </Row>
