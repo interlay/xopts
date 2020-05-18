@@ -33,10 +33,7 @@ class DashTable extends Component {
                   <a href="/view" class="badge badge-info mx-2">
                     View
                   </a>
-                  <a
-                    onClick={console.log("clicked")}
-                    class="badge badge-success mx-2"
-                  >
+                  <a href="/view" class="badge badge-success mx-2">
                     Extend
                   </a>
                 </th>
@@ -92,6 +89,21 @@ class DashTable extends Component {
                   </a>
                 </th>
               </tr>
+              <tr>
+                <th>2020/10/26</th>
+                <td>
+                  <span class="badge badge-pill badge-primary">Earning</span>
+                </td>
+                <td>1 BTC</td>
+                <td>
+                  6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
+                </td>
+                <th>
+                  <a href="/view" class="badge badge-info mx-2">
+                    View
+                  </a>
+                </th>
+              </tr>
             </tbody>
           </Table>
         </Row>
@@ -99,7 +111,6 @@ class DashTable extends Component {
     );
   }
 }
-
 export default class Dashboard extends Component {
   render() {
     return (
@@ -152,7 +163,7 @@ export default class Dashboard extends Component {
             </Col>
             <Col>
               <button type="button" class="btn btn-secondary my-4">
-                Total Return &nbsp;
+                Total Locked &nbsp;
                 <span class="badge badge-light">4.2%</span>
               </button>
             </Col>

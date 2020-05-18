@@ -141,7 +141,7 @@ export default class Lend extends Component {
             <h2>Lend</h2>
           </div>
         </section>
-        <Container fluid style={{ marginTop: "15px" }}>
+        <Container fluid style={{ marginTop: "15px", marginBottom: "30px" }}>
           <Row>
             <Col xs={12} md={6} className="mr-auto ml-auto">
               <ReactWizard

@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Button, Container, Row, Table } from "react-bootstrap";
+import { Button, Col, Container, Row, Table } from "react-bootstrap";
 
 class AvailableTable extends Component {
   render() {
@@ -15,6 +15,8 @@ class AvailableTable extends Component {
                 <th>Strike Date</th>
                 <th>Strike Price</th>
                 <th>Nominal Amount</th>
+                <th>Instrinsic Value</th>
+                <th>Time Value</th>
                 <th>Time to Expiry</th>
                 <th>&nbsp;</th>
               </tr>
@@ -24,6 +26,8 @@ class AvailableTable extends Component {
                 <td>2020/10/25</td>
                 <td>$1000</td>
                 <td>$100</td>
+                <td>$10</td>
+                <td>$20</td>
                 <td>24:00:01</td>
                 <td>
                   <Button>Underwrite for $10</Button>
@@ -36,7 +40,6 @@ class AvailableTable extends Component {
     );
   }
 }
-
 class CurrentTable extends Component {
   render() {
     return (
@@ -84,8 +87,30 @@ class Underwrite extends Component {
             <h1>Underwrite</h1>
           </div>
         </section>
-        <CurrentTable heading="Current" />
-        <AvailableTable heading="Available" />
+        <Container className="p-3">
+          <Row>
+            <Col>
+              <button type="button" class="btn btn-secondary my-4">
+                Total Balance &nbsp;
+                <span class="badge badge-light">109.92 BTC</span>
+              </button>
+            </Col>
+            <Col>
+              <button type="button" class="btn btn-secondary my-4">
+                Available Balance &nbsp;
+                <span class="badge badge-light">20 BTC</span>
+              </button>
+            </Col>
+            <Col>
+              <button type="button" class="btn btn-secondary my-4">
+                Total Locked &nbsp;
+                <span class="badge badge-light">100,001.2 BTC</span>
+              </button>
+            </Col>
+          </Row>
+        </Container>
+        <CurrentTable heading="Current Underwritings" />
+        <AvailableTable heading="Available Underwritings" />
       </div>
     );
   }
