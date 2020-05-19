@@ -1,4 +1,4 @@
-import { Navbar, Nav, Form, Image } from "react-bootstrap";
+import { NavDropdown, Navbar, Nav, Form, Image } from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 
@@ -20,28 +20,28 @@ class TopBar extends Component {
 
           <a
             href="/borrow"
-            className="btn btn-primary m-2"
+            class="btn btn-primary m-2"
             style={{ width: "100px" }}
           >
             Borrow
           </a>
           <a
             href="/insure"
-            className="btn btn-primary m-2"
+            class="btn btn-primary m-2"
             style={{ width: "100px" }}
           >
             Insure
           </a>
           <a
             href="/underwrite"
-            className="btn btn-primary m-2"
+            class="btn btn-primary m-2"
             style={{ width: "100px" }}
           >
             Underwrite
           </a>
           <a
             href="/lend"
-            className="btn btn-primary m-2"
+            class="btn btn-primary m-2"
             style={{ width: "100px" }}
           >
             Lend

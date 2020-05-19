@@ -1,0 +1,15 @@
+image: python:3.7-alpine
+
+pages:
+  stage: deploy
+  script:
+  - python3 -V
+  - cd docs
+  - pip3 install -r requirements.txt
+  - sphinx-build -b html source build/html
+  - mv build/html/ ../public/
+  artifacts:
+    paths:
+    - public
+  only:
+  - master

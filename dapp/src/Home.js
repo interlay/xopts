@@ -1,6 +1,214 @@
 import React, { Component } from "react";
 import { Col, Container, Row, Table } from "react-bootstrap";
 import LightweightChart from "./LightweightChart";
+import { fetchJson } from "ethers/utils";
+
+class LatestTransactions extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      error: null,
+      isLoaded: false,
+      transactions: [],
+    };
+  }
+
+  componentDidMount() {
+    fetchJson("http://localhost:8080/latestTxs").then(
+      (res) => {
+        this.setState({
+          isLoaded: true,
+          transactions: res,
+        });
+      },
+      (error) => {
+        this.setState({
+          isLoaded: true,
+          error,
+        });
+      }
+    );
+  }
+
+  render() {
+    const { error, isLoaded, transactions } = this.state;
+
+    console.debug(transactions);
+    if (error) {
+      return (
+        <Container className="p-3">
+          <Row>
+            <h2>Latest Transactions</h2>
+          </Row>
+          <Row>
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>ID</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="5">Error...</td>
+                </tr>
+              </tbody>
+            </Table>
+          </Row>
+        </Container>
+      );
+    } else if (!isLoaded) {
+      return (
+        <Container className="p-3">
+          <Row>
+            <h2>Latest Transactions</h2>
+          </Row>
+          <Row>
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>ID</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="5">Loading...</td>
+                </tr>
+              </tbody>
+            </Table>
+          </Row>
+        </Container>
+      );
+    } else {
+      return (
+        <Container className="p-3">
+          <Row>
+            <h2>Latest Transactions</h2>
+          </Row>
+          <Row>
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>ID</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.timestamp}</td>
+                    <td>
+                      <span className="badge badge-pill badge-success">
+                        {item.status}
+                      </span>
+                    </td>
+                    <td>{item.total}</td>
+                    <td>{item.id}</td>
+                    <td>
+                      <a href="/view" className="badge badge-light">
+                        {" "}
+                        View
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Row>
+        </Container>
+      );
+    }
+  }
+}
+
+class PoolStats extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      error: null,
+      isLoaded: false,
+      stats: [],
+    };
+  }
+
+  componentDidMount() {
+    fetchJson("http://localhost:8080/poolStats").then(
+      (res) => {
+        this.setState({
+          isLoaded: true,
+          stats: res,
+        });
+      },
+      (error) => {
+        this.setState({
+          isLoaded: true,
+          error,
+        });
+      }
+    );
+  }
+
+  render() {
+    const { error, isLoaded, stats } = this.state;
+    console.debug("stats=" + stats);
+    if (error) {
+      return (
+        <Container className="p-3">
+          <Row>
+            <Col>
+              <h2>Cannot load pool stats</h2>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <LightweightChart />
+            </Col>
+          </Row>
+        </Container>
+      );
+    } else if (!isLoaded) {
+      return (
+        <Container className="p-3">
+          <Row>
+            <Col>
+              <h2>Loading Pool Stats</h2>
+            </Col>
+          </Row>
+        </Container>
+      );
+    } else {
+      return (
+        <Container className="p-3">
+          <Row>
+            {stats.map((stat) => (
+              <Col key={stat.key}>
+                <button type="button" className="btn btn-secondary my-4">
+                  {stat.key} &nbsp;
+                  <span className="badge badge-light">{stat.val}</span>
+                </button>
+              </Col>
+            ))}
+          </Row>
+          <Row>
+            <Col>
+              <LightweightChart />
+            </Col>
+          </Row>
+        </Container>
+      );
+    }
+  }
+}
 
 export default class Home extends Component {
   render() {
@@ -35,106 +243,8 @@ export default class Home extends Component {
             </p>
           </div>
         </section>
-        <Container className="p-3">
-          <Row>
-            <Col>
-              <button type="button" className="btn btn-secondary my-4">
-                Pool Size <span className="badge badge-light">1209.92 BTC</span>
-              </button>
-            </Col>
-            <Col>
-              <button type="button" className="btn btn-secondary my-4">
-                Locked <span className="badge badge-light">1209.92 BTC</span>
-              </button>
-            </Col>
-            <Col>
-              <button type="button" className="btn btn-secondary my-4">
-                Volumn <span className="badge badge-light">109.92 BTC</span>
-              </button>
-            </Col>
-            <Col>
-              <button type="button" className="btn btn-secondary my-4">
-                Earnings <span className="badge badge-light">10.92 BTC</span>
-              </button>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <LightweightChart />
-            </Col>
-          </Row>
-        </Container>
-        <Container className="p-3">
-          <Row>
-            <h2>Current Transactions</h2>
-          </Row>
-          <Row>
-            <Table striped bordered hover>
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Status</th>
-                  <th>Total</th>
-                  <th>ID</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th>2020/10/25</th>
-                  <td>
-                    <span className="badge badge-pill badge-success">
-                      Minted
-                    </span>
-                  </td>
-                  <td>100 BTC</td>
-                  <td>
-                    6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
-                  </td>
-                  <th>
-                    <a href="/view" className="badge badge-light">
-                      View
-                    </a>
-                  </th>
-                </tr>
-                <tr>
-                  <th>2020/10/25</th>
-                  <td>
-                    <span className="badge badge-pill badge-info">
-                      Extended
-                    </span>
-                  </td>
-                  <td>100 BTC</td>
-                  <td>
-                    6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
-                  </td>
-                  <th>
-                    <a href="/view" className="badge badge-light">
-                      View
-                    </a>
-                  </th>
-                </tr>
-                <tr>
-                  <th>2020/10/25</th>
-                  <td>
-                    <span className="badge badge-pill badge-danger">
-                      Withdrawn
-                    </span>
-                  </td>
-                  <td>100 BTC</td>
-                  <td>
-                    6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
-                  </td>
-                  <th>
-                    <a href="/view" className="badge badge-light">
-                      View
-                    </a>
-                  </th>
-                </tr>
-              </tbody>
-            </Table>
-          </Row>
-        </Container>
+        <PoolStats />
+        <LatestTransactions />
       </div>
     );
   }

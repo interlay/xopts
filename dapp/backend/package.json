@@ -1,0 +1,12 @@
+{
+  "name": "xflash-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "ethers": "^4.0.47",
+    "expressjs": "^1.0.1",
+    "mongodb": "^3.5.7"
+  }
+}
