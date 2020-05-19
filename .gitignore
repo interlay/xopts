@@ -2,6 +2,7 @@ node_modules
 artifacts
 cache
 typechain
+/public
 docs/venv
 docs/build
 *.pyc
