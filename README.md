@@ -55,6 +55,15 @@ Deploy the XFLASH contracts.
 npm run deploy
 ```
 
+### Ganache
+
+Start ganache and then run deploy against localhost:
+
+```bash
+ganache-cli -d
+npm run deploy -- --network localhost
+```
+
 ### Development environment
 
 Compile contracts and create the [TypeChain](https://github.com/ethereum-ts/TypeChain) interfaces.
