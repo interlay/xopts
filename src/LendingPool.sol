@@ -1,11 +1,11 @@
-pragma solidity ^0.6.6;
+pragma solidity ^0.5.15;
 
 import "@nomiclabs/buidler/console.sol";
 
 contract LendingPool {
 
 
-    constructor(address treasury) {
+    constructor(address treasury) public {
 
     }
 
