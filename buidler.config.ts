@@ -8,7 +8,7 @@ usePlugin("buidler-typechain");
 const config: BuidlerConfig = {
 	defaultNetwork: "buidlerevm",
 	solc: {
-		version: '0.6.6',
+		version: '0.5.15',
 	},
 	paths: {
 		sources: './src',

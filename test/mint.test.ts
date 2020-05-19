@@ -8,12 +8,12 @@ import { Treasury } from "../typechain/Treasury"
 chai.use(solidity);
 const { expect } = chai;
 
-describe("Gas", () => {
+describe("Balances", () => {
   let signers: Signer[];
   let treasury: Treasury;
 
 
-  it("should cost less than amount", async () => {
+  it("mint 100 flashBTC", async () => {
     signers = await ethers.signers();
     treasury = await deployContract(<Wallet>signers[0], Artifact, []) as Treasury;
 
