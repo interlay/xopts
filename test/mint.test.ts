@@ -12,7 +12,6 @@ describe("Balances", () => {
   let signers: Signer[];
   let treasury: Treasury;
 
-
   it("mint 100 flashBTC", async () => {
     signers = await ethers.signers();
     treasury = await deployContract(<Wallet>signers[0], Artifact, []) as Treasury;

@@ -4,21 +4,8 @@ import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-// import "../lib/BokkyPooBahsRedBlackTreeLibrary.sol";
-
 contract ERC20Expiring is IERC20 {
     using SafeMath for uint;
-
-    // TODO: construct interval tree?
-    // using BokkyPooBahsRedBlackTreeLibrary for BokkyPooBahsRedBlackTreeLibrary.Tree;
-
-    // account -> key -> value
-    // mapping(address => mapping(uint => uint)) values;
-    // account -> tree
-    // mapping(address => BokkyPooBahsRedBlackTreeLibrary.Tree) trees;
-
-    // BokkyPooBahsRedBlackTreeLibrary.Tree global;
-    // mapping(uint => uint) values;
 
     // The balance type consists of an implicit tuple in the form of (block_number, amount).
     // The block_number indicates the time until this time is valid and the amount
@@ -86,16 +73,6 @@ contract ERC20Expiring is IERC20 {
     }
 
     function balanceOf(address account) external view returns (uint256) {
-        // uint amount;
-        // uint timestamp = block.timestamp;
-        // uint key = trees[account].root;
-        // if (key > timestamp) amount += values[account][key];
-        // while (true) {
-        //     uint key = trees[account].next(timestamp);
-        //     if (key == 0) break;
-        //     amount += values[account][key];
-        // }
-        // return amount;
         return _get_balance(account);
     }
 
@@ -109,7 +86,7 @@ contract ERC20Expiring is IERC20 {
         uint length = balances_length[account];
 
         for (uint i = 0; i < length; i++) {
-            Token memory token= balances[account][i];
+            Token memory token = balances[account][i];
             uint this_expiry_block = token.expiry_block;
             uint this_amount = token.amount;
 
