@@ -6,6 +6,7 @@ Welcome to XFLASH's documentation!
    :maxdepth: 2
    :caption: Introduction
    
+   intro/put_options
    intro/at-a-glance
    intro/protocols
    intro/flows
