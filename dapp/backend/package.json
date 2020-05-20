@@ -7,6 +7,7 @@
     "cors": "^2.8.5",
     "ethers": "^4.0.47",
     "expressjs": "^1.0.1",
+    "fs": "^0.0.1-security",
     "mongodb": "^3.5.7"
   }
 }

@@ -5,13 +5,19 @@ const fs = require("fs");
 const app = express();
 const port = 8080;
 
-const bytecode = fs.readFileSync("Voting_sol_Voting.bin").toString();
-const abi = JSON.parse(fs.readFileSync("Voting_sol_Voting.abi").toString());
-const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:7545");
-const signer = provider.getSigner(0);
-const factory = new ethers.ContractFactory(abi, bytecode, signer);
+var bytecode = null;
+var abi = null;
+var provider = null;
+var signer = null;
+var factory = null;
 
 async function deploy() {
+  bytecode = fs.readFileSync("Voting_sol_Voting.bin").toString();
+  abi = JSON.parse(fs.readFileSync("Voting_sol_Voting.abi").toString());
+  provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:7545");
+  signer = provider.getSigner(0);
+  factory = new ethers.ContractFactory(abi, bytecode, signer);
+
   let contract = await factory.deploy([
     ethers.utils.formatBytes32String("Alice"),
     ethers.utils.formatBytes32String("Bob"),
@@ -146,3 +152,5 @@ function start() {
     console.log(`Example app listening at http://localhost:${port}`)
   );
 }
+
+start();
