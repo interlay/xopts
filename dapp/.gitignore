@@ -1,6 +1,4 @@
 node_modules
-<<<<<<< HEAD
-=======
 artifacts
 cache
 typechain
@@ -8,4 +6,3 @@ typechain
 docs/venv
 docs/build
 *.pyc
->>>>>>> d7898f42a9c18ad07813c5e3c4a83b564da83b89
