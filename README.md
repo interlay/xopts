@@ -4,7 +4,7 @@
 	<p align="center">
 		<img src="media/icon_256.png" alt="logo" width="128" height="128">
 	</p>
-	<p> 
+	<p>
 		<h3 align="center">XFLASH: Bitcoin-powered flash loans on Ethereum</h3>
 	</p>
 </div>
@@ -60,7 +60,7 @@ npm run deploy
 Start ganache and then run deploy against localhost:
 
 ```bash
-ganache-cli -d
+npm run ganache
 npm run deploy -- --network localhost
 ```
 

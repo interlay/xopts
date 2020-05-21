@@ -7,7 +7,8 @@
     "build": "npm run compile && npx buidler typechain",
     "compile": "npx buidler compile",
     "test": "npx buidler test",
-    "deploy": "npx buidler run scripts/deploy.ts"
+    "deploy": "npx buidler run scripts/deploy.ts",
+    "ganache": "npx buidler run scripts/ganache.ts"
   },
   "repository": {
     "type": "git",
