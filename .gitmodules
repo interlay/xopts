@@ -1,3 +1,4 @@
 [submodule "lib/btc-relay-sol"]
 	path = lib/btc-relay-sol
-	url = git@gitlab.com:interlay/btc-relay-sol.git
+	url = ../../interlay/btc-relay-sol
+
