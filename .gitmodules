@@ -1,4 +1,3 @@
-[submodule "lib/btc-relay-sol"]
-	path = lib/btc-relay-sol
+[submodule "src/lib/btc-relay-sol"]
+	path = src/lib/btc-relay-sol
 	url = ../../interlay/btc-relay-sol
-
