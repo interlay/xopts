@@ -24,12 +24,20 @@ contract ERC20Authorable is IERC20, Context {
     // mapping of account to its indexes of balances
     mapping(address => mapping(uint256 => Token)) _balances;
 
+    // accounts that can spend an owners funds
     mapping (address => mapping (address => uint256)) internal _allowances;
 
+    // total number of tokens minted
     uint256 internal _totalSupply;
 
     // this is decremented when the tokens are locked
     uint256 internal _totalSupplyUnlocked;
+
+    string constant ERR_TRANSFER_EXCEEDS_BALANCE = "ERC20: transfer amount exceeds balance";
+    string constant ERR_APPROVE_TO_ZERO_ADDRESS = "ERC20: approve to the zero address";
+    string constant ERR_TRANSFER_TO_ZERO_ADDRESS = "ERC20: transfer to the zero address";
+    string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "ERC20: approve from the zero address";
+    string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "ERC20: transfer from the zero address";
 
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
@@ -92,17 +100,27 @@ contract ERC20Authorable is IERC20, Context {
         emit Transfer(account, address(0), amount);
     }
 
+    function _burnAll(address account) internal {
+        uint length = _balancesLength[account];
+        require(length > 0, ERR_TRANSFER_EXCEEDS_BALANCE);
+        for (uint i = length; i > 0; i = i.sub(1)) {
+            delete _balances[account][i.sub(1)];
+        }
+        delete _balancesLength[account];
+    }
+
     function _removeBalance(
         address account,
         uint amount
     ) internal {
         uint length = _balancesLength[account];
-        require(length > 0, "ERC20: transfer amount exceeds balance");
+        require(length > 0, ERR_TRANSFER_EXCEEDS_BALANCE);
 
         uint remainder = amount;
-        for (uint i = length - 1; i >= 0; i--) {
+        for (uint i = length; i > 0; i = i.sub(1)) {
+            uint index = i.sub(1);
             if (remainder == 0) return;
-            Token memory token = _balances[account][i];
+            Token memory token = _balances[account][index];
             if (remainder >= token.amount) {
                 // decrease length
                 length = length.sub(1);
@@ -110,16 +128,16 @@ contract ERC20Authorable is IERC20, Context {
 
                 remainder = remainder.sub(token.amount);
                 _authored[token.author] = _authored[token.author].sub(token.amount);
-                delete _balances[account][i];
+                delete _balances[account][index];
                 if (remainder == 0) return;
             } else {
                 token.amount = token.amount.sub(remainder);
-                _balances[account][i] = token;
+                _balances[account][index] = token;
                 _authored[token.author] = _authored[token.author].sub(token.amount);
                 return;
             }
         }
-        revert("ERC20: transfer amount exceeds balance");
+        revert(ERR_TRANSFER_EXCEEDS_BALANCE);
     }
 
     function allowance(address owner, address spender) external view returns (uint256) {
@@ -132,8 +150,8 @@ contract ERC20Authorable is IERC20, Context {
     }
 
     function _approve(address owner, address spender, uint256 amount) internal {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
+        require(owner != address(0), ERR_APPROVE_FROM_ZERO_ADDRESS);
+        require(spender != address(0), ERR_APPROVE_TO_ZERO_ADDRESS);
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
@@ -169,7 +187,7 @@ contract ERC20Authorable is IERC20, Context {
 
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
         _transfer(sender, recipient, amount, false);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         emit Transfer(sender, recipient, amount);
         return true;
     }
@@ -187,13 +205,15 @@ contract ERC20Authorable is IERC20, Context {
         uint256 amount,
         bool lock
     ) internal {
-        require(sender != address(0), "ERC20: transfer from the zero address");
-        require(recipient != address(0), "ERC20: transfer to the zero address");
+        require(sender != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
+        require(recipient != address(0), ERR_TRANSFER_TO_ZERO_ADDRESS);
+
         uint length = _balancesLength[sender];
-        require(length > 0, "ERC20: transfer amount exceeds balance");
+        require(length > 0, ERR_TRANSFER_EXCEEDS_BALANCE);
         uint remainder = amount;
-        for (uint i = length - 1; i >= 0; i--) {
-            Token memory token = _balances[sender][i];
+        for (uint i = length; i > 0; i = i.sub(1)) {
+            uint index = i.sub(1);
+            Token memory token = _balances[sender][index];
             if (lock) token.locked = true;
             if (remainder >= token.amount) {
                 // decrease length
@@ -204,17 +224,17 @@ contract ERC20Authorable is IERC20, Context {
                 remainder = remainder.sub(token.amount);
                 _insertBalanceFromToken(recipient, token.author, token.amount, token.locked);
 
-                delete _balances[sender][i];
+                delete _balances[sender][index];
                 if (remainder == 0) return;
             } else {
                 // update amount in token set
                 token.amount = token.amount.sub(remainder);
-                _balances[sender][i] = token;
+                _balances[sender][index] = token;
                 _insertBalanceFromToken(recipient, token.author, remainder, token.locked);
                 return;
             }
         }
-        revert("ERC20: transfer amount exceeds balance");
+        revert(ERR_TRANSFER_EXCEEDS_BALANCE);
     }
 
     function _insertBalanceFromToken(

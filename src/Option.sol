@@ -23,15 +23,27 @@ contract PutOption is ERC20Authorable {
     // payout addresses for underwriters
     mapping(address => bytes20) _btcAddress;
 
+    string constant ERR_INSUFFICIENT_COLLATERAL = "Insufficient collateral";
+    string constant ERR_INSUFFICIENT_UNLOCKED = "Insufficient unlocked";
+    string constant ERR_INSUFFICIENT_BALANCE = "Insufficient balance";
+    string constant ERR_INIT_EXPIRED = "Cannot init expired";
+    string constant ERR_ZERO_PREMIUM = "Requires non-zero premium";
+    string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
+    string constant ERR_ZERO_AMOUNT = "Requires non-zero amount";
+    string constant ERR_OPTION_EXPIRED = "Option has expired";
+    string constant ERR_OPTION_NOT_EXPIRED = "Option not expired";
+    string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
+    string constant ERR_UNEXPECTED_BTC_ADDRESS = "Cannot change BTC address";
+
     constructor(
         IERC20 collateral,
         uint256 expiry,
         uint256 premium,
         uint256 strikePrice
     ) public {
-        require(expiry > block.number, "Cannot init expired");
-        require(strikePrice > 0, "Requires non-zero strikePrice");
-        // check premium non-zero?
+        require(expiry > block.number, ERR_INIT_EXPIRED);
+        require(premium > 0, ERR_ZERO_PREMIUM);
+        require(strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
 
         _collateral = collateral;
         _expiry = expiry;
@@ -44,21 +56,21 @@ contract PutOption is ERC20Authorable {
     * @param amount: erc-20 underlying
     * @param owner: insurer to use
     **/
-    function insure(uint256 amount, address owner) public {
-        require(!expired(), "Option has expired");
-        require(amount > 0, "Requires non-zero amount");
+    function insure(uint256 amount, address owner) external {
+        require(!expired(), ERR_OPTION_EXPIRED);
+        require(amount > 0, ERR_ZERO_AMOUNT);
 
         // needed for output
         address caller = msg.sender;
-        require(_btcAddress[owner] != bytes20(0), "Insurer lacks BTC address");
+        require(_btcAddress[owner] != bytes20(0), ERR_NO_BTC_ADDRESS);
 
         // check that total supply is sufficient
         uint256 payout = _calculatePayout(amount);
-        require(totalSupplyUnlocked() >= payout, "Insufficient unlocked");
+        require(totalSupplyUnlocked() >= payout, ERR_INSUFFICIENT_UNLOCKED);
 
         // require the amount * strike price
         uint256 premium = _calculatePremium(amount);
-        require(_collateral.balanceOf(caller) >= premium, "Insufficient collateral");
+        require(_collateral.balanceOf(caller) >= premium, ERR_INSUFFICIENT_COLLATERAL);
 
         // take premium now and transfer options
         _collateral.transferFrom(caller, owner, premium);
@@ -71,9 +83,11 @@ contract PutOption is ERC20Authorable {
     * @param btcAddress: recipient address for exercising
     **/
     function underwrite(uint256 amount, bytes20 btcAddress) external {
-        require(!expired(), "Option has expired");
+        require(!expired(), ERR_OPTION_EXPIRED);
+        require(amount > 0, ERR_ZERO_AMOUNT);
+
         address caller = msg.sender;
-        require(_collateral.balanceOf(caller) >= amount, "Insufficient balance");
+        require(_collateral.balanceOf(caller) >= amount, ERR_INSUFFICIENT_BALANCE);
         // we do the transfer here because it requires approval
         _collateral.transferFrom(caller, address(this), amount);
         _mint(caller, caller, amount);
@@ -86,11 +100,12 @@ contract PutOption is ERC20Authorable {
     * @param btcAddress: recipient address for exercising
     **/
     function setBtcAddress(bytes20 btcAddress) public {
+        // TODO: check balance
         address caller = msg.sender;
         require(
             _btcAddress[caller] == bytes20(0) ||
             _btcAddress[caller] == btcAddress,
-            "Cannot change payout address"
+            ERR_UNEXPECTED_BTC_ADDRESS
         );
         // TODO: associate with tokens?
         _btcAddress[caller] = btcAddress;
@@ -99,12 +114,12 @@ contract PutOption is ERC20Authorable {
     /**
     * @dev Exercise an option before expiry
     **/
-    function exercise() public {
+    function exercise() external {
         // TODO: tx verify
-        require(!expired(), "Option has expired");
+        require(!expired(), ERR_OPTION_EXPIRED);
         address caller = msg.sender;
         uint256 balance = _getBalance(caller);
-        require(balance > 0, "Insufficient balance");
+        require(balance > 0, ERR_INSUFFICIENT_BALANCE);
         _burn(caller, balance);
         _collateral.transfer(caller, balance);
     }
@@ -112,19 +127,19 @@ contract PutOption is ERC20Authorable {
     /**
     * @dev Claim collateral for tokens after expiry
     **/
-    function refund() public {
-        require(expired(), "Option not expired");
+    function refund() external {
+        require(expired(), ERR_OPTION_NOT_EXPIRED);
         address caller = msg.sender;
         uint256 balance = _getBalanceAuthored(caller);
-        require(balance > 0, "Insufficient balance");
+        require(balance > 0, ERR_INSUFFICIENT_BALANCE);
         _setBalanceAuthored(msg.sender, 0);
-        // TODO: cleanup expired tokens?
         _collateral.transfer(caller, balance);
+        _burnAll(caller);
     }
 
     // Overwrite ERC-20 functionality with expiry
     function transfer(address recipient, uint256 amount) external returns (bool) {
-        require(!expired(), "Option has expired");
+        require(!expired(), ERR_OPTION_EXPIRED);
         _transfer(_msgSender(), recipient, amount, false);
         emit Transfer(_msgSender(), recipient, amount);
         return true;
@@ -132,9 +147,9 @@ contract PutOption is ERC20Authorable {
 
     // Overwrite ERC-20 functionality with expiry
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
-        require(!expired(), "Option has expired");
+        require(!expired(), ERR_OPTION_EXPIRED);
         _transfer(sender, recipient, amount, false);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         emit Transfer(sender, recipient, amount);
         return true;
     }
