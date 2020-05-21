@@ -3,127 +3,163 @@ pragma solidity ^0.5.15;
 import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./ERC20Authorable.sol";
 
-contract PutOption {
+contract PutOption is ERC20Authorable {
     using SafeMath for uint;
 
-    IERC20 collateral;
-    IERC20 underlying;
-
-    address owner;
-    address buyer;
-
-    // amount of collateral locked
-    uint256 public totalCollateral;
-
-    // amount of underlying asset locked
-    uint256 public totalUnderlying;
+    // backing asset (eg. Dai or USDC)
+    IERC20 _collateral;
 
     // expiry block of the option
-    uint256 public expiry;
+    uint256 private _expiry;
 
     // the price to buy the option
-    uint256 public premium;
+    uint256 private _premium;
 
     // the strike price for 1 FlashBTC
-    uint256 public strikePrice;
+    uint256 private _strikePrice;
+
+    // payout addresses for underwriters
+    mapping(address => bytes20) _btcAddress;
 
     constructor(
-        IERC20 _collateral,
-        IERC20 _underlying,
-        address _owner,
-        uint256 _expiry,
-        uint256 _premium,
-        uint256 _strikePrice
+        IERC20 collateral,
+        uint256 expiry,
+        uint256 premium,
+        uint256 strikePrice
     ) public {
-        require(_expiry > block.number, "Cannot init expired");
-        require(_strikePrice > 0, "Requires non-zero strikePrice");
+        require(expiry > block.number, "Cannot init expired");
+        require(strikePrice > 0, "Requires non-zero strikePrice");
         // check premium non-zero?
 
-        collateral = _collateral;
-        underlying = _underlying;
-        owner = _owner;
-        expiry = _expiry;
-        premium = _premium;
-        strikePrice = _strikePrice;
+        _collateral = collateral;
+        _expiry = expiry;
+        _premium = premium;
+        _strikePrice = strikePrice;
     }
 
     /**
-    * @dev Claim the option for a fee
+    * @dev Claim options by paying the premium
     * @param amount: erc-20 underlying
+    * @param owner: insurer to use
     **/
-    function insure(uint256 amount) public {
-        require(!_expired(), "Option has expired");
-        require(!_locked(), "Option is locked");
+    function insure(uint256 amount, address owner) public {
+        require(!expired(), "Option has expired");
         require(amount > 0, "Requires non-zero amount");
-        // check that totalCollateral is sufficient
-        _payout(amount);
 
-        buyer = msg.sender;
-        require(underlying.balanceOf(buyer) >= amount, "Insufficient underlying");
-        require(collateral.balanceOf(buyer) >= premium, "Can't pay premium");
-        // take premium now
-        collateral.transferFrom(buyer, address(this), premium);
-        totalUnderlying = totalUnderlying.add(amount);
+        // needed for output
+        address caller = msg.sender;
+        require(_btcAddress[owner] != bytes20(0), "Insurer lacks BTC address");
+
+        // check that total supply is sufficient
+        uint256 payout = _calculatePayout(amount);
+        require(totalSupplyUnlocked() >= payout, "Insufficient unlocked");
+
+        // require the amount * strike price
+        uint256 premium = _calculatePremium(amount);
+        require(_collateral.balanceOf(caller) >= premium, "Insufficient collateral");
+
+        // take premium now and transfer options
+        _collateral.transferFrom(caller, owner, premium);
+        _transfer(owner, caller, payout, true);
     }
 
     /**
     * @dev Underwrite an option, can be called multiple times
     * @param amount: erc-20 collateral
+    * @param btcAddress: recipient address for exercising
     **/
-    function underwrite(uint256 amount) public {
-        require(!_expired(), "Option has expired");
-        require(!_locked(), "Option is locked");
-        require(msg.sender == owner, "Unauthorized");
-        require(collateral.balanceOf(owner) >= amount, "Insufficient balance");
+    function underwrite(uint256 amount, bytes20 btcAddress) external {
+        require(!expired(), "Option has expired");
+        address caller = msg.sender;
+        require(_collateral.balanceOf(caller) >= amount, "Insufficient balance");
         // we do the transfer here because it requires approval
-        collateral.transferFrom(owner, address(this), amount);
-        totalCollateral = totalCollateral.add(amount);
+        _collateral.transferFrom(caller, address(this), amount);
+        _mint(caller, caller, amount);
+        setBtcAddress(btcAddress);
     }
 
     /**
-    * @dev Exercise an option then self-destruct
+    * @dev Set the payout address for an account,
+    * @dev facilitates trading underwrite options
+    * @param btcAddress: recipient address for exercising
+    **/
+    function setBtcAddress(bytes20 btcAddress) public {
+        address caller = msg.sender;
+        require(
+            _btcAddress[caller] == bytes20(0) ||
+            _btcAddress[caller] == btcAddress,
+            "Cannot change payout address"
+        );
+        // TODO: associate with tokens?
+        _btcAddress[caller] = btcAddress;
+    }
+
+    /**
+    * @dev Exercise an option before expiry
     **/
     function exercise() public {
         // TODO: tx verify
-        require(!_expired(), "Option has expired");
-        require(msg.sender == owner || msg.sender == buyer, "Unauthorized");
+        require(!expired(), "Option has expired");
+        address caller = msg.sender;
+        uint256 balance = _getBalance(caller);
+        require(balance > 0, "Insufficient balance");
+        _burn(caller, balance);
+        _collateral.transfer(caller, balance);
+    }
 
-        // send locked collateral to alice
-        uint payout = _payout(totalUnderlying);
-        collateral.transfer(buyer, payout);
+    /**
+    * @dev Claim collateral for tokens after expiry
+    **/
+    function refund() public {
+        require(expired(), "Option not expired");
+        address caller = msg.sender;
+        uint256 balance = _getBalanceAuthored(caller);
+        require(balance > 0, "Insufficient balance");
+        _setBalanceAuthored(msg.sender, 0);
+        // TODO: cleanup expired tokens?
+        _collateral.transfer(caller, balance);
+    }
 
-        // remainder should go to bob
-        collateral.transfer(owner, totalCollateral.sub(payout));
-        // premium isn't tracked in totalCollateral
-        collateral.transfer(owner, premium);
+    // Overwrite ERC-20 functionality with expiry
+    function transfer(address recipient, uint256 amount) external returns (bool) {
+        require(!expired(), "Option has expired");
+        _transfer(_msgSender(), recipient, amount, false);
+        emit Transfer(_msgSender(), recipient, amount);
+        return true;
+    }
 
-        // recooperate some gas costs
-        selfdestruct(address(uint160(owner)));
+    // Overwrite ERC-20 functionality with expiry
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
+        require(!expired(), "Option has expired");
+        _transfer(sender, recipient, amount, false);
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        emit Transfer(sender, recipient, amount);
+        return true;
     }
 
     /**
     * @dev Computes the payout from the amount and the strikePrice
     * @param amount: asset to exchange
     */
-    function _payout(uint256 amount) private view returns (uint256) {
-        uint256 payout = amount.mul(strikePrice);
-        require(totalCollateral >= payout, "Insufficient collateral");
-        return payout;
+    function _calculatePayout(uint256 amount) private view returns (uint256) {
+        return amount.mul(_strikePrice);
+    }
+
+    /**
+    * @dev Computes the premium per option
+    * @param amount: asset to exchange
+    */
+    function _calculatePremium(uint256 amount) private view returns (uint256) {
+        return amount.mul(_premium);
     }
 
     /**
     * @dev Checks if the option has expired
     */
-    function _expired() public view returns (bool) {
-        return (block.number >= expiry);
-    }
-
-    /**
-    * @dev Checks if the option is locked
-    */
-    function _locked() public view returns (bool) {
-        return buyer!=address(0);
+    function expired() public view returns (bool) {
+        return (block.number >= _expiry);
     }
 }
 

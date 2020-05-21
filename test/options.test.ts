@@ -38,8 +38,6 @@ describe("Options", () => {
   let bobAddress: string;
 
   let collateral: Mintable;
-  let underlying: Mintable;
-
   let optionPool: OptionPool;
 
   beforeEach(async () => {
@@ -52,10 +50,9 @@ describe("Options", () => {
 
     let mintableFactory = new MintableFactory(alice);
     collateral = await mintableFactory.deploy();
-    underlying = await mintableFactory.deploy();
 
     let optionFactory = new OptionPoolFactory(bob);
-    optionPool = await optionFactory.deploy(collateral.address, underlying.address);
+    optionPool = await optionFactory.deploy(collateral.address);
   });
 
   const put = async function(
@@ -69,28 +66,22 @@ describe("Options", () => {
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount);
 
     // alice needs fees to pay premium
-    await collateral.mint(aliceAddress, premium);
-    expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(premium);
+    await collateral.mint(aliceAddress, premium * underlyingAmount);
+    expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
-    // alice needs to have underlying
-    await underlying.mint(aliceAddress, underlyingAmount);
-    expect((await underlying.balanceOf(aliceAddress)).toNumber()).to.eq(underlyingAmount);
-
-    await optionPool.create(20, premium, strikePrice);
+    await optionPool.createOption(20, premium, strikePrice);
     
-    let address = await optionPool.options(0);
+    let address = (await optionPool.getOptions())[0];
     let option = await getOption(address, alice);
-
-    // alice is not owner, therefore cannot underwrite
-    await expect(call(option, PutOptionFactory, alice).underwrite(collateralAmount)).to.be.reverted;
 
     // bob should approve collateral transfer and underwrite
     await call(collateral, MintableFactory, bob).approve(address, collateralAmount);
-    await call(option, PutOptionFactory, bob).underwrite(collateralAmount);
+    await call(option, PutOptionFactory, bob).underwrite(collateralAmount, "0x66c7060feb882664ae62ffad0051fe843e318e85");
+
+    await call(option, PutOptionFactory, bob).approve(address, collateralAmount);
 
     // balances should be adjusted accordingly
     expect((await collateral.balanceOf(await bob.getAddress())).toNumber()).to.eq(0);
-    expect((await option.totalCollateral()).toNumber()).to.eq(collateralAmount);
 
     return option;
   };
@@ -98,21 +89,18 @@ describe("Options", () => {
   it("create and exercise put option", async () => {
     let collateralAmount = 100;
     let underlyingAmount = 100;
-    let premium = 20;
+    let premium = 1;
     let strikePrice = 1;
 
     let option = await put(collateralAmount, underlyingAmount, premium, strikePrice);
 
     // alice now claims option by paying premium
-    await call(collateral, MintableFactory, alice).approve(option.address, premium);
-    await call(option, PutOptionFactory, alice).insure(underlyingAmount);
+    await call(collateral, MintableFactory, alice).approve(option.address, premium * underlyingAmount);
+    await call(option, PutOptionFactory, alice).insure(underlyingAmount, bobAddress);
+    expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
-    expect((await option.totalUnderlying()).toNumber()).to.eq(underlyingAmount);
-
+    expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(premium * underlyingAmount);
     await call(option, PutOptionFactory, alice).exercise();
-
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(collateralAmount);
-    expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium);
   });
-
 });

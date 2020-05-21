@@ -9,16 +9,12 @@ contract OptionPool {
     using SafeMath for uint;
 
     // backing asset (eg. Dai or USDC)
-    IERC20 collateral;
+    IERC20 _collateral;
 
-    // the asset to insure
-    IERC20 underlying;
+    address[] private _options;
 
-    address[] public options;
-
-    constructor(address _collateral, address _underlying) public {
-        collateral = IERC20(_collateral);
-        underlying = IERC20(_underlying);
+    constructor(address collateral) public {
+        _collateral = IERC20(collateral);
     }
 
     /**
@@ -27,17 +23,19 @@ contract OptionPool {
     * @param _premium: fee required to lock and exercise option
     * @param _strikePrice: amount of collateral to payout per token
     **/
-    function create(uint _expiry, uint _premium, uint _strikePrice) public returns (address) {
+    function createOption(uint _expiry, uint _premium, uint _strikePrice) public returns (address) {
         PutOption option = new PutOption(
-            collateral,
-            underlying,
-            msg.sender,
+            _collateral,
             _expiry,
             _premium,
             _strikePrice
         );
-        options.push(address(option));
+        _options.push(address(option));
         return address(option);
+    }
+
+    function getOptions() external view returns (address[] memory) {
+        return _options;
     }
 }
 
