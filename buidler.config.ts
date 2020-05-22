@@ -8,6 +8,7 @@ usePlugin("buidler-typechain");
 // environment
 var ganache_config = {
     url: 'http://127.0.0.1:8545',
+    deterministic: true,
     mnemonic: 'lion album emotion suffer october belt uphold mind chronic stool february flag',
     network_id: 3,
     timeout: 0,
@@ -23,7 +24,7 @@ if (INFURA_ID) {
 }
 
 const config = {
-	defaultNetwork: "ganache",
+	defaultNetwork: "buidlerevm",
 	solc: {
 		version: '0.5.15',
 	},
