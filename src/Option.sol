@@ -5,10 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
 import {IValid} from "./lib/IValid.sol";
-import "./ERC20Authorable.sol";
+import "./ERC20Lockable.sol";
 
-
-contract PutOption is ERC20Authorable {
+contract PutOption is ERC20Lockable {
     using SafeMath for uint;
 
     // backing asset (eg. Dai or USDC)
@@ -67,15 +66,15 @@ contract PutOption is ERC20Authorable {
     /**
     * @dev Claim options by paying the premium
     * @param amount: erc-20 underlying
-    * @param owner: insurer to use
+    * @param seller: insurer to use
     **/
-    function insure(uint256 amount, address owner) external {
+    function insure(uint256 amount, address seller) external {
         require(!expired(), ERR_OPTION_EXPIRED);
         require(amount > 0, ERR_ZERO_AMOUNT);
 
         // needed for output
         address caller = msg.sender;
-        require(_btcAddress[owner] != bytes20(0), ERR_NO_BTC_ADDRESS);
+        require(_btcAddress[seller] != bytes20(0), ERR_NO_BTC_ADDRESS);
 
         // require the amount * strike price
         uint256 payout = _calculateInsure(amount);
@@ -84,10 +83,10 @@ contract PutOption is ERC20Authorable {
         // require the amount * premium
         uint256 premium = _calculatePremium(amount);
         require(_collateral.balanceOf(caller) >= premium, ERR_INSUFFICIENT_COLLATERAL);
+        _collateral.transferFrom(caller, seller, premium);
 
-        // take premium now and transfer options
-        _collateral.transferFrom(caller, owner, premium);
-        _transfer(owner, caller, payout, true);
+        // lock token from seller
+        _exchange(seller, caller, payout);
     }
 
     /**
@@ -103,7 +102,7 @@ contract PutOption is ERC20Authorable {
         require(_collateral.balanceOf(caller) >= amount, ERR_INSUFFICIENT_BALANCE);
         // we do the transfer here because it requires approval
         _collateral.transferFrom(caller, address(this), amount);
-        _mint(caller, caller, amount);
+        _mintUnlocked(caller, amount);
         setBtcAddress(btcAddress);
     }
 
@@ -125,15 +124,20 @@ contract PutOption is ERC20Authorable {
     }
 
     function authorsOf(address account) public view returns (bytes20[] memory authors, uint256[] memory amounts) {
-        uint length = _balancesLength[account];
+        IterableMapping.Map storage map = _owned[account];
+        uint length = map.size();
 
         authors = new bytes20[](length);
         amounts = new uint256[](length);
+
         for (uint i = 0; i < length; i++) {
-            bytes20 author = _btcAddress[_balances[account][i].author];
+            address key = map.getKeyAtIndex(i);
+            uint value = map.get(key);
+
+            bytes20 author = _btcAddress[key];
             require(author != bytes20(0), ERR_NO_BTC_ADDRESS);
             authors[i] = author;
-            amounts[i] = _calculateExercise(_balances[account][i].amount);
+            amounts[i] = _calculateExercise(value);
         }
 
         return (authors, amounts);
@@ -151,7 +155,8 @@ contract PutOption is ERC20Authorable {
     ) external {
         require(!expired(), ERR_OPTION_EXPIRED);
         address caller = msg.sender;
-        uint256 balance = _getBalance(caller);
+        require(isLocked(caller), ERR_ACCOUNT_NOT_LOCKED);
+        uint256 balance = _burnAllLocked(caller);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
 
         (bytes20[] memory authors, uint256[] memory amounts) = authorsOf(caller);
@@ -159,7 +164,6 @@ contract PutOption is ERC20Authorable {
         require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
         require(_valid.validateTx(txid, rawtx, authors, amounts), ERR_VALIDATE_TX);
 
-        _burn(caller, balance);
         _collateral.transfer(caller, balance);
     }
 
@@ -169,17 +173,16 @@ contract PutOption is ERC20Authorable {
     function refund() external {
         require(expired(), ERR_OPTION_NOT_EXPIRED);
         address caller = msg.sender;
-        uint256 balance = _getBalanceAuthored(caller);
+        require(!isLocked(caller), ERR_ACCOUNT_LOCKED);
+        uint256 balance = _burnAll(caller);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
-        _setBalanceAuthored(msg.sender, 0);
         _collateral.transfer(caller, balance);
-        _burnAll(caller);
     }
 
     // Overwrite ERC-20 functionality with expiry
     function transfer(address recipient, uint256 amount) external returns (bool) {
         require(!expired(), ERR_OPTION_EXPIRED);
-        _transfer(_msgSender(), recipient, amount, false);
+        _transfer(_msgSender(), recipient, amount);
         emit Transfer(_msgSender(), recipient, amount);
         return true;
     }
@@ -187,7 +190,7 @@ contract PutOption is ERC20Authorable {
     // Overwrite ERC-20 functionality with expiry
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
         require(!expired(), ERR_OPTION_EXPIRED);
-        _transfer(sender, recipient, amount, false);
+        _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         emit Transfer(sender, recipient, amount);
         return true;

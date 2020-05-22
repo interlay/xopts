@@ -78,16 +78,14 @@ describe("Options", () => {
     bobAddress = await bob.getAddress();
     charlieAddress = await charlie.getAddress();
 
-    var collateral;
-
     if ('fork' in config.networks.ganache) {
         const dai = contracts.dai;
         // console.log("Collateral (Dai)", dai);
-        collateral = new ethers.Contract(
-            dai,
-            legos.erc20.abi,
-            alice
-        );
+        // collateral = new ethers.Contract(
+        //     dai,
+        //     legos.erc20.abi,
+        //     alice
+        // );
     } else {
         let mintableFactory = new CollateralFactory(alice);
         collateral = await mintableFactory.deploy();
@@ -254,6 +252,7 @@ describe("Options", () => {
     // alice has equivalent options
     expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
+    
     // alice exercises and burns options to redeem collateral
     await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
@@ -302,10 +301,10 @@ describe("Options", () => {
     let aliceExercises = call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     await expect(aliceExercises).to.be.revertedWith(ErrorCode.ERR_OPTION_EXPIRED);
 
-    let bobCollateral = (await collateral.balanceOf(bobAddress)).toNumber();
+    expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
     expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount - (strikePrice * underlyingAmount));
     await call(option, PutOptionFactory, bob).refund();
     expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(0);
-    expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(bobCollateral + collateralAmount)
+    expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount + (premium * underlyingAmount));
   });
 });
