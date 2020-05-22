@@ -1,25 +1,20 @@
 import { ethers } from "@nomiclabs/buidler";
+import { Signer } from "ethers";
+import { CollateralFactory } from "../typechain/CollateralFactory";
+import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 
 // TODO: use Dai / USDC addresses
-async function Mintable(): Promise<string> {
-	const factory = await ethers.getContract("Mintable");
-	let contract = await factory.deploy();
-	console.log("Collateral (Mintable):", contract.address);
+async function Collateral(signer: Signer): Promise<string> {
+    let factory = new CollateralFactory(signer);
+    let contract = await factory.deploy();
+	console.log("Collateral (Dai) contract:", contract.address);
 	await contract.deployed();
 	return contract.address;
 }
 
-async function ERC20Expiring(): Promise<string> {
-	const factory = await ethers.getContract("ERC20Expiring");
-	let contract = await factory.deploy();
-	console.log("ERC20Expiring:", contract.address);
-	await contract.deployed();
-	return contract.address;
-}
-
-async function OptionPool(collateral: string, underlying: string) {
-	const factory = await ethers.getContract("OptionPool");
-	let contract = await factory.deploy(collateral, underlying);
+async function OptionPool(signer: Signer, collateral: string) {
+	let factory = new OptionPoolFactory(signer);
+	let contract = await factory.deploy(collateral);
 	// The address the Contract WILL have once mined
 	console.log("OptionPool contract:", contract.address);
 	// The contract is NOT deployed yet; we must wait until it is mined
@@ -27,12 +22,13 @@ async function OptionPool(collateral: string, underlying: string) {
 }
 
 async function main() {
+	let signers = await ethers.signers();
+
 	// this will be a stablecoin
-	const collateral = await Mintable();
-	// this is xBTC / xFlash
-	const underlying = await ERC20Expiring();
+	const collateral = await Collateral(signers[0]);
+
 	// finally deploy options over assets
-	await OptionPool(collateral, underlying);
+	await OptionPool(signers[0], collateral);
 }
 
 main()

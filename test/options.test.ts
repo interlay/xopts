@@ -2,8 +2,8 @@ import { ethers } from "@nomiclabs/buidler";
 import { Signer } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { Mintable } from "../typechain/Mintable";
-import { MintableFactory } from "../typechain/MintableFactory";
+import { Collateral } from "../typechain/Collateral";
+import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPool } from "../typechain/OptionPool";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 import { PutOption } from "../typechain/PutOption";
@@ -48,7 +48,7 @@ describe("Options", () => {
   let bobAddress: string;
   let charlieAddress: string;
 
-  let collateral: Mintable;
+  let collateral: Collateral;
   let optionPool: OptionPool;
 
   let btcAddress = "0x66c7060feb882664ae62ffad0051fe843e318e85";
@@ -63,8 +63,8 @@ describe("Options", () => {
     bobAddress = await bob.getAddress();
     charlieAddress = await charlie.getAddress();
 
-    let mintableFactory = new MintableFactory(alice);
-    collateral = await mintableFactory.deploy();
+    let collateralFactory = new CollateralFactory(alice);
+    collateral = await collateralFactory.deploy();
 
     let optionFactory = new OptionPoolFactory(bob);
     optionPool = await optionFactory.deploy(collateral.address);
@@ -91,7 +91,7 @@ describe("Options", () => {
     let option = await getOption(address, alice);
 
     // bob should approve collateral transfer and underwrite
-    await call(collateral, MintableFactory, bob).approve(address, collateralAmount);
+    await call(collateral, CollateralFactory, bob).approve(address, collateralAmount);
     await call(option, PutOptionFactory, bob).underwrite(collateralAmount, btcAddress);
 
     await call(option, PutOptionFactory, bob).approve(address, collateralAmount);
@@ -129,7 +129,7 @@ describe("Options", () => {
     let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, 20);
 
     // alice now claims option by paying premium
-    await call(collateral, MintableFactory, alice).approve(option.address, premium * underlyingAmount);
+    await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
     await call(option, PutOptionFactory, alice).insure(underlyingAmount, bobAddress);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
@@ -156,7 +156,7 @@ describe("Options", () => {
     expect((await option.balanceOf(charlieAddress)).toNumber()).to.eq(collateralAmount);
 
     // alice claims option by paying premium
-    await call(collateral, MintableFactory, alice).approve(option.address, premium * underlyingAmount);
+    await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
     let insureCall = call(option, PutOptionFactory, alice).insure(underlyingAmount, charlieAddress);
     await expect(insureCall).to.be.reverted;
 
@@ -189,7 +189,7 @@ describe("Options", () => {
     let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, expiry);
 
     // alice now claims option by paying premium
-    await call(collateral, MintableFactory, alice).approve(option.address, premium * underlyingAmount);
+    await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
     await call(option, PutOptionFactory, alice).insure(underlyingAmount, bobAddress);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
@@ -226,7 +226,7 @@ describe("Options", () => {
     let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, expiry);
 
     // alice now claims option by paying premium
-    await call(collateral, MintableFactory, alice).approve(option.address, premium * underlyingAmount);
+    await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
     await call(option, PutOptionFactory, alice).insure(underlyingAmount, bobAddress);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
