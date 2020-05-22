@@ -4,41 +4,30 @@ import LightweightChart from "./LightweightChart";
 import { fetchJson } from "ethers/utils";
 
 
-class LatestTransactions extends Component {
+class Options extends Component {
   
   constructor(props) {
     super(props);
     this.state = {
-      error: null,
-      isLoaded: false,
-      transactions: [],
+      optionContracts: ["0x123", "0x"],
+      options: []
     };
   }
 
   componentDidMount() {
-    fetchJson("http://localhost:8080/latestTxs").then(
-      (res) => {
-        this.setState({
-          isLoaded: true,
-          transactions: res,
-        });
-      },
-      (error) => {
-        this.setState({
-          isLoaded: true,
-          error,
-        });
-      }
-    );
+
+    let options = this.getOptions();
+
+    console.log(options);
+
+  }
+
+  async getOptions() {
+    await this.props.optionPoolContract.getOptions();
   }
 
   render() {
-    const { error, isLoaded, transactions } = this.state;
-
-    console.debug(transactions);
-    if (error) {
-      return (
-        <Container className="p-3">
+      return <Container className="p-3">
           <Row>
             <h2>Latest Transactions</h2>
           </Row>
@@ -60,155 +49,7 @@ class LatestTransactions extends Component {
               </tbody>
             </Table>
           </Row>
-        </Container>
-      );
-    } else if (!isLoaded) {
-      return (
-        <Container className="p-3">
-          <Row>
-            <h2>Latest Transactions</h2>
-          </Row>
-          <Row>
-            <Table striped bordered hover>
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Status</th>
-                  <th>Total</th>
-                  <th>ID</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colSpan="5">Loading...</td>
-                </tr>
-              </tbody>
-            </Table>
-          </Row>
-        </Container>
-      );
-    } else {
-      return (
-        <Container className="p-3">
-          <Row>
-            <h2>Latest Transactions</h2>
-          </Row>
-          <Row>
-            <Table striped bordered hover>
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Status</th>
-                  <th>Total</th>
-                  <th>ID</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.timestamp}</td>
-                    <td>
-                      <span className="badge badge-pill badge-success">
-                        {item.status}
-                      </span>
-                    </td>
-                    <td>{item.total}</td>
-                    <td>{item.id}</td>
-                    <td>
-                      <a href="/view" className="badge badge-light">
-                        {" "}
-                        View
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </Row>
-        </Container>
-      );
-    }
-  }
-}
-
-class PoolStats extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      error: null,
-      isLoaded: false,
-      stats: [],
-    };
-  }
-
-  componentDidMount() {
-    fetchJson("http://localhost:8080/poolStats").then(
-      (res) => {
-        this.setState({
-          isLoaded: true,
-          stats: res,
-        });
-      },
-      (error) => {
-        this.setState({
-          isLoaded: true,
-          error,
-        });
-      }
-    );
-  }
-
-  render() {
-    const { error, isLoaded, stats } = this.state;
-    console.debug("stats=" + stats);
-    if (error) {
-      return (
-        <Container className="p-3">
-          <Row>
-            <Col>
-              <h2>Cannot load pool stats</h2>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <LightweightChart />
-            </Col>
-          </Row>
-        </Container>
-      );
-    } else if (!isLoaded) {
-      return (
-        <Container className="p-3">
-          <Row>
-            <Col>
-              <h2>Loading Pool Stats</h2>
-            </Col>
-          </Row>
-        </Container>
-      );
-    } else {
-      return (
-        <Container className="p-3">
-          <Row>
-            {stats.map((stat) => (
-              <Col key={stat.key}>
-                <button type="button" className="btn btn-secondary my-4">
-                  {stat.key} &nbsp;
-                  <span className="badge badge-light">{stat.val}</span>
-                </button>
-              </Col>
-            ))}
-          </Row>
-          <Row>
-            <Col>
-              <LightweightChart />
-            </Col>
-          </Row>
-        </Container>
-      );
-    }
+        </Container>;
   }
 }
 
@@ -238,8 +79,6 @@ export default class Home extends Component {
             </p>
           </div>
         </section>
-        <PoolStats />
-        <LatestTransactions />
       </div>
     );
   }

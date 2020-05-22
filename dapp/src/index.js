@@ -18,6 +18,7 @@ import Underwrite from "./components/Underwrite";
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 import putOptionArtifact from "./artifacts/PutOption.json"
 
+const optionPoolAddress = "0xbe65a1f9a31d5e81d5e2b863aef15bf9b3d92891";
 
 class App extends Component {
 
@@ -27,7 +28,8 @@ class App extends Component {
         isWeb3: false,
         signer: null,
         address: null,
-        provider: null
+        provider: null,
+        optionPoolContract: null
     };
   }
 
@@ -42,11 +44,18 @@ class App extends Component {
       let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
       let signer = await provider.getSigner();
       let address = await signer.getAddress();
+
+      let optionPoolAbi = optionPoolArtifact.abi;
+
+      let optionPoolContract = await new ethers.Contract(optionPoolAddress, optionPoolAbi, provider);
+
+
       this.setState({
         isWeb3: true,
         signer: signer,
         address: address,
-        provider: provider
+        provider: provider,
+        optionPoolContract: optionPoolContract
       });
     }
   }
