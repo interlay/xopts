@@ -9,6 +9,9 @@ import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 import { PutOption } from "../typechain/PutOption";
 import { PutOptionFactory } from "../typechain/PutOptionFactory";
 import { ErrorCode } from './constants';
+import config from "../buidler.config";
+import contracts from "../contracts";
+import { legos } from "@studydefi/money-legos";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -39,6 +42,7 @@ async function mineUntil(expiry: number) {
   }
 }
 
+
 describe("Options", () => {
   let alice: Signer;
   let bob: Signer;
@@ -63,12 +67,47 @@ describe("Options", () => {
     bobAddress = await bob.getAddress();
     charlieAddress = await charlie.getAddress();
 
-    let collateralFactory = new CollateralFactory(alice);
-    collateral = await collateralFactory.deploy();
+    var collateral;
+
+    if ('fork' in config.networks.ganache) {
+        const dai = contracts.dai;
+        // console.log("Collateral (Dai)", dai);
+        collateral = new ethers.Contract(
+            dai,
+            legos.erc20.abi,
+            alice
+        );
+    } else {
+        let mintableFactory = new CollateralFactory(alice);
+        collateral = await mintableFactory.deploy();
+    }
 
     let optionFactory = new OptionPoolFactory(bob);
     optionPool = await optionFactory.deploy(collateral.address);
   });
+
+  const mint = async function(user: Signer, userAddress: string, collateralAmount: number) {
+    if ('fork' in config.networks.ganache) {
+        // get a maker proxy
+        const proxyRegistry = new ethers.Contract(
+            contracts.proxyRegistry,
+            legos.maker.proxyRegistry.abi,
+            user,
+        );
+        const before = await proxyRegistry.proxies(userAddress);
+
+        await proxyRegistry.build({ gasLimit: 1500000 });
+
+        const after = await proxyRegistry.proxies(userAddress);
+
+        expect(before).to.be("0x0000000000000000000000000000000000000000");
+        expect(after).not.to.be("0x0000000000000000000000000000000000000000");
+        // open vault
+    } else {
+        await collateral.mint(userAddress, collateralAmount);
+        expect((await collateral.balanceOf(userAddress)).toNumber()).to.eq(collateralAmount);
+    }
+  }
 
   const put = async function(
     collateralAmount: number,
@@ -86,7 +125,7 @@ describe("Options", () => {
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
     await optionPool.createOption(expiry, premium, strikePrice);
-    
+
     let address = (await optionPool.getOptions())[0];
     let option = await getOption(address, alice);
 
@@ -151,7 +190,7 @@ describe("Options", () => {
 
     // charlie now becomes the insurer
     await call(option, PutOptionFactory, bob).transfer(charlieAddress, collateralAmount);
-  
+
     expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(0);
     expect((await option.balanceOf(charlieAddress)).toNumber()).to.eq(collateralAmount);
 
@@ -195,7 +234,7 @@ describe("Options", () => {
 
     // alice has equivalent options
     expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
-    
+
     // alice exercises and burns options to redeem collateral
     await call(option, PutOptionFactory, alice).exercise();
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
@@ -232,7 +271,7 @@ describe("Options", () => {
 
     // alice has equivalent options
     expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
-    
+
     // bob cannot refund his options / authored tokens until after expiry
     let bobRefunds = call(option, PutOptionFactory, bob).refund();
     await expect(bobRefunds).to.be.revertedWith(ErrorCode.ERR_OPTION_NOT_EXPIRED);
@@ -243,7 +282,7 @@ describe("Options", () => {
     // alice can no longer exercise her options
     let aliceExercises = call(option, PutOptionFactory, alice).exercise();
     await expect(aliceExercises).to.be.revertedWith(ErrorCode.ERR_OPTION_EXPIRED);
-    
+
     let bobCollateral = (await collateral.balanceOf(bobAddress)).toNumber();
     expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount - (strikePrice * underlyingAmount));
     await call(option, PutOptionFactory, bob).refund();

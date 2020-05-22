@@ -2,22 +2,30 @@ import { ethers } from "@nomiclabs/buidler";
 import { Signer } from "ethers";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
+import config from "../buidler.config";
+import contracts from "../contracts";
 
-// TODO: use Dai / USDC addresses
+// use Dai addresses
 async function Collateral(signer: Signer): Promise<string> {
-    let factory = new CollateralFactory(signer);
-    let contract = await factory.deploy();
-	console.log("Collateral (Dai) contract:", contract.address);
-	await contract.deployed();
-	return contract.address;
+    // if we use the ganache forking option, use the Dai address on Ropsten
+    // otherwise, we use a blank ERC20
+    if ('fork' in config.networks.ganache) {
+        const dai = contracts.dai;
+        console.log("Collateral (Dai)", dai);
+        return dai;
+    } else {
+        let factory = new CollateralFactory(signer);
+	    let contract = await factory.deploy();
+	    console.log("Collateral (ERC20):", contract.address);
+	    await contract.deployed();
+	    return contract.address;
+    }
 }
 
 async function OptionPool(signer: Signer, collateral: string) {
-	let factory = new OptionPoolFactory(signer);
+    let factory = new OptionPoolFactory(signer);
 	let contract = await factory.deploy(collateral);
-	// The address the Contract WILL have once mined
 	console.log("OptionPool contract:", contract.address);
-	// The contract is NOT deployed yet; we must wait until it is mined
 	await contract.deployed();
 }
 
