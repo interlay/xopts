@@ -4,12 +4,7 @@ import { Link } from "react-router-dom";
 
 class TopBar extends Component {
 
-  static defaultProps = {
-    eth : {}
-  }
-
   render() {
-    console.log(this.props);
     return (
       <Navbar bg="light" expand="md" className="border-bottom shadow-sm">
         <Navbar.Brand href="/">XOpts</Navbar.Brand>
@@ -23,14 +18,9 @@ class TopBar extends Component {
               Underwrite
             </Link>
           </Nav>
-
-
-
-
-
-            <Nav.Link href="/dashboard">
+          <Nav.Link href="/dashboard">
             {this.props.address}
-            </Nav.Link>
+          </Nav.Link>
         </Navbar.Collapse>
       </Navbar>
     );
