@@ -109,7 +109,7 @@ export default class Insure extends Component {
       <div>
         <section class="jumbotron text-center border-bottom shadow-sm">
           <div class="container">
-            <h1>Insure</h1>
+            <h1>Buy Insurance</h1>
           </div>
         </section>
         <Container className="p-3">

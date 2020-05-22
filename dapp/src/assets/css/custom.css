@@ -1,0 +1,51 @@
+
+.profile-image {
+   max-width: 10rem;
+   box-sizing: border-box; 
+   border-radius: 50%;
+}
+.page-header-padding {
+   padding-top: 30vh;
+}
+.lowercase {
+   text-transform: lowercase;
+}
+
+.xclaim-head-logo {
+   max-width: 10rem;
+}
+
+.iframe-container {
+   overflow: hidden;
+   padding-top: 56.25%;
+   position: relative;
+}
+
+.img-container {
+   overflow: hidden;
+   position: relative;
+}
+
+.iframe-container iframe {
+   border: 0;
+   height: 100%;
+   left: 0;
+   position: absolute;
+   top: 0;
+   width: 100%;
+}
+
+.margin-top-small {
+   margin-top: 1rem;
+}
+
+.navbar-shadow {
+   box-shadow: 0 4px 18px 0px rgba(0, 0, 0, 0.12), 0 7px 10px -5px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 500px) {
+
+   h1 {
+      font-size: 2.5rem;
+   }
+}

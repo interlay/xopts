@@ -3,7 +3,9 @@ import { Col, Container, Row, Table } from "react-bootstrap";
 import LightweightChart from "./LightweightChart";
 import { fetchJson } from "ethers/utils";
 
+
 class LatestTransactions extends Component {
+  
   constructor(props) {
     super(props);
     this.state = {

@@ -1,5 +1,5 @@
 {
-  "name": "xflash",
+  "name": "xopts",
   "version": "0.0.1",
   "description": "Bitcoin-backed flash loans on Ethereum.",
   "main": "index.js",
