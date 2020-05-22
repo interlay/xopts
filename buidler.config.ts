@@ -6,10 +6,25 @@ usePlugin("@nomiclabs/buidler-waffle");
 usePlugin("buidler-typechain");
 
 // environment
+var ganache_config = {
+    url: 'http://127.0.0.1:8545',
+    mnemonic: 'lion album emotion suffer october belt uphold mind chronic stool february flag',
+    network_id: 3,
+    timeout: 0,
+    logger: console,
+};
+
+// if infura is available, fork from ropsten
 const INFURA_ID = process.env.INFURA_XFLASH_ID;
 
-const config /*: BuidlerConfig*/ = {
-	defaultNetwork: "buidlerevm",
+if (INFURA_ID) {
+    const INFURA_URL = 'https://ropsten.infura.io/v3/'.concat(INFURA_ID);
+    console.log('Forking from '.concat(INFURA_URL));
+    ganache_config = {...ganache_config, ...{fork: INFURA_URL}};
+}
+
+const config = {
+	defaultNetwork: "ganache",
 	solc: {
 		version: '0.5.15',
 	},
@@ -23,14 +38,7 @@ const config /*: BuidlerConfig*/ = {
   	},
     networks: {
         buidlerevm : {},
-        ganache: {
-            url: 'http://127.0.0.1:8545',
-            // fork: 'https://ropsten.infura.io/v3/${ INFURA_ID }',
-            mnemonic: 'lion album emotion suffer october belt uphold mind chronic stool february flag',
-            network_id: 3,
-            timeout: 0,
-            logger: console,
-        },
+        ganache: ganache_config,
     },
 };
 
