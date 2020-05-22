@@ -10,6 +10,8 @@ export const ErrorCode = {
     ERR_OPTION_NOT_EXPIRED: "Option not expired",
     ERR_NO_BTC_ADDRESS: "Insurer lacks BTC address",
     ERR_UNEXPECTED_BTC_ADDRESS: "Cannot change BTC address",
+    ERR_VERIFY_TX: "Cannot verify tx inclusion",
+    ERR_VALIDATE_TX: "Cannot validate tx format",
     ERR_TRANSFER_EXCEEDS_BALANCE: "ERC20: transfer amount exceeds balance",
     ERR_APPROVE_TO_ZERO_ADDRESS: "ERC20: approve to the zero address",
     ERR_TRANSFER_TO_ZERO_ADDRESS: "ERC20: transfer to the zero address",

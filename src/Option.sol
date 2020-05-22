@@ -3,13 +3,20 @@ pragma solidity ^0.5.15;
 import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import {IRelay} from "./lib/IRelay.sol";
+import {IValid} from "./lib/IValid.sol";
 import "./ERC20Authorable.sol";
+
 
 contract PutOption is ERC20Authorable {
     using SafeMath for uint;
 
     // backing asset (eg. Dai or USDC)
     IERC20 _collateral;
+
+    // btc relay
+    IRelay _relay;
+    IValid _valid;
 
     // expiry block of the option
     uint256 private _expiry;
@@ -34,9 +41,13 @@ contract PutOption is ERC20Authorable {
     string constant ERR_OPTION_NOT_EXPIRED = "Option not expired";
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
     string constant ERR_UNEXPECTED_BTC_ADDRESS = "Cannot change BTC address";
+    string constant ERR_VERIFY_TX = "Cannot verify tx inclusion";
+    string constant ERR_VALIDATE_TX = "Cannot validate tx format";
 
     constructor(
         IERC20 collateral,
+        IRelay relay,
+        IValid valid,
         uint256 expiry,
         uint256 premium,
         uint256 strikePrice
@@ -46,6 +57,8 @@ contract PutOption is ERC20Authorable {
         require(strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
 
         _collateral = collateral;
+        _relay = relay;
+        _valid = valid;
         _expiry = expiry;
         _premium = premium;
         _strikePrice = strikePrice;
@@ -65,7 +78,7 @@ contract PutOption is ERC20Authorable {
         require(_btcAddress[owner] != bytes20(0), ERR_NO_BTC_ADDRESS);
 
         // require the amount * strike price
-        uint256 payout = _calculatePayout(amount);
+        uint256 payout = _calculateInsure(amount);
         require(totalSupplyUnlocked() >= payout, ERR_INSUFFICIENT_UNLOCKED);
 
         // require the amount * premium
@@ -111,15 +124,41 @@ contract PutOption is ERC20Authorable {
         _btcAddress[caller] = btcAddress;
     }
 
+    function authorsOf(address account) public view returns (bytes20[] memory authors, uint256[] memory amounts) {
+        uint length = _balancesLength[account];
+
+        authors = new bytes20[](length);
+        amounts = new uint256[](length);
+        for (uint i = 0; i < length; i++) {
+            bytes20 author = _btcAddress[_balances[account][i].author];
+            require(author != bytes20(0), ERR_NO_BTC_ADDRESS);
+            authors[i] = author;
+            amounts[i] = _calculateExercise(_balances[account][i].amount);
+        }
+
+        return (authors, amounts);
+    }
+
     /**
     * @dev Exercise an option before expiry
     **/
-    function exercise() external {
-        // TODO: tx verify
+    function exercise(
+        uint256 height,
+        uint256 index,
+        bytes32 txid,
+        bytes calldata proof,
+        bytes calldata rawtx
+    ) external {
         require(!expired(), ERR_OPTION_EXPIRED);
         address caller = msg.sender;
         uint256 balance = _getBalance(caller);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
+
+        (bytes20[] memory authors, uint256[] memory amounts) = authorsOf(caller);
+        // verify & validate tx, use default confirmations
+        require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
+        require(_valid.validateTx(txid, rawtx, authors, amounts), ERR_VALIDATE_TX);
+
         _burn(caller, balance);
         _collateral.transfer(caller, balance);
     }
@@ -155,11 +194,19 @@ contract PutOption is ERC20Authorable {
     }
 
     /**
-    * @dev Computes the payout from the amount and the strikePrice
+    * @dev Computes the insure payout from the amount and the strikePrice
     * @param amount: asset to exchange
     */
-    function _calculatePayout(uint256 amount) private view returns (uint256) {
+    function _calculateInsure(uint256 amount) private view returns (uint256) {
         return amount.mul(_strikePrice);
+    }
+
+    /**
+    * @dev Computes the exerise payout from the amount and the strikePrice
+    * @param amount: asset to exchange
+    */
+    function _calculateExercise(uint256 amount) private view returns (uint256) {
+        return amount.div(_strikePrice);
     }
 
     /**

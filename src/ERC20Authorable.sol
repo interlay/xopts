@@ -171,6 +171,19 @@ contract ERC20Authorable is IERC20, Context {
         return balance;
     }
 
+    // function authorsOf(address account) public view returns (address[] memory authors, uint256[] memory amounts) {
+    //     uint length = _balancesLength[account];
+
+    //     authors = new address[](length);
+    //     amounts = new uint256[](length);
+    //     for (uint i = 0; i < length; i++) {
+    //         authors[i] = _balances[account][i].author;
+    //         amounts[i] = _balances[account][i].amount;
+    //     }
+
+    //     return (authors, amounts);
+    // }
+
     function _getBalanceAuthored(address account) internal view returns (uint256) {
         return _authored[account];
     }
