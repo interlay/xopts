@@ -25,7 +25,7 @@ if (INFURA_ID) {
 }
 
 const config = {
-	defaultNetwork: "buidlerevm",
+	defaultNetwork: "ganache",
 	solc: {
 		version: '0.5.15',
 	},
