@@ -5,47 +5,35 @@ import { Link } from "react-router-dom";
 class TopBar extends Component {
   render() {
     return (
-      <Navbar bg="light" expand="lg" className="border-bottom shadow-sm">
-        <Navbar.Brand href="#home">XFLASH</Navbar.Brand>
+      <Navbar bg="light" expand="md" className="border-bottom shadow-sm">
+        <Navbar.Brand href="/home">XOpts</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
-            <Link className="nav-link" to="/">
-              Home
-            </Link>
-            <Link className="nav-link" to="/audit">
-              Audit
-            </Link>
-          </Nav>
-
-          <a
-            href="/borrow"
-            className="btn btn-primary m-2"
-            style={{ width: "100px" }}
-          >
-            Borrow
-          </a>
-          <a
+            <Link className="nav-link" to="/insure">
+            <a
             href="/insure"
             className="btn btn-primary m-2"
             style={{ width: "100px" }}
           >
             Insure
           </a>
-          <a
+            </Link>
+            <Link className="nav-link" to="/underwrite">
+            <a
             href="/underwrite"
             className="btn btn-primary m-2"
             style={{ width: "100px" }}
           >
             Underwrite
           </a>
-          <a
-            href="/lend"
-            className="btn btn-primary m-2"
-            style={{ width: "100px" }}
-          >
-            Lend
-          </a>
+            </Link>
+          </Nav>
+
+         
+          
+          
+        
           <Form inline>
             <Nav.Link href="/dashboard">
               <Image

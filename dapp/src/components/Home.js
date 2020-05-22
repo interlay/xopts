@@ -216,16 +216,9 @@ export default class Home extends Component {
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
           <div className="container">
-            <h1>XFLASH</h1>
-            <p className="lead text-muted">Amazing one-liner elevator pitch</p>
+            <h1>Decentralized Bitcoin Options</h1>
+            <p className="lead text-muted">Buy and Sell Protection against Bitcoin Price Drops. </p>
             <p>
-              <a
-                href="/borrow"
-                className="btn btn-primary m-2"
-                style={{ width: "100px" }}
-              >
-                Borrow
-              </a>
               <a
                 href="/insure"
                 className="btn btn-primary m-2"
@@ -234,11 +227,11 @@ export default class Home extends Component {
                 Insure
               </a>
               <a
-                href="/lend"
+                href="/underwrite"
                 className="btn btn-primary m-2"
                 style={{ width: "100px" }}
               >
-                Lend
+                Underwrite
               </a>
             </p>
           </div>
