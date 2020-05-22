@@ -8,12 +8,11 @@ import { ethers } from 'ethers';
 
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
-import Dashboard from "./components/Dashboard";
-import Home from "./components/Home";
+import Dashboard from "./views/Dashboard";
+import Home from "./views/Home";
 import Topbar from "./components/Topbar";
-import Audit from "./xflash/Audit";
-import Insure from "./components/Insure";
-import Underwrite from "./components/Underwrite";
+import Insure from "./views/Insure";
+import Underwrite from "./views/Underwrite";
 
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 import putOptionArtifact from "./artifacts/PutOption.json"
@@ -73,14 +72,12 @@ class App extends Component {
             <Route path="/dashboard">
               <Dashboard />
             </Route>
-            <Route path="/audit">
-              <Audit />
-            </Route>
+
             <Route path="/insure">
               <Insure />
             </Route>
             <Route exact path="/">
-              <Home />
+              <Home {...this.state}/>
             </Route>
           </Switch>
         </div>
