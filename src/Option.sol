@@ -64,11 +64,11 @@ contract PutOption is ERC20Authorable {
         address caller = msg.sender;
         require(_btcAddress[owner] != bytes20(0), ERR_NO_BTC_ADDRESS);
 
-        // check that total supply is sufficient
+        // require the amount * strike price
         uint256 payout = _calculatePayout(amount);
         require(totalSupplyUnlocked() >= payout, ERR_INSUFFICIENT_UNLOCKED);
 
-        // require the amount * strike price
+        // require the amount * premium
         uint256 premium = _calculatePremium(amount);
         require(_collateral.balanceOf(caller) >= premium, ERR_INSUFFICIENT_COLLATERAL);
 
