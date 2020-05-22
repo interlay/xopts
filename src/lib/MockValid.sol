@@ -6,8 +6,8 @@ contract MockValid is IValid {
     function validateTx(
         bytes32 txid,
         bytes calldata rawtx,
-        bytes20[] calldata authors,
-        uint256[] calldata amounts
+        bytes20 output,
+        uint256 amount
     ) external view returns(bool) {
         return true;
     }

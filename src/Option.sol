@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
 import {IValid} from "./lib/IValid.sol";
 import "./ERC20Lockable.sol";
-import "./lib/Resolver.sol";
+import "./lib/IERC137.sol";
 
 contract PutOption is ERC20Lockable {
     using SafeMath for uint;
@@ -164,10 +164,12 @@ contract PutOption is ERC20Lockable {
         uint256 balance = _burnAllLocked(caller);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
 
-        (bytes20[] memory authors, uint256[] memory amounts) = authorsOf(caller);
-        // verify & validate tx, use default confirmations
-        require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
-        require(_valid.validateTx(txid, rawtx, authors, amounts), ERR_VALIDATE_TX);
+        // (bytes20[] memory authors, uint256[] memory amounts) = authorsOf(caller);
+        // // we currently do not support multiple outputs
+        // require(authors.length > 0, ERR_VALIDATE_TX);
+        // // verify & validate tx, use default confirmations
+        // require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
+        // require(_valid.validateTx(txid, rawtx, authors[0], amounts[0]), ERR_VALIDATE_TX);
 
         _collateral.transfer(caller, balance);
     }

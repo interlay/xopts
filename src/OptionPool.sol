@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
 import {IValid} from "./lib/IValid.sol";
-import "./lib/Resolver.sol";
+import "./lib/IERC137.sol";
 import "./Option.sol";
 
 contract OptionPool {

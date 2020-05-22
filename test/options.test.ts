@@ -263,7 +263,6 @@ describe("Options", () => {
 
     // alice has equivalent options
     expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
-
     
     // alice exercises and burns options to redeem collateral
     await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
