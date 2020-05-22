@@ -103,7 +103,6 @@ describe("Options", () => {
         expect(before).to.be("0x0000000000000000000000000000000000000000");
         expect(after).not.to.be("0x0000000000000000000000000000000000000000");
         // open vault
-
     } else {
         await collateral.mint(userAddress, collateralAmount);
         expect((await collateral.balanceOf(userAddress)).toNumber()).to.eq(collateralAmount);

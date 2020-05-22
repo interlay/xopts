@@ -11,7 +11,6 @@ var ganache_config = {
     mnemonic: 'lion album emotion suffer october belt uphold mind chronic stool february flag',
     network_id: 3,
     timeout: 0,
-    logger: console,
 };
 
 // if infura is available, fork from ropsten
