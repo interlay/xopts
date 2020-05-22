@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
 import {IValid} from "./lib/IValid.sol";
 import "./ERC20Lockable.sol";
+import "./lib/Resolver.sol";
 
 contract PutOption is ERC20Lockable {
     using SafeMath for uint;
@@ -16,6 +17,8 @@ contract PutOption is ERC20Lockable {
     // btc relay
     IRelay _relay;
     IValid _valid;
+
+    IERC137Registry _ens;
 
     // expiry block of the option
     uint256 private _expiry;
@@ -47,6 +50,7 @@ contract PutOption is ERC20Lockable {
         IERC20 collateral,
         IRelay relay,
         IValid valid,
+        IERC137Registry ens,
         uint256 expiry,
         uint256 premium,
         uint256 strikePrice
@@ -58,6 +62,7 @@ contract PutOption is ERC20Lockable {
         _collateral = collateral;
         _relay = relay;
         _valid = valid;
+        _ens = ens;
         _expiry = expiry;
         _premium = premium;
         _strikePrice = strikePrice;

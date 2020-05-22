@@ -10,11 +10,14 @@ import { PutOption } from "../typechain/PutOption";
 import { PutOptionFactory } from "../typechain/PutOptionFactory";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
 import { MockValidFactory } from "../typechain/MockValidFactory";
-
-import { ErrorCode } from './constants';
 import config from "../buidler.config";
 import contracts from "../contracts";
 import { legos } from "@studydefi/money-legos";
+import { ERC137Registry } from '../typechain/ERC137Registry';
+import { ERC137RegistryFactory } from '../typechain/ERC137RegistryFactory';
+import { ERC137Resolver } from '../typechain/ERC137Resolver';
+import { ERC137ResolverFactory } from '../typechain/ERC137ResolverFactory';
+import { ErrorCode } from './constants';
 
 chai.use(solidity);
 const { expect } = chai;
@@ -56,6 +59,8 @@ describe("Options", () => {
   let charlieAddress: string;
 
   let collateral: Collateral;
+  let registry: ERC137Registry
+
   let optionPool: OptionPool;
 
   let btcAddress = "0x66c7060feb882664ae62ffad0051fe843e318e85";
@@ -97,8 +102,15 @@ describe("Options", () => {
     let validFactory = new MockValidFactory(alice);
     let valid = await validFactory.deploy();
 
+    let resolverFactory = new ERC137ResolverFactory(alice);
+    let aliceResolver = await resolverFactory.deploy(aliceAddress);
+
+    let registryFactory = new ERC137RegistryFactory(alice);
+    registry = await registryFactory.deploy();
+    registry.setResolver(Buffer.alloc(32).fill(0), aliceResolver.address);
+
     let optionFactory = new OptionPoolFactory(bob);
-    optionPool = await optionFactory.deploy(collateral.address, relay.address, valid.address);
+    optionPool = await optionFactory.deploy(collateral.address, relay.address, valid.address, registry.address);
   });
 
   const mint = async function(user: Signer, userAddress: string, collateralAmount: number) {
