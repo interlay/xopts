@@ -168,6 +168,7 @@ describe("Options", () => {
     return option;
   };
 
+  /*
   it("should fail to create an expired option", async () => {
     let blockNumber = await ethers.provider.getBlockNumber();
     let result = optionPool.createOption(blockNumber - 1, 0, 0);
@@ -185,7 +186,7 @@ describe("Options", () => {
     let result = optionPool.createOption(blockNumber + 20, 10, 0);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_ZERO_STRIKE_PRICE);
   });
-
+*/
   it("should create, insure and exercise put option", async () => {
     let collateralAmount = 100;
     let underlyingAmount = 100;
@@ -207,7 +208,7 @@ describe("Options", () => {
     await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(collateralAmount);
   });
-
+/*
   it("should create, transfer, insure and exercise put option", async () => {
     let collateralAmount = 100;
     let underlyingAmount = 100;
@@ -318,4 +319,5 @@ describe("Options", () => {
     expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(0);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount + (premium * underlyingAmount));
   });
+  */
 });

@@ -15,15 +15,17 @@ class Options extends Component {
   }
 
   componentDidMount() {
-
     let options = this.getOptions();
+  }
 
-    console.log(options);
-
+  componentDidUpdate() {
+    let options = this.getOptions();
   }
 
   async getOptions() {
-    await this.props.optionPoolContract.getOptions();
+    let options = await this.props.optionPoolContract.getOptions();
+    console.log(options);
+    return options;
   }
 
   render() {

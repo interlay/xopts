@@ -18,7 +18,7 @@ import Underwrite from "./components/Underwrite";
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 import putOptionArtifact from "./artifacts/PutOption.json"
 
-const optionPoolAddress = "0xbe65a1f9a31d5e81d5e2b863aef15bf9b3d92891";
+const optionPoolAddress = "0x25c344e14b5df94e89021f3b09dad5f462e9b777";
 
 class App extends Component {
 
