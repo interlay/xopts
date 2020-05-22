@@ -68,6 +68,18 @@ contract PutOption is ERC20Lockable {
         _strikePrice = strikePrice;
     }
 
+    function getExpiry() public view returns (uint) {
+        return _expiry;
+    }
+
+    function getPremium() public view returns (uint) {
+        return _premium;
+    }
+
+    function getStrikePrice() public view returns (uint) {
+        return _strikePrice;
+    }
+
     /**
     * @dev Claim options by paying the premium
     * @param amount: erc-20 underlying

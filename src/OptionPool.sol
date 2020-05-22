@@ -49,6 +49,14 @@ contract OptionPool {
         return address(option);
     }
 
+    function getOptionInfoAt(uint index) external view returns (uint expiry, uint premium, uint strikePrice) {
+        PutOption opt = PutOption(_options[index]);
+        expiry = opt.getExpiry();
+        premium = opt.getPremium();
+        strikePrice = opt.getStrikePrice();
+        return (expiry, premium, strikePrice);
+    }
+
     function getOptions() external view returns (address[] memory) {
         return _options;
     }
