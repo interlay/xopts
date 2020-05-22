@@ -11,22 +11,10 @@ class TopBar extends Component {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
             <Link className="nav-link" to="/insure">
-            <a
-            href="/insure"
-            className="btn btn-primary m-2"
-            style={{ width: "100px" }}
-          >
             Insure
-          </a>
             </Link>
             <Link className="nav-link" to="/underwrite">
-            <a
-            href="/underwrite"
-            className="btn btn-primary m-2"
-            style={{ width: "100px" }}
-          >
             Underwrite
-          </a>
             </Link>
           </Nav>
 
