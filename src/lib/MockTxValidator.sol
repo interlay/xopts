@@ -4,7 +4,6 @@ import {ITxValidator} from "./ITxValidator.sol";
 
 contract MockTxValidator is ITxValidator {
     function validateTx(
-        bytes32 txid,
         bytes calldata rawtx,
         bytes20 output,
         uint256 amount

@@ -191,7 +191,7 @@ contract PutOption is ERC20Lockable {
         // we currently do not support multiple outputs
         // verify & validate tx, use default confirmations
         require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
-        require(_valid.validateTx(txid, rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
+        require(_valid.validateTx(rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
 
         _collateral.transfer(caller, balance);
     }

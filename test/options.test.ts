@@ -10,7 +10,7 @@ import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 import { PutOption } from "../typechain/PutOption";
 import { PutOptionFactory } from "../typechain/PutOptionFactory";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
-import { MockValidFactory } from "../typechain/MockValidFactory";
+import { MockTxValidatorFactory } from "../typechain/MockTxValidatorFactory";
 import config from "../buidler.config";
 import contracts from "../contracts";
 import { legos } from "@studydefi/money-legos";
@@ -100,7 +100,7 @@ describe("Options", () => {
     let relayFactory = new MockRelayFactory(alice);
     let relay = await relayFactory.deploy();
 
-    let validFactory = new MockValidFactory(alice);
+    let validFactory = new MockTxValidatorFactory(alice);
     let valid = await validFactory.deploy();
 
     let resolverFactory = new ERC137ResolverFactory(alice);
