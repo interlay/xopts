@@ -2,73 +2,32 @@ import React, { Component } from "react";
 import { Col, Container, Row, Table } from "react-bootstrap";
 import { fetchJson } from "ethers/utils";
 import OptionList from "../components/OptionList.js"
-import UserOptions from "../components/UserOptions.js";
+import UserPurchasedOptions from "../components/UserPurchasedOptions.js";
+import UserSoldOptions from "../components/UserSoldOptions.js";
 
 export default class Dashboard extends Component {
+
+
+  componentDidMount(){
+    this.forceUpdate();
+  }
+  
   render() {
-    return ( 
+    return (
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
           <div className="container">
-            <a
-              href="/borrow"
-              className="btn btn-primary m-2"
-              style={{ width: "100px" }}
-            >
-              Borrow
-            </a>
-            <a
-              href="/insure"
-              className="btn btn-primary m-2"
-              style={{ width: "100px" }}
-            >
-              Insure
-            </a>
-            <a
-              href="/underwrite"
-              className="btn btn-primary m-2"
-              style={{ width: "100px" }}
-            >
-              Underwrite
-            </a>
-            <a
-              href="/lend"
-              className="btn btn-primary m-2"
-              style={{ width: "100px" }}
-            >
-              Lend
-            </a>
+            <h2>Your Options</h2>
+            <p className="lead text-muted">Account: {this.props.address} </p>
           </div>
         </section>
-        <Container className="p-3">
-          <Row>
-            <Col>
-              <button type="button" className="btn btn-secondary my-4">
-                Total Minted &nbsp;
-                <span className="badge badge-light">109.92 BTC</span>
-              </button>
-            </Col>
-            <Col>
-              <button type="button" className="btn btn-secondary my-4">
-                Total Earnt &nbsp;
-                <span className="badge badge-light">10.2 BTC</span>
-              </button>
-            </Col>
-            <Col>
-              <button type="button" className="btn btn-secondary my-4">
-                Total Locked &nbsp;
-                <span className="badge badge-light">4.2%</span>
-              </button>
-            </Col>
-            <Col>
-              <button type="button" className="btn btn-secondary my-4">
-                Pending Mint &nbsp;
-                <span className="badge badge-light">1 BTC</span>
-              </button>
-            </Col>
-          </Row>
-        </Container>
-        <UserOptions {...this.props} />
+        <section >
+          <UserPurchasedOptions {...this.props} />
+        </section>
+        <section className="mt-5">
+          <UserSoldOptions {...this.props} />
+        </section>
+
       </div>
     );
   }

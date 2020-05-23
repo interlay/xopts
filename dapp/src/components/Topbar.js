@@ -53,12 +53,12 @@ class TopBar extends Component {
   render() {
     return (
       <Navbar bg="light" expand="md" className="border-bottom shadow-sm">
-        <Navbar.Brand href="/">XOpts</Navbar.Brand>
+        <Navbar.Brand><Link to="/" className="text-decoration-none">XOpts</Link></Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
             <Link className="nav-link" to="/">
-              Exchange
+              Buy/Sell
             </Link>
             {this.props.isLoggedIn &&
               <Link className="nav-link" to="/dashboard">

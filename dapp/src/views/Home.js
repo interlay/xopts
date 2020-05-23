@@ -5,35 +5,24 @@ import OptionList from "../components/OptionList.js"
 import { withRouter } from 'react-router-dom'
 
 class Home extends Component {
+  componentDidMount(){
+    this.forceUpdate();
+  }
+  
   render() {
     return (
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
           <div className="container">
             <h1>Decentralized Bitcoin Options</h1>
-            <p className="lead text-muted">Buy and Sell Protection against Bitcoin Price Drops. </p>
-            <p>
-              <a
-                href="/insure"
-                className="btn btn-primary m-2"
-                style={{ width: "100px" }}
-              >
-                Insure
-              </a>
-              <a
-                href="/underwrite"
-                className="btn btn-primary m-2"
-                style={{ width: "100px" }}
-              >
-                Underwrite
-              </a>
-            </p>
+            <p className="lead text-muted">Buy and Sell Insurance against Bitcoin Price Fluctuations. </p>
+
           </div>
         </section>
-        <OptionList {...this.props}/>
+        <OptionList {...this.props} />
       </div>
     );
   }
 }
 
-export default withRouter (Home);
+export default withRouter(Home);

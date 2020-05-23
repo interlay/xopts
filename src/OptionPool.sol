@@ -101,6 +101,7 @@ contract OptionPool {
                 currentOptions[i] = current_options;
             }
         }
+
         return (options, currentOptions);
     }
 

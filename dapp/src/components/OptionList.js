@@ -1,11 +1,11 @@
 import React, { Component } from "react";
-import { Col, Badge, Row, Table, Button, Card, } from "react-bootstrap";
+import { Col, Badge, Row, Table, Button, Card, Spinner} from "react-bootstrap";
 import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
 import { withRouter } from 'react-router-dom'
 
 import putOptionArtifact from "./../artifacts/PutOption.json"
-import UserOptions from "./UserOptions";
+import UserOptions from "./UserPurchasedOptions";
 
 class OptionList extends Component {
 
@@ -114,7 +114,7 @@ class OptionList extends Component {
                 }
                 return (
                     <tr key={strikePrice}>
-                        <td>{expiry}</td>
+                        <td>{new Date(expiry*1000).toLocaleString()}</td>
                         <td>{strikePrice} DAI</td>
                         <td>{spotPrice} DAI</td>
                         <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
@@ -133,7 +133,7 @@ class OptionList extends Component {
                 )
             })
         } else {
-            return <tr><td colSpan="7">Loading...</td></tr>
+            return <tr><td colSpan="7" className="text-center"><Spinner animation="border" /></td></tr>
         }
     }
 
@@ -245,4 +245,4 @@ class OptionList extends Component {
     */
 }
 
-export default withRouter (OptionList);
+export default withRouter(OptionList);

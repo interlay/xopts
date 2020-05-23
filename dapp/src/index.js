@@ -7,6 +7,7 @@ import { withRouter } from 'react-router-dom'
 // Importing Sass with Bootstrap CSS
 import "./App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'react-toastify/dist/ReactToastify.css';
 
 import Dashboard from "./views/Dashboard";
 import Home from "./views/Home";
@@ -107,7 +108,7 @@ class App extends Component {
             <Route path="/sell/:contract" component={Sell} eth={this.state} />
 
             <Route path="/dashboard">
-              <Dashboard />
+              <Dashboard {...this.state}/>
             </Route>
 
             <Route path="/">
