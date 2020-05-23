@@ -1,8 +1,7 @@
 import React, { Component } from "react";
 import { Col, Container, Row, Table, Button, } from "react-bootstrap";
 
-import putOptionArtifact from "../artifacts/PutOption.json"
-import { ethers } from 'ethers';
+import putOptionArtifact from "./../artifacts/PutOption.json"
 
 export default class OptionList extends Component {
 
@@ -35,8 +34,10 @@ export default class OptionList extends Component {
         }
     }
 
-    async getOptionDetails(optionContracts) {
-        let options = [];
+    getOptionDetails(optionContracts) {
+
+        /*
+                let options = [];
         var index;
         for (index in optionContracts) {
             let addr = optionContracts[index];
@@ -48,7 +49,8 @@ export default class OptionList extends Component {
             this.state.totalInsured += option.insured;
             this.state.insuranceAvailable += option.collateral;
         }
-        /*
+        
+        */
         let options = this.getDummyOptions();
         var index;
         for (index in options) {
@@ -57,7 +59,6 @@ export default class OptionList extends Component {
             this.state.totalInsured += options[index].insured;
             this.state.insuranceAvailable += options[index].collateral;
         }
-        */
         return options;
     }
 
