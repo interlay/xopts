@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import { Col, Container, Row, Table, Button, } from "react-bootstrap";
 
-import putOptionArtifact from "./../artifacts/PutOption.json"
+import putOptionArtifact from "../artifacts/PutOption.json"
+import { ethers } from 'ethers';
 
 export default class OptionList extends Component {
 
@@ -34,14 +35,20 @@ export default class OptionList extends Component {
         }
     }
 
-    getOptionDetails(optionContracts) {
-        //let options = [];
-        //var addr;
-        //for (addr in optionContracts) {
-        // let putOption = putOptionArtifact.abi;
-        //let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
-        // let option = optionContract.get();
-        //}
+    async getOptionDetails(optionContracts) {
+        let options = [];
+        var index;
+        for (index in optionContracts) {
+            let addr = optionContracts[index];
+            let putOption = putOptionArtifact.abi;
+            let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
+            let option = optionContract.get();
+            option.spotPrice = this.props.btcPrices.dai;
+            option.contract = addr;
+            this.state.totalInsured += option.insured;
+            this.state.insuranceAvailable += option.collateral;
+        }
+        /*
         let options = this.getDummyOptions();
         var index;
         for (index in options) {
@@ -50,6 +57,7 @@ export default class OptionList extends Component {
             this.state.totalInsured += options[index].insured;
             this.state.insuranceAvailable += options[index].collateral;
         }
+        */
         return options;
     }
 
@@ -87,9 +95,9 @@ export default class OptionList extends Component {
 
     render() {
         return <Container>
-            <Col lg={{ span: 12}}>
+            <Col lg={{ span: 12 }}>
                 <Row>
-                <h2>BTC/DAI Put Option Contracts</h2>
+                    <h2>BTC/DAI Put Option Contracts</h2>
                 </Row>
                 <Row>
                     <Col md={4}>

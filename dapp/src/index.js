@@ -14,9 +14,8 @@ import Insure from "./views/Insure";
 import Underwrite from "./views/Underwrite";
 
 import optionPoolArtifact from "./artifacts/OptionPool.json"
-import putOptionArtifact from "./artifacts/PutOption.json"
 
-const optionPoolAddress = "0x25c344e14b5df94e89021f3b09dad5f462e9b777";
+const optionPoolAddress = "0x5429c8fafa53b09386E41F07CbA2479C170faf0b";
 
 
 class App extends Component {
@@ -24,16 +23,16 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-        isWeb3: false,
-        signer: null,
-        address: null,
-        provider: null,
-        optionPoolContract: null,
-        btcPrices: {
-          dai: null,
-          usd: null,
-          eth: null
-        }
+      isWeb3: false,
+      signer: null,
+      address: null,
+      provider: null,
+      optionPoolContract: null,
+      btcPrices: {
+        dai: null,
+        usd: null,
+        eth: null
+      }
     };
   }
 
@@ -46,38 +45,42 @@ class App extends Component {
   async getBlockchainData() {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
-      let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
-      let signer = await provider.getSigner();
-      let address = await signer.getAddress();
+      try {
+        let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
+        let signer = await provider.getSigner();
+        let address = await signer.getAddress();
 
-      let optionPoolAbi = optionPoolArtifact.abi;
+        let optionPoolAbi = optionPoolArtifact.abi;
 
-      let optionPoolContract = await new ethers.Contract(optionPoolAddress, optionPoolAbi, provider);
+        let optionPoolContract = await new ethers.Contract(optionPoolAddress, optionPoolAbi, provider);
 
 
-      this.setState({
-        isWeb3: true,
-        signer: signer,
-        address: address,
-        provider: provider,
-        optionPoolContract: optionPoolContract
-      });
+        this.setState({
+          isWeb3: true,
+          signer: signer,
+          address: address,
+          provider: provider,
+          optionPoolContract: optionPoolContract
+        });
+      } catch (error) {
+        console.log(error);
+      }
     }
   }
 
   async getPriceData() {
     fetch("https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC&tsyms=DAI,USD,ETH&api_key=0fe74ac7dd16554406f7ec8d305807596571e13bd6b3c8ac496ac436c17c26e2").then(res => res.json())
-    .then(
-      (result) => {
-        this.setState({
-          btcPrices: {
-            dai: result.BTC.DAI,
-            usd: result.BTC.USD,
-            eth: result.BTC.ETH
-          }
-        })
-      }
-    )
+      .then(
+        (result) => {
+          this.setState({
+            btcPrices: {
+              dai: result.BTC.DAI,
+              usd: result.BTC.USD,
+              eth: result.BTC.ETH
+            }
+          })
+        }
+      )
   }
 
 
@@ -98,7 +101,7 @@ class App extends Component {
               <Insure />
             </Route>
             <Route exact path="/">
-              <Home {...this.state}/>
+              <Home {...this.state} />
             </Route>
           </Switch>
         </div>

@@ -60,5 +60,16 @@ contract OptionPool {
     function getOptions() external view returns (address[] memory) {
         return _options;
     }
+
+    /*
+    function getOptionsWithDetails() external view returns (uint) {
+        optionsWithDetails = [];
+        for(uint i = 0; i < _options.length; i++){
+            option = _options[i].getOptionDetails();
+            optionsWithDetails.push(option);
+        }
+        return optionsWithDetails;
+    }
+    */
 }
 
