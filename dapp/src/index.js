@@ -1,12 +1,11 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import { ethers } from 'ethers';
 
 // Importing Sass with Bootstrap CSS
 import "./App.scss";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { ethers } from 'ethers';
-
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import Dashboard from "./views/Dashboard";
 import Home from "./views/Home";
@@ -19,6 +18,7 @@ import putOptionArtifact from "./artifacts/PutOption.json"
 
 const optionPoolAddress = "0x25c344e14b5df94e89021f3b09dad5f462e9b777";
 
+
 class App extends Component {
 
   constructor(props) {
@@ -28,12 +28,18 @@ class App extends Component {
         signer: null,
         address: null,
         provider: null,
-        optionPoolContract: null
+        optionPoolContract: null,
+        btcPrices: {
+          dai: null,
+          usd: null,
+          eth: null
+        }
     };
   }
 
   componentDidMount() {
     this.getBlockchainData();
+    this.getPriceData();
   }
 
 
@@ -57,6 +63,21 @@ class App extends Component {
         optionPoolContract: optionPoolContract
       });
     }
+  }
+
+  async getPriceData() {
+    fetch("https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC&tsyms=DAI,USD,ETH&api_key=0fe74ac7dd16554406f7ec8d305807596571e13bd6b3c8ac496ac436c17c26e2").then(res => res.json())
+    .then(
+      (result) => {
+        this.setState({
+          btcPrices: {
+            dai: result.BTC.DAI,
+            usd: result.BTC.USD,
+            eth: result.BTC.ETH
+          }
+        })
+      }
+    )
   }
 
 
