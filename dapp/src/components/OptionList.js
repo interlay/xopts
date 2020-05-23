@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { Col, Container, Row, Table, Button, } from "react-bootstrap";
 import { Redirect } from "react-router-dom";
+import { ethers } from 'ethers';
 
 import putOptionArtifact from "./../artifacts/PutOption.json"
 
@@ -29,7 +30,7 @@ export default class OptionList extends Component {
     async getOptions() {
         if (this.props.optionPoolContract) {
             let optionContracts = await this.props.optionPoolContract.getOptions();
-            let options = this.getOptionDetails(optionContracts);
+            let options = await this.getOptionDetails(optionContracts);
             this.setState({
                 loaded: true,
                 options: options
@@ -37,23 +38,31 @@ export default class OptionList extends Component {
         }
     }
 
-    getOptionDetails(optionContracts) {
+    async getOptionDetails(optionContracts) {
 
-        /*
-                let options = [];
+        let options = [];
         var index;
         for (index in optionContracts) {
             let addr = optionContracts[index];
-            let putOption = putOptionArtifact.abi;
             let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
-            let option = optionContract.get();
+            let optionRes = await optionContract.getOptionDetails();
+            let option = {
+                expiry: parseInt(optionRes[0]._hex),
+                premium: parseInt(optionRes[1]._hex),
+                strikePrice: parseInt(optionRes[2]._hex),
+                totalSupply: parseInt(optionRes[3]._hex),
+                totalSupplyLocked: parseInt(optionRes[4]._hex),
+                totalSupplyUnlocked: parseInt(optionRes[5]._hex),
+            }            
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;
-            this.state.totalInsured += option.insured;
-            this.state.insuranceAvailable += option.collateral;
+            this.state.totalInsured += option.totalSupplyLocked;
+            this.state.insuranceAvailable += option.totalSupplyUnlocked;
+            this.state.totalVolume += option.totalSupply;
+            options.push(option);
         }
-        
-        */
+
+        /*
         let options = this.getDummyOptions();
         var index;
         for (index in options) {
@@ -62,41 +71,46 @@ export default class OptionList extends Component {
             this.state.totalInsured += options[index].insured;
             this.state.insuranceAvailable += options[index].collateral;
         }
+        */
+      
         return options;
     }
 
     handleBuy = (contract) => {
         this.setState({
-            buy : contract
+            buy: contract
         })
     }
 
     handleSell(contract) {
         this.setState({
-            sell : contract
+            sell: contract
         })
     }
 
     renderTableData() {
-
-        if (this.state.options) {
+        if (this.state.loaded) {
             return this.state.options.map((option, index) => {
-                const { expiry, premium, strikePrice, spotPrice, collateral, contract, insured, premiumEarned } = option
+                const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked, contract } = option;
+                
+                let percentInsured = 0;
+                if(totalSupply > 0) {
+                    percentInsured = Math.round(10000*  totalSupplyLocked / totalSupply) / 100;
+                }
                 return (
                     <tr key={strikePrice}>
                         <td>{expiry}</td>
                         <td>{strikePrice} DAI</td>
                         <td>{spotPrice} DAI</td>
-                        <td>{collateral} DAI</td>
+                        <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
                         <td>{premium} DAI/BTC</td>
-                        <td>{insured} BTC</td>
-                        <td>{premiumEarned} DAI</td>
+
                         <td>
-                            <Button variant="success" onClick={() => {this.handleBuy(contract)}}>
+                            <Button variant="success" onClick={() => { this.handleBuy(contract) }}>
                                 Buy
                             </Button>
                             {" "}
-                            <Button variant="outline-danger" onClick={() => {this.handleSell(contract)}}>
+                            <Button variant="outline-danger" onClick={() => { this.handleSell(contract) }}>
                                 Sell
                             </Button>
                         </td>
@@ -104,14 +118,14 @@ export default class OptionList extends Component {
                 )
             })
         } else {
-            return <tr><td colSpan="7">No options found.</td></tr>
+            return <tr><td colSpan="7">Loading...</td></tr>
         }
     }
 
 
     render() {
-        if (this.state.buy) return  <Redirect  to={"/buy/" + this.state.buy} />
-        if (this.state.sell) return  <Redirect  to={"/sell/" + this.state.sell} />
+        if (this.state.buy) return <Redirect to={"/buy/" + this.state.buy} />
+        if (this.state.sell) return <Redirect to={"/sell/" + this.state.sell} />
         return <Container>
             <Col lg={{ span: 12 }}>
                 <Row>
@@ -137,11 +151,9 @@ export default class OptionList extends Component {
                             <tr>
                                 <th>Expiry</th>
                                 <th>Strike Price</th>
-                                <th>Spot Price</th>
-                                <th>Insurance Available</th>
+                                <th>Current Price</th>
+                                <th>Insurance Issued</th>
                                 <th>Premium</th>
-                                <th>Total insured</th>
-                                <th>Premium earned</th>
                                 <th>
                                     Action
                                 </th>

@@ -25,6 +25,7 @@ class App extends Component {
     super(props);
     this.state = {
       isWeb3: false,
+      isLoggedIn: false,
       signer: null,
       address: null,
       provider: null,
@@ -47,10 +48,8 @@ class App extends Component {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
       try {
-        window.ethereum.enable();
+        //window.ethereum.enable();
         let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
-        let signer = await provider.getSigner();
-        let address = await signer.getAddress();
 
         let optionPoolAbi = optionPoolArtifact.abi;
 
@@ -59,14 +58,31 @@ class App extends Component {
 
         this.setState({
           isWeb3: true,
-          signer: signer,
-          address: address,
+          //signer: signer,
+          //address: address,
           provider: provider,
           optionPoolContract: optionPoolContract
         });
+
+        this.tryLogIn(provider);
       } catch (error) {
         console.log(error);
       }
+    }
+  }
+
+  async tryLogIn(provider) {
+    try {
+      let signer = await provider.getSigner();
+      let address = await signer.getAddress();
+      this.setState({
+        isLoggedIn: true,
+        signer: signer,
+        address: address,
+      });
+      console.log(this.state.isLoggedIn);
+    } catch (error) {
+      console.log("Not logged in.")
     }
   }
 
@@ -95,8 +111,8 @@ class App extends Component {
             <Route path="/underwrite">
               <Underwrite />
             </Route>
-            <Route path="/buy/:contract" component={Buy} eth = {this.state}/>
-            <Route path="/sell/:contract" component={Sell} eth = {this.state}/>
+            <Route path="/buy/:contract" component={Buy} eth={this.state} />
+            <Route path="/sell/:contract" component={Sell} eth={this.state} />
 
             <Route path="/dashboard">
               <Dashboard />
