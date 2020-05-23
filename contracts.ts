@@ -7,6 +7,7 @@ const contracts = {
     join_eth_A: "0xa885b27E8754f8238DBedaBd2eae180490C341d7",
     join_dai: "0xA0b569e9E0816A20Ab548D692340cC28aC7Be986",
     optionPool: "0x97b43e2326c294744E46C7E7d5274967eC588C5b",
+    dai_account: "0xd422104e6310367abe12456fc6017513601e5732",
 };
 
 export default contracts;
