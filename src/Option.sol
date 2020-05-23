@@ -82,7 +82,7 @@ contract PutOption is ERC20Lockable {
         return _strikePrice;
     }
 
-    function getOptionSellers(address user) public view returns (address[] memory insurer, uint256[] memory options) {
+    function getOptionSellers() public view returns (address[] memory insurer, uint256[] memory options) {
         IterableMapping.Map storage map = _balancesUnlocked;
 
         uint length = map.size();
