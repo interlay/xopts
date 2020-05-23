@@ -50,13 +50,13 @@ async function mineUntil(expiry: number) {
   }
 }
 
-async function getCollateral(alice: Signer): Promise<Contract> {
-    if ('fork' in config.networks.ganache) {
+async function getCollateral(user: Signer): Promise<Contract> {
+    if ((await ethers.provider.getNetwork()).chainId == 3) {
       const dai = contracts.dai;
-      const collateral =  await ethers.getContractAt(legos.erc20.abi, dai, alice);
+      const collateral =  await ethers.getContractAt(legos.erc20.abi, dai);
       return collateral;
     } else {
-      let mintableFactory = new CollateralFactory(alice);
+      let mintableFactory = new CollateralFactory(user);
       return await mintableFactory.deploy();
     }
 };
@@ -115,63 +115,35 @@ describe("Options", () => {
   });
 
   const mint = async function(user: Signer, userAddress: string, collateralAmount: number) {
-    if ('fork' in config.networks.ganache) {
-        // get a maker proxy
-        const proxyRegistry = await ethers.getContractAt(
-            legos.maker.proxyRegistry.abi,
-            contracts.proxyRegistry,
-            user
-        );
-        let proxyAddress = await proxyRegistry.proxies(userAddress);
-        if (proxyAddress === "0x0000000000000000000000000000000000000000") {
-            await proxyRegistry.build({ gasLimit: 1500000 });
-            proxyAddress = await proxyRegistry.proxies(userAddress);
-        }
+    if ((await ethers.provider.getNetwork()).chainId == 3) {
+      // await web3.eth.sendTransaction({
+      //   from: userAddress,
+      //   to: contracts.dai_account,
+      //   value: ether('0.1')
+      // });
+      console.log("Getting collateral: ", collateralAmount);
 
-        const proxyContract = await ethers.getContractAt(
-            legos.dappsys.dsProxy.abi,
-            proxyAddress,
-            user
-        );
-        console.log("Proxy contract: ", proxyContract.address);
-        const IDssProxyActions = new ethers.utils.Interface(
-            legos.maker.dssProxyActions.abi,
-        );
+      console.log("Dai balance before (main account): ", collateral.balanceOf(contracts.dai_account).toString());
+      console.log("Dai balance before (user): ", await collateral.balanceOf(userAddress).toString());
 
-        const _data = IDssProxyActions.functions.openLockETHAndDraw.encode([
-            contracts.cdpManager,
-            contracts.jug,
-            contracts.join_eth_A,
-            contracts.join_dai,
-            ethers.utils.formatBytes32String(legos.maker.ethA.symbol),
-            ethers.utils.parseUnits("20", legos.erc20.dai.decimals),
-        ]);
+      // var web3 = new Web3("http://localhost:8545");
 
-        const ethBefore = await ethers.provider.getBalance(userAddress);
-        const daiBefore = await collateral.balanceOf(userAddress);
-        console.log("ETH balance before: ", ethBefore.toString());
-        console.log("Dai balance before: ", daiBefore.toString());
+      // const daiContract = new web3.eth.Contract(legos.erc20.abi, contracts.dai);
 
-        // Open vault through proxy
-        await proxyContract.execute(contracts.dssProxyActions, _data, {
-            gasLimit: 2500000,
-            value: ethers.utils.parseEther("1"),
-        });
+      // await daiContract.methods
+        // .transfer(userAddress, "100")
+        // .send({from: contracts.dai_account, gasLimit: 800000})
 
-        const ethAfter = await ethers.provider.getBalance(userAddress);
-        const daiAfter = await collateral.balanceOf(userAddress);
-        console.log("ETH balance after: ", ethAfter.toString());
-        console.log("Dai balance after: ", daiAfter.toString());
-
-        const ethSpent = parseFloat(fromWei(ethBefore.sub(ethAfter)));
-        const daiGained = parseFloat(fromWei(daiAfter.sub(daiBefore)));
-
-        expect(ethSpent).to.be.closeTo(1, 1);
-        expect(daiGained).to.be.closeTo(20, 1);
+      let fromDaiAccount = collateral.connect(contracts.dai_account);
+      // console.log(fromDaiAccount);
+      // console.log(collateral);
+      await fromDaiAccount.transfer(userAddress, "100");
+      console.log("Dai balance after (main account): ", collateral.balanceOf(contracts.dai_account).toString());
+      console.log("Dai balance after (user): ", await collateral.balanceOf(userAddress).toString());
     } else {
-        await collateral.mint(userAddress, collateralAmount);
-        expect((await collateral.balanceOf(userAddress)).toNumber()).to.eq(collateralAmount);
+      await collateral.mint(userAddress, collateralAmount);
     }
+    expect((await collateral.balanceOf(userAddress)).toNumber()).to.eq(collateralAmount);
   };
 
   const put = async function(
