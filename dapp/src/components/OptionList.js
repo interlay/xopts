@@ -1,11 +1,13 @@
 import React, { Component } from "react";
-import { Col, Container, Row, Table, Button, } from "react-bootstrap";
+import { Col, Badge, Row, Table, Button, Card, Spinner} from "react-bootstrap";
 import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
+import { withRouter } from 'react-router-dom'
 
 import putOptionArtifact from "./../artifacts/PutOption.json"
+import UserOptions from "./UserPurchasedOptions";
 
-export default class OptionList extends Component {
+class OptionList extends Component {
 
     constructor(props) {
         super(props);
@@ -14,12 +16,17 @@ export default class OptionList extends Component {
             options: [],
             totalInsured: 0,
             insuranceAvailable: 0,
-            totalVolume: 750000,
+            avgPremium: 0,
             buy: null,
             sell: null
         };
     }
 
+    componentDid() {
+        if (this.state.loaded == false) {
+            this.getOptions();
+        }
+    }
 
     componentDidUpdate() {
         if (this.state.loaded == false) {
@@ -42,6 +49,9 @@ export default class OptionList extends Component {
 
         let options = [];
         var index;
+        let insuranceAvailable = 0;
+        let totalInsured = 0;
+        let totalPremium = 0;
         for (index in optionContracts) {
             let addr = optionContracts[index];
             let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
@@ -53,15 +63,20 @@ export default class OptionList extends Component {
                 totalSupply: parseInt(optionRes[3]._hex),
                 totalSupplyLocked: parseInt(optionRes[4]._hex),
                 totalSupplyUnlocked: parseInt(optionRes[5]._hex),
-            }            
+            }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;
-            this.state.totalInsured += option.totalSupplyLocked;
-            this.state.insuranceAvailable += option.totalSupplyUnlocked;
-            this.state.totalVolume += option.totalSupply;
+            totalInsured += option.totalSupplyLocked;
+            insuranceAvailable += option.totalSupplyUnlocked;
+            totalPremium += option.premium;
             options.push(option);
         }
 
+        this.setState({
+            insuranceAvailable: insuranceAvailable,
+            totalInsured: totalInsured,
+            avgPremium: totalPremium / options.length
+        })
         /*
         let options = this.getDummyOptions();
         var index;
@@ -72,7 +87,7 @@ export default class OptionList extends Component {
             this.state.insuranceAvailable += options[index].collateral;
         }
         */
-      
+
         return options;
     }
 
@@ -92,14 +107,14 @@ export default class OptionList extends Component {
         if (this.state.loaded) {
             return this.state.options.map((option, index) => {
                 const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked, contract } = option;
-                
+
                 let percentInsured = 0;
-                if(totalSupply > 0) {
-                    percentInsured = Math.round(10000*  totalSupplyLocked / totalSupply) / 100;
+                if (totalSupply > 0) {
+                    percentInsured = Math.round(10000 * totalSupplyLocked / totalSupply) / 100;
                 }
                 return (
                     <tr key={strikePrice}>
-                        <td>{expiry}</td>
+                        <td>{new Date(expiry*1000).toLocaleString()}</td>
                         <td>{strikePrice} DAI</td>
                         <td>{spotPrice} DAI</td>
                         <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
@@ -118,7 +133,7 @@ export default class OptionList extends Component {
                 )
             })
         } else {
-            return <tr><td colSpan="7">Loading...</td></tr>
+            return <tr><td colSpan="7" className="text-center"><Spinner animation="border" /></td></tr>
         }
     }
 
@@ -126,50 +141,59 @@ export default class OptionList extends Component {
     render() {
         if (this.state.buy) return <Redirect to={"/buy/" + this.state.buy} />
         if (this.state.sell) return <Redirect to={"/sell/" + this.state.sell} />
-        return <Container>
-            <Col lg={{ span: 12 }}>
-                <Row>
-                    <h2>BTC/DAI Put Option Contracts</h2>
-                </Row>
-                <Row>
-                    <Col md={4}>
-                        <b>{this.state.totalInsured}</b> BTC
-                            Insured
-                    </Col>
-                    <Col md={4}>
-                        <b>{this.state.insuranceAvailable}</b> DAI
-                            Insurance Available
-                    </Col>
-                    <Col md={4}>
-                        <b>{this.state.totalVolume}</b> BTC
-                            Traded Volume
-                    </Col>
-                </Row>
-                <Row>
-                    <Table hover responsive="sm">
-                        <thead>
-                            <tr>
-                                <th>Expiry</th>
-                                <th>Strike Price</th>
-                                <th>Current Price</th>
-                                <th>Insurance Issued</th>
-                                <th>Premium</th>
-                                <th>
-                                    Action
+        return <Col xl={{ span: 8, offset: 2 }}>
+            <Card border="dark">
+                <Card.Header>
+                    <Card.Title><h2>BTC/DAI Put Option Contracts</h2>
+                        <Row className="text-center">
+                            <Badge>
+                                <Col md={4}>
+                                    <h3>{this.state.totalInsured}</h3>
+                                    <h6>BTC
+                            Insured</h6>
+                                </Col>
+                            </Badge>
+                            <Badge>
+                                <Col md={4}>
+                                    <h3>{this.state.insuranceAvailable}</h3>
+                                    <h6>Insurance Available</h6>
+                                </Col>
+                            </Badge>
+                            <Badge>
+                                <Col md={4}>
+                                    <h3>{this.state.avgPremium}</h3>
+                                    <h6>DAI/BTC
+                            Average Premium</h6>
+                                </Col>
+                            </Badge>
+                        </Row>
+                    </Card.Title>
+                </Card.Header>
+                <Card.Body>
+                    <Row>
+                        <Table hover responsive>
+                            <thead>
+                                <tr>
+                                    <th>Expiry</th>
+                                    <th>Strike Price</th>
+                                    <th>Current Price</th>
+                                    <th>Insurance Issued</th>
+                                    <th>Premium</th>
+                                    <th>
+                                        Action
                                 </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {this.renderTableData()}
-                        </tbody>
-                    </Table>
-                </Row>
-            </Col>
-        </Container >;
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {this.renderTableData()}
+                            </tbody>
+                        </Table>
+                    </Row>
+                </Card.Body>
+            </Card>
+        </Col>;
     }
-
-
-
+    /*
     getDummyOptions() {
         return [
             {
@@ -218,5 +242,7 @@ export default class OptionList extends Component {
             }
         ]
     }
+    */
 }
 
+export default withRouter(OptionList);
