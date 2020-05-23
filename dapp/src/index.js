@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { ethers } from 'ethers';
+import { withRouter } from 'react-router-dom'
 
 // Importing Sass with Bootstrap CSS
 import "./App.scss";
@@ -10,8 +11,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Dashboard from "./views/Dashboard";
 import Home from "./views/Home";
 import Topbar from "./components/Topbar";
-import Insure from "./views/Insure";
-import Underwrite from "./views/Underwrite";
 import Buy from "./views/Buy";
 import Sell from "./views/Sell";
 
@@ -48,22 +47,18 @@ class App extends Component {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
       try {
-        //window.ethereum.enable();
+        // get Ethereum smart contract details
         let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
-
         let optionPoolAbi = optionPoolArtifact.abi;
-
         let optionPoolContract = await new ethers.Contract(optionPoolAddress, optionPoolAbi, provider);
-
 
         this.setState({
           isWeb3: true,
-          //signer: signer,
-          //address: address,
           provider: provider,
           optionPoolContract: optionPoolContract
         });
 
+        // Get user account data, if already logged in
         this.tryLogIn(provider);
       } catch (error) {
         console.log(error);
@@ -80,7 +75,6 @@ class App extends Component {
         signer: signer,
         address: address,
       });
-      console.log(this.state.isLoggedIn);
     } catch (error) {
       console.log("Not logged in.")
     }
@@ -108,18 +102,14 @@ class App extends Component {
         <div>
           <Topbar {...this.state} />
           <Switch>
-            <Route path="/underwrite">
-              <Underwrite />
-            </Route>
+
             <Route path="/buy/:contract" component={Buy} eth={this.state} />
             <Route path="/sell/:contract" component={Sell} eth={this.state} />
 
             <Route path="/dashboard">
               <Dashboard />
             </Route>
-            <Route path="/insure">
-              <Insure />
-            </Route>
+
             <Route path="/">
               <Home {...this.state} />
             </Route>
@@ -129,5 +119,6 @@ class App extends Component {
     )
   }
 }
+
 
 ReactDOM.render(<App />, document.getElementById("root"));

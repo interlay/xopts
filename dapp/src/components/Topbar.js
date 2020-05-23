@@ -1,18 +1,12 @@
 import { Navbar, Nav, Badge } from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
+import { withRouter } from 'react-router-dom'
 
 
 
 class Web3LogIn extends Component {
 
-  componentDidMount() {
-    console.log(this.props.isLoggedIn);
-  }
-
-  componentDidUpdate() {
-    console.log(this.props.isLoggedIn);
-}
 
   async logIn() {
     let web3 = window.web3;
@@ -26,7 +20,7 @@ class Web3LogIn extends Component {
           signer: signer,
           address: address
         });
-        this.forceUpdate(); 
+        this.forceUpdate();
       } catch (error) {
         console.log(error);
       }
@@ -38,18 +32,21 @@ class Web3LogIn extends Component {
   }
 
   render() {
-    if (this.props.isLoggedIn){
+    if (this.props.isLoggedIn) {
       return (
-      <Nav.Link>
-        <Badge pill variant="success"> {this.props.address}</Badge>
-      </Nav.Link>)
+        <Link className="nav-link" to="/dashboard">
+          <Badge pill variant="success"> {this.props.address}</Badge>
+        </Link>)
     } else if (this.props.isWeb3) {
-      return <Nav.Link><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Nav.Link>
+      return <Link className="nav-link" to=""><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Link>
     } else {
-      return  <Nav.Link href="https://metamask.io/download.html" target="__blank"><Badge pill variant="primary"> Get MetaMask</Badge></Nav.Link>
+      return <Link className="nav-link" to="https://metamask.io/download.html" target="__blank"><Badge pill variant="primary"> Get MetaMask</Badge></Link>
     }
   }
 }
+
+const Web3LogInWithRouter = withRouter (Web3LogIn);
+
 
 class TopBar extends Component {
 
@@ -60,18 +57,22 @@ class TopBar extends Component {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
-            <Link className="nav-link" to="/insure">
-              Insure
+            <Link className="nav-link" to="/">
+              Exchange
             </Link>
-            <Link className="nav-link" to="/underwrite">
-              Underwrite
+            {this.props.isLoggedIn &&
+              <Link className="nav-link" to="/dashboard">
+                Account
             </Link>
+            }
           </Nav>
-            <Web3LogIn {...this.props} />
+          <Nav>
+            <Web3LogInWithRouter {...this.props} />
+          </Nav>
         </Navbar.Collapse>
       </Navbar>
     );
   }
 }
 
-export default TopBar;
+export default withRouter (TopBar);

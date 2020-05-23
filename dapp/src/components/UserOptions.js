@@ -2,18 +2,16 @@ import React, { Component } from "react";
 import { Col, Badge, Row, Table, Button, Card, } from "react-bootstrap";
 import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
-import { withRouter } from 'react-router-dom'
 
 import putOptionArtifact from "./../artifacts/PutOption.json"
-import UserOptions from "./UserOptions";
 
-class OptionList extends Component {
-
+export default class UserOptions extends Component {
     constructor(props) {
         super(props);
         this.state = {
             loaded: false,
-            options: [],
+            boughtOptions: [],
+            soldOptions: [],
             totalInsured: 0,
             insuranceAvailable: 0,
             avgPremium: 0,
@@ -22,19 +20,14 @@ class OptionList extends Component {
         };
     }
 
-    componentDid() {
-        if (this.state.loaded == false) {
-            this.getOptions();
-        }
-    }
 
     componentDidUpdate() {
         if (this.state.loaded == false) {
-            this.getOptions();
+            this.getUserOptions();
         }
     }
 
-    async getOptions() {
+    async getUserOptions() {
         if (this.props.optionPoolContract) {
             let optionContracts = await this.props.optionPoolContract.getOptions();
             let options = await this.getOptionDetails(optionContracts);
@@ -90,19 +83,6 @@ class OptionList extends Component {
 
         return options;
     }
-
-    handleBuy = (contract) => {
-        this.setState({
-            buy: contract
-        })
-    }
-
-    handleSell(contract) {
-        this.setState({
-            sell: contract
-        })
-    }
-
     renderTableData() {
         if (this.state.loaded) {
             return this.state.options.map((option, index) => {
@@ -139,8 +119,6 @@ class OptionList extends Component {
 
 
     render() {
-        if (this.state.buy) return <Redirect to={"/buy/" + this.state.buy} />
-        if (this.state.sell) return <Redirect to={"/sell/" + this.state.sell} />
         return <Col xl={{ span: 8, offset: 2 }}>
             <Card border="dark">
                 <Card.Header>
@@ -189,60 +167,9 @@ class OptionList extends Component {
                             </tbody>
                         </Table>
                     </Row>
+
                 </Card.Body>
             </Card>
         </Col>;
     }
-    /*
-    getDummyOptions() {
-        return [
-            {
-                expiry: 1591012800,
-                premium: 10,
-                strikePrice: 9250,
-                btcAddresses: {
-                    "0x1CF8f0A193eeA288014c7513eA6Aa65e6997D8bE": "0xtb1qtypzfss4558ml9j5v3fu90jtd6xlxmq4ltmvp9"
-                },
-                insured: 0.006,
-                premiumEarned: 100,
-                collateral: 5000
-            },
-            {
-                expiry: 1590795000,
-                premium: 15,
-                strikePrice: 9000,
-                btcAddress: {
-                    "0x1CF8f0A193eeA288014c7513eA6Aa65e6997D8bE": "0xtb1qtypzfss4558ml9j5v3fu90jtd6xlxmq4ltmvp9"
-                },
-                insured: 0.01,
-                premiumEarned: 150,
-                collateral: 7850
-            },
-            {
-                expiry: 1590148800,
-                premium: 5,
-                strikePrice: 10000,
-                btcAddress: {
-                    "0x1CF8f0A193eeA288014c7513eA6Aa65e6997D8bE": "0xtb1qtypzfss4558ml9j5v3fu90jtd6xlxmq4ltmvp9"
-                },
-                insured: 1.2,
-                premiumEarned: 500,
-                collateral: 540
-            },
-            {
-                expiry: 1590018300,
-                premium: 11,
-                strikePrice: 8909,
-                btcAddress: {
-                    "0x1CF8f0A193eeA288014c7513eA6Aa65e6997D8bE": "0xtb1qtypzfss4558ml9j5v3fu90jtd6xlxmq4ltmvp9"
-                },
-                insured: 4.975123,
-                premiumEarned: 7700,
-                collateral: 9700
-            }
-        ]
-    }
-    */
 }
-
-export default withRouter (OptionList);

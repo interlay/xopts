@@ -110,6 +110,14 @@ contract PutOption is ERC20Lockable {
         );
     }
 
+    function getAvailableOptionsForUser(address user) public view returns (uint available_options) {
+        return _balancesUnlocked.get(user);
+    }
+
+    function getCurrentOptionsForUser(address user) public view returns (uint current_options) {
+        return _balancesLocked[user];
+    }
+
     function getOptionDetailsForUser(address user) public view returns (uint, uint) {
         uint current_options = _balancesLocked[user];
         uint available_options = _balancesUnlocked.get(user);

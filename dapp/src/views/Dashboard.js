@@ -1,7 +1,90 @@
+import React, { Component } from "react";
+import { Col, Container, Row, Table } from "react-bootstrap";
+import { fetchJson } from "ethers/utils";
+import OptionList from "../components/OptionList.js"
+import UserOptions from "../components/UserOptions.js";
+
+export default class Dashboard extends Component {
+  render() {
+    return ( 
+      <div>
+        <section className="jumbotron text-center border-bottom shadow-sm">
+          <div className="container">
+            <a
+              href="/borrow"
+              className="btn btn-primary m-2"
+              style={{ width: "100px" }}
+            >
+              Borrow
+            </a>
+            <a
+              href="/insure"
+              className="btn btn-primary m-2"
+              style={{ width: "100px" }}
+            >
+              Insure
+            </a>
+            <a
+              href="/underwrite"
+              className="btn btn-primary m-2"
+              style={{ width: "100px" }}
+            >
+              Underwrite
+            </a>
+            <a
+              href="/lend"
+              className="btn btn-primary m-2"
+              style={{ width: "100px" }}
+            >
+              Lend
+            </a>
+          </div>
+        </section>
+        <Container className="p-3">
+          <Row>
+            <Col>
+              <button type="button" className="btn btn-secondary my-4">
+                Total Minted &nbsp;
+                <span className="badge badge-light">109.92 BTC</span>
+              </button>
+            </Col>
+            <Col>
+              <button type="button" className="btn btn-secondary my-4">
+                Total Earnt &nbsp;
+                <span className="badge badge-light">10.2 BTC</span>
+              </button>
+            </Col>
+            <Col>
+              <button type="button" className="btn btn-secondary my-4">
+                Total Locked &nbsp;
+                <span className="badge badge-light">4.2%</span>
+              </button>
+            </Col>
+            <Col>
+              <button type="button" className="btn btn-secondary my-4">
+                Pending Mint &nbsp;
+                <span className="badge badge-light">1 BTC</span>
+              </button>
+            </Col>
+          </Row>
+        </Container>
+        <UserOptions {...this.props} />
+      </div>
+    );
+  }
+}
+
+
+
+
+
+
+/*
+
 import { Container, Row, Table, Col } from "react-bootstrap";
 import React, { Component } from "react";
 
-class DashTable extends Component {
+className DashTable extends Component {
   render() {
     return (
       <Container className="p-3">
@@ -23,17 +106,17 @@ class DashTable extends Component {
               <tr>
                 <th>2020/10/25</th>
                 <td>
-                  <span class="badge badge-pill badge-success">Minted</span>
+                  <span className="badge badge-pill badge-success">Minted</span>
                 </td>
                 <td>100 BTC</td>
                 <td>
                   6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
                 </td>
                 <th>
-                  <a href="/view" class="badge badge-info mx-2">
+                  <a href="/view" className="badge badge-info mx-2">
                     View
                   </a>
-                  <a href="/view" class="badge badge-success mx-2">
+                  <a href="/view" className="badge badge-success mx-2">
                     Extend
                   </a>
                 </th>
@@ -41,14 +124,14 @@ class DashTable extends Component {
               <tr>
                 <th>2020/10/25</th>
                 <td>
-                  <span class="badge badge-pill badge-info">Extended</span>
+                  <span className="badge badge-pill badge-info">Extended</span>
                 </td>
                 <td>100 BTC</td>
                 <td>
                   6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
                 </td>
                 <th>
-                  <a href="/view" class="badge badge-info mx-2">
+                  <a href="/view" className="badge badge-info mx-2">
                     View
                   </a>
                 </th>
@@ -56,17 +139,17 @@ class DashTable extends Component {
               <tr>
                 <th>2020/10/25</th>
                 <td>
-                  <span class="badge badge-pill badge-danger">Withdrawn</span>
+                  <span className="badge badge-pill badge-danger">Withdrawn</span>
                 </td>
                 <td>100 BTC</td>
                 <td>
                   6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
                 </td>
                 <th>
-                  <a href="/view" class="badge badge-info mx-2">
+                  <a href="/view" className="badge badge-info mx-2">
                     View
                   </a>
-                  <a href="/view" class="badge badge-success mx-2">
+                  <a href="/view" className="badge badge-success mx-2">
                     Recover
                   </a>
                 </th>
@@ -74,17 +157,17 @@ class DashTable extends Component {
               <tr>
                 <th>2020/10/25</th>
                 <td>
-                  <span class="badge badge-pill badge-danger">Withdrawn</span>
+                  <span className="badge badge-pill badge-danger">Withdrawn</span>
                 </td>
                 <td>100 BTC</td>
                 <td>
                   6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
                 </td>
                 <th>
-                  <a href="/view" class="badge badge-info mx-2">
+                  <a href="/view" className="badge badge-info mx-2">
                     View
                   </a>
-                  <a href="/view" class="badge badge-success mx-2">
+                  <a href="/view" className="badge badge-success mx-2">
                     Recover
                   </a>
                 </th>
@@ -92,14 +175,14 @@ class DashTable extends Component {
               <tr>
                 <th>2020/10/26</th>
                 <td>
-                  <span class="badge badge-pill badge-primary">Earning</span>
+                  <span className="badge badge-pill badge-primary">Earning</span>
                 </td>
                 <td>1 BTC</td>
                 <td>
                   6abe96c9ac613da4fa4ef69045f5a792b9d20305e16a8491775710c66183b343
                 </td>
                 <th>
-                  <a href="/view" class="badge badge-info mx-2">
+                  <a href="/view" className="badge badge-info mx-2">
                     View
                   </a>
                 </th>
@@ -111,36 +194,36 @@ class DashTable extends Component {
     );
   }
 }
-export default class Dashboard extends Component {
+export default className Dashboard extends Component {
   render() {
     return (
       <div>
-        <section class="jumbotron text-center border-bottom shadow-sm">
-          <div class="container">
+        <section className="jumbotron text-center border-bottom shadow-sm">
+          <div className="container">
             <a
               href="/borrow"
-              class="btn btn-primary m-2"
+              className="btn btn-primary m-2"
               style={{ width: "100px" }}
             >
               Borrow
             </a>
             <a
               href="/insure"
-              class="btn btn-primary m-2"
+              className="btn btn-primary m-2"
               style={{ width: "100px" }}
             >
               Insure
             </a>
             <a
               href="/underwrite"
-              class="btn btn-primary m-2"
+              className="btn btn-primary m-2"
               style={{ width: "100px" }}
             >
               Underwrite
             </a>
             <a
               href="/lend"
-              class="btn btn-primary m-2"
+              className="btn btn-primary m-2"
               style={{ width: "100px" }}
             >
               Lend
@@ -150,27 +233,27 @@ export default class Dashboard extends Component {
         <Container className="p-3">
           <Row>
             <Col>
-              <button type="button" class="btn btn-secondary my-4">
+              <button type="button" className="btn btn-secondary my-4">
                 Total Minted &nbsp;
-                <span class="badge badge-light">109.92 BTC</span>
+                <span className="badge badge-light">109.92 BTC</span>
               </button>
             </Col>
             <Col>
-              <button type="button" class="btn btn-secondary my-4">
+              <button type="button" className="btn btn-secondary my-4">
                 Total Earnt &nbsp;
-                <span class="badge badge-light">10.2 BTC</span>
+                <span className="badge badge-light">10.2 BTC</span>
               </button>
             </Col>
             <Col>
-              <button type="button" class="btn btn-secondary my-4">
+              <button type="button" className="btn btn-secondary my-4">
                 Total Locked &nbsp;
-                <span class="badge badge-light">4.2%</span>
+                <span className="badge badge-light">4.2%</span>
               </button>
             </Col>
             <Col>
-              <button type="button" class="btn btn-secondary my-4">
+              <button type="button" className="btn btn-secondary my-4">
                 Pending Mint &nbsp;
-                <span class="badge badge-light">1 BTC</span>
+                <span className="badge badge-light">1 BTC</span>
               </button>
             </Col>
           </Row>
@@ -180,3 +263,5 @@ export default class Dashboard extends Component {
     );
   }
 }
+
+*/
