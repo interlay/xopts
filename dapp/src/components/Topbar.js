@@ -1,4 +1,4 @@
-import { Navbar, Nav, Form, Image } from "react-bootstrap";
+import { Navbar, Nav, Badge} from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 
@@ -19,7 +19,9 @@ class TopBar extends Component {
             </Link>
           </Nav>
           <Nav.Link href="/dashboard">
+          <Badge pill variant="success">
             {this.props.address}
+            </Badge>
           </Nav.Link>
         </Navbar.Collapse>
       </Navbar>
