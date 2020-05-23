@@ -80,6 +80,33 @@ contract PutOption is ERC20Lockable {
         return _strikePrice;
     }
 
+    function getOptionDetails() public view returns(uint, uint, uint, uint, uint, uint, uint)
+    {
+        uint locked_collateral = _collateral.balanceOf(address(this));
+        return (
+            _expiry,
+            _premium,
+            _strikePrice,
+            locked_collateral,
+            _totalSupply,
+            _totalSupplyLocked,
+            _totalSupplyUnlocked
+        );
+    }
+
+    function getOptionDetailsForUser(address user) public view returns (uint, uint, uint)
+    {
+        uint available_collateral = _collateral.balanceOf(user);
+        uint current_options = _balancesLocked[user];
+        uint available_options = _balancesUnlocked[user];
+        return (
+            available_collateral,
+            current_options,
+            available_options
+        );
+    }
+
+
     /**
     * @dev Claim options by paying the premium
     * @param amount: erc-20 underlying
