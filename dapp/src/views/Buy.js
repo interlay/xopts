@@ -65,7 +65,8 @@ export default class Buy extends React.Component {
 
     componentDidMount() {
         const { contract } = this.props.match.params;
-        //Note: access parent / global web3 state as follows: 
+        //Note: access parent / global web3 state as follows:
+         
         console.log(this.props.eth);
     }
 
