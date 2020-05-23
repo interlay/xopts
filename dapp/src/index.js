@@ -95,7 +95,9 @@ class App extends Component {
             <Route path="/underwrite">
               <Underwrite />
             </Route>
-            <Route path="/buy/:contract" component={Buy} eth = {this.state}/>
+            <Route path="/buy/:contract"
+              render={(props) => <Buy {...props} eth={this.state}/>} />
+              
             <Route path="/sell/:contract" component={Sell} eth = {this.state}/>
 
             <Route path="/dashboard">
