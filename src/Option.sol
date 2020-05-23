@@ -7,9 +7,11 @@ import {IRelay} from "./lib/IRelay.sol";
 import {ITxValidator} from "./lib/ITxValidator.sol";
 import "./ERC20Lockable.sol";
 import "./lib/IERC137.sol";
+import "./IterableMapping.sol";
 
 contract PutOption is ERC20Lockable {
     using SafeMath for uint;
+    using IterableMapping for IterableMapping.Map;
 
     // backing asset (eg. Dai or USDC)
     IERC20 _collateral;
@@ -80,32 +82,42 @@ contract PutOption is ERC20Lockable {
         return _strikePrice;
     }
 
-    function getOptionDetails() public view returns(uint, uint, uint, uint, uint, uint, uint)
-    {
-        uint locked_collateral = _collateral.balanceOf(address(this));
+    function getOptionSellers() public view returns (address[] memory insurer, uint256[] memory options) {
+        IterableMapping.Map storage map = _balancesUnlocked;
+
+        uint length = map.size();
+        insurer = new address[](length);
+        options = new uint256[](length);
+
+        for (uint i = 0; i < length; i++) {
+            address key = map.getKeyAtIndex(i);
+            uint value = map.get(key);
+            insurer[i] = key;
+            options[i] = value;
+        }
+
+        return (insurer, options);
+    }
+
+    function getOptionDetails() public view returns(uint, uint, uint, uint, uint, uint) {
         return (
             _expiry,
             _premium,
             _strikePrice,
-            locked_collateral,
             _totalSupply,
             _totalSupplyLocked,
             _totalSupplyUnlocked
         );
     }
 
-    function getOptionDetailsForUser(address user) public view returns (uint, uint, uint)
-    {
-        uint available_collateral = _collateral.balanceOf(user);
+    function getOptionDetailsForUser(address user) public view returns (uint, uint) {
         uint current_options = _balancesLocked[user];
-        uint available_options = _balancesUnlocked[user];
+        uint available_options = _balancesUnlocked.get(user);
         return (
-            available_collateral,
             current_options,
             available_options
         );
     }
-
 
     /**
     * @dev Claim options by paying the premium
@@ -122,7 +134,7 @@ contract PutOption is ERC20Lockable {
 
         // require the amount * strike price
         uint256 payout = _calculateInsure(amount);
-        require(totalSupplyUnlocked() >= payout, ERR_INSUFFICIENT_UNLOCKED);
+        require(_balanceOfUnlocked(seller) >= payout, ERR_INSUFFICIENT_UNLOCKED);
 
         // require the amount * premium
         uint256 premium = _calculatePremium(amount);
@@ -203,7 +215,7 @@ contract PutOption is ERC20Lockable {
         require(expired(), ERR_OPTION_NOT_EXPIRED);
         address caller = msg.sender;
         require(!isLocked(caller), ERR_ACCOUNT_LOCKED);
-        uint256 balance = _burnAll(caller);
+        uint256 balance = _burnOwned(caller);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
         _collateral.transfer(caller, balance);
     }

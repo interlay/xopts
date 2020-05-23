@@ -4,59 +4,7 @@ import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
-
-library IterableMapping {
-    using SafeMath for uint;
-
-    struct Map {
-        address[] keys;
-        mapping(address => uint) values;
-        mapping(address => uint) indexOf;
-        mapping(address => bool) inserted;
-    }
-
-    function get(Map storage map, address key) internal view returns (uint) {
-        return map.values[key];
-    }
-
-    function getKeyAtIndex(Map storage map, uint index) internal view returns (address) {
-        return map.keys[index];
-    }
-
-    function size(Map storage map) internal view returns (uint) {
-        return map.keys.length;
-    }
-
-    function set(Map storage map, address key, uint val) internal {
-        if (map.inserted[key]) {
-            map.values[key] = val;
-        } else {
-            map.inserted[key] = true;
-            map.values[key] = val;
-            map.indexOf[key] = map.keys.length;
-            map.keys.push(key);
-        }
-    }
-
-    function remove(Map storage map, address key) internal {
-        if (!map.inserted[key]) {
-            return;
-        }
-
-        delete map.inserted[key];
-        delete map.values[key];
-
-        uint index = map.indexOf[key];
-        uint lastIndex = map.keys.length - 1;
-        address lastKey = map.keys[lastIndex];
-
-        map.indexOf[lastKey] = index;
-        delete map.indexOf[key];
-
-        map.keys[index] = lastKey;
-        map.keys.pop();
-    }
-}
+import "./IterableMapping.sol";
 
 contract ERC20Lockable is IERC20, Context {
     using SafeMath for uint;
@@ -69,9 +17,9 @@ contract ERC20Lockable is IERC20, Context {
     // contains mapping to lenders and amounts borrowed
     mapping (address => IterableMapping.Map) _owned;
 
-    mapping (address => uint256) _balances;
+    mapping (address => uint256) _balancesOwned;
     mapping (address => uint256) _balancesLocked;
-    mapping (address => uint256) _balancesUnlocked;
+    IterableMapping.Map _balancesUnlocked;
 
     // accounts that can spend an owners funds
     mapping (address => mapping (address => uint256)) internal _allowances;
@@ -114,19 +62,25 @@ contract ERC20Lockable is IERC20, Context {
         require(!_locked[owner], ERR_ACCOUNT_LOCKED);
 
         // insert into the accounts balance
-        _balances[owner] = _balances[owner].add(amount);
-        _balancesUnlocked[owner] = _balancesUnlocked[owner].add(amount);
+        _balancesOwned[owner] = _balancesOwned[owner].add(amount);
+        _balancesUnlocked.set(owner, _balancesUnlocked.get(owner).add(amount));
 
         _totalSupply = _totalSupply.add(amount);
         _totalSupplyUnlocked = _totalSupplyUnlocked.add(amount);
         emit Transfer(address(0), owner, amount);
     }
 
-    function _burnAll(address account) internal returns (uint) {
-        uint balance = _balances[account];
-        delete _balances[account];
+    function _burnOwned(address account) internal returns (uint) {
+        uint balance = _balancesOwned[account];
+        delete _balancesOwned[account];
         delete _balancesLocked[account];
-        delete _balancesUnlocked[account];
+
+        uint balanceUnlocked = _balancesUnlocked.get(account);
+        _balancesUnlocked.remove(account);
+
+        _totalSupply = _totalSupply.sub(balance);
+        _totalSupplyUnlocked = _totalSupplyUnlocked.sub(balanceUnlocked);
+
         emit Transfer(account, address(0), balance);
         return balance;
     }
@@ -136,8 +90,11 @@ contract ERC20Lockable is IERC20, Context {
         uint balance = map.get(seller);
         map.remove(seller);
 
+        _totalSupply = _totalSupply.sub(balance);
+        _totalSupplyLocked = _totalSupplyLocked.sub(balance);
+
         _balancesLocked[buyer] = _balancesLocked[buyer].sub(balance);
-        _balances[seller] = _balances[seller].sub(balance);
+        _balancesOwned[seller] = _balancesOwned[seller].sub(balance);
 
         emit Transfer(buyer, address(0), balance);
         return balance;
@@ -169,11 +126,11 @@ contract ERC20Lockable is IERC20, Context {
     }
 
     function _balanceOf(address account) internal view returns (uint256) {
-        return _balancesLocked[account] + _balancesUnlocked[account];
+        return _balancesLocked[account].add(_balancesUnlocked.get(account));
     }
 
-    function _balanceOfTotal(address account) internal view returns (uint256) {
-        return _balances[account];
+    function _balanceOfUnlocked(address account) internal view returns (uint256) {
+        return _balancesUnlocked.get(account);
     }
 
     function transfer(address recipient, uint256 amount) external returns (bool) {
@@ -207,7 +164,7 @@ contract ERC20Lockable is IERC20, Context {
         _totalSupplyLocked = _totalSupplyLocked.add(amount);
 
         // update balances
-        _balancesUnlocked[sender] = _balancesUnlocked[sender].sub(amount);
+        _balancesUnlocked.set(sender, _balancesUnlocked.get(sender).sub(amount));
         _balancesLocked[recipient] = _balancesLocked[recipient].add(amount);
 
         _owned[recipient].set(sender, _owned[recipient].get(sender).add(amount));
@@ -231,10 +188,10 @@ contract ERC20Lockable is IERC20, Context {
 
         if (!_locked[sender]) {
             // transfer between unlocked accounts
-            _balances[sender] = _balances[sender].sub(amount);
-            _balances[recipient] = _balances[recipient].add(amount);
-            _balancesUnlocked[sender] = _balancesUnlocked[sender].sub(amount);
-            _balancesUnlocked[recipient] = _balancesUnlocked[recipient].add(amount);
+            _balancesOwned[sender] = _balancesOwned[sender].sub(amount);
+            _balancesOwned[recipient] = _balancesOwned[recipient].add(amount);
+            _balancesUnlocked.set(sender, _balancesUnlocked.get(sender).sub(amount));
+            _balancesUnlocked.set(recipient, _balancesUnlocked.get(recipient).add(amount));
             return;
         } else {
             // transfer between locked accounts
