@@ -1,7 +1,8 @@
 import { ethers } from "@nomiclabs/buidler";
-import { Signer } from "ethers";
+import { Signer, Wallet, Contract } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
+import { ERC20 } from "../typechain/ERC20";
 import { Collateral } from "../typechain/Collateral";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPool } from "../typechain/OptionPool";
@@ -18,6 +19,7 @@ import { ERC137RegistryFactory } from '../typechain/ERC137RegistryFactory';
 import { ERC137Resolver } from '../typechain/ERC137Resolver';
 import { ERC137ResolverFactory } from '../typechain/ERC137ResolverFactory';
 import { ErrorCode } from './constants';
+import { fromWei } from './utils';
 
 chai.use(solidity);
 const { expect } = chai;
@@ -48,6 +50,17 @@ async function mineUntil(expiry: number) {
   }
 }
 
+async function getCollateral(user: Signer): Promise<Contract> {
+    if ((await ethers.provider.getNetwork()).chainId == 3) {
+      const dai = contracts.dai;
+      const collateral =  await ethers.getContractAt(legos.erc20.abi, dai);
+      return collateral;
+    } else {
+      let mintableFactory = new CollateralFactory(user);
+      return await mintableFactory.deploy();
+    }
+};
+
 
 describe("Options", () => {
   let alice: Signer;
@@ -58,9 +71,8 @@ describe("Options", () => {
   let bobAddress: string;
   let charlieAddress: string;
 
-  let collateral: Collateral;
   let registry: ERC137Registry
-
+  let collateral: Contract;
   let optionPool: OptionPool;
 
   let btcAddress = "0x66c7060feb882664ae62ffad0051fe843e318e85";
@@ -83,18 +95,7 @@ describe("Options", () => {
     bobAddress = await bob.getAddress();
     charlieAddress = await charlie.getAddress();
 
-    if ('fork' in config.networks.ganache) {
-        const dai = contracts.dai;
-        // console.log("Collateral (Dai)", dai);
-        // collateral = new ethers.Contract(
-        //     dai,
-        //     legos.erc20.abi,
-        //     alice
-        // );
-    } else {
-        let mintableFactory = new CollateralFactory(alice);
-        collateral = await mintableFactory.deploy();
-    }
+    collateral = await getCollateral(alice);
 
     let relayFactory = new MockRelayFactory(alice);
     let relay = await relayFactory.deploy();
@@ -114,27 +115,16 @@ describe("Options", () => {
   });
 
   const mint = async function(user: Signer, userAddress: string, collateralAmount: number) {
-    if ('fork' in config.networks.ganache) {
-        // get a maker proxy
-        const proxyRegistry = new ethers.Contract(
-            contracts.proxyRegistry,
-            legos.maker.proxyRegistry.abi,
-            user,
-        );
-        const before = await proxyRegistry.proxies(userAddress);
+    if ((await ethers.provider.getNetwork()).chainId == 3) {
+      let signer = ethers.provider.getSigner(contracts.dai_account);
+      let fromDaiAccount = collateral.connect(signer);
 
-        await proxyRegistry.build({ gasLimit: 1500000 });
-
-        const after = await proxyRegistry.proxies(userAddress);
-
-        expect(before).to.be("0x0000000000000000000000000000000000000000");
-        expect(after).not.to.be("0x0000000000000000000000000000000000000000");
-        // open vault
+      await fromDaiAccount.transfer(userAddress, "100");
     } else {
-        await collateral.mint(userAddress, collateralAmount);
-        expect((await collateral.balanceOf(userAddress)).toNumber()).to.eq(collateralAmount);
+      await collateral.mint(userAddress, collateralAmount);
     }
-  }
+    expect((await collateral.balanceOf(userAddress)).toNumber()).to.eq(collateralAmount);
+  };
 
   const put = async function(
     collateralAmount: number,
@@ -144,11 +134,11 @@ describe("Options", () => {
     expiry: number,
   ) {
     // bob needs collateral >= the insured amount
-    await collateral.mint(bobAddress, collateralAmount);
+    await mint(bob, bobAddress, collateralAmount);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount);
 
     // alice needs fees to pay premium
-    await collateral.mint(aliceAddress, premium * underlyingAmount);
+    await mint(alice, aliceAddress, premium * underlyingAmount);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
     await optionPool.createOption(expiry, premium, strikePrice);
@@ -206,7 +196,7 @@ describe("Options", () => {
     // alice exercises and burns options to redeem collateral
     await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(collateralAmount);
-  });
+  }).timeout(100000);
 
   it("should create, transfer, insure and exercise put option", async () => {
     let collateralAmount = 100;
@@ -243,7 +233,7 @@ describe("Options", () => {
     // alice exercises and burns options to redeem collateral
     await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(collateralAmount);
-  });
+  }).timeout(100000);
 
   it("should create, insure, exercise and refund put options", async () => {
     let collateralAmount = 300;
@@ -263,7 +253,7 @@ describe("Options", () => {
 
     // alice has equivalent options
     expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
-    
+
     // alice exercises and burns options to redeem collateral
     await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
@@ -280,7 +270,7 @@ describe("Options", () => {
     await call(option, PutOptionFactory, bob).refund();
     expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(0);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(bobCollateral + (collateralAmount - (strikePrice * underlyingAmount)))
-  });
+  }).timeout(100000);
 
   it("should create, insure and refund put options", async () => {
     let collateralAmount = 300;

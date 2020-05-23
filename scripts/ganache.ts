@@ -1,14 +1,32 @@
 import config from "../buidler.config";
 import  * as child from "child_process";
+import contracts from "../contracts";
 
-var ganache_cmd = "ganache-cli -d";
-var port = "-p 8545";
-var mnemonic = "-m ".concat(config.networks.ganache.mnemonic);
-var id = "-i ".concat(config.networks.ganache.network_id.toString());
 
-console.log(ganache_cmd.concat(" ", port, " ", mnemonic, " ", id));
+const ganache_cmd = "ganache-cli";
+const port = "-p 8545";
+const mnemonic = "-m ".concat(config.networks.ganache.mnemonic);
+const id = "-i ".concat(config.networks.ganache.network_id.toString());
 
-var ganache: child.ChildProcess = child.spawn("ganache-cli", [port, mnemonic, id]);
+// if infura is available, fork from ropsten
+const INFURA_ID = process.env.INFURA_XFLASH_ID;
+
+var fork = "";
+var unlocked = "";
+
+if (INFURA_ID) {
+    const INFURA_URL = 'https://ropsten.infura.io/v3/'.concat(INFURA_ID.toString());
+    fork = "-f ".concat(INFURA_URL.toString());
+    var dai_account = "--unlock ".concat(contracts.dai_account);
+    var dai_contract = "--unlock ".concat(contracts.dai);
+    unlocked = "".concat(dai_account, " ", dai_contract)
+}
+
+const ganache_string = ganache_cmd.concat(" ", port, " ", mnemonic, " ", id, " ", fork, " ", unlocked);
+
+console.log(ganache_string);
+
+var ganache: child.ChildProcess = child.exec(ganache_string);
 
 ganache.stdout!.on('data', (data) => {
     console.log(data.toString());
