@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Col, Container, Row, Table } from "react-bootstrap";
 import { fetchJson } from "ethers/utils";
-import OptionList from "./../components/OptionList.js"
+import OptionList from "../components/OptionList.js"
 
 export default class Home extends Component {
   render() {

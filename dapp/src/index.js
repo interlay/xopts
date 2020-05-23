@@ -12,11 +12,11 @@ import Home from "./views/Home";
 import Topbar from "./components/Topbar";
 import Insure from "./views/Insure";
 import Underwrite from "./views/Underwrite";
+import Buy from "./views/Buy";
 
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 
 const optionPoolAddress = "0x5429c8fafa53b09386E41F07CbA2479C170faf0b";
-
 
 class App extends Component {
 
@@ -46,6 +46,7 @@ class App extends Component {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
       try {
+        window.ethereum.enable();
         let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
         let signer = await provider.getSigner();
         let address = await signer.getAddress();
@@ -93,14 +94,14 @@ class App extends Component {
             <Route path="/underwrite">
               <Underwrite />
             </Route>
+            <Route path="/buy/:contract" component={Buy} eth = {this.state}/>
             <Route path="/dashboard">
               <Dashboard />
             </Route>
-
             <Route path="/insure">
               <Insure />
             </Route>
-            <Route exact path="/">
+            <Route path="/">
               <Home {...this.state} />
             </Route>
           </Switch>
