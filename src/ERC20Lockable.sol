@@ -131,19 +131,15 @@ contract ERC20Lockable is IERC20, Context {
         return balance;
     }
 
-    function _burnAllLocked(address account) internal returns (uint) {
-        uint balance = _balancesLocked[account];
-        _balancesLocked[account] = 0;
+    function _burnLocked(address buyer, address seller) internal returns (uint) {
+        IterableMapping.Map storage map = _owned[buyer];
+        uint balance = map.get(seller);
+        map.remove(seller);
 
-        IterableMapping.Map storage map = _owned[account];
-        for (uint i = 0; i < map.size(); i++) {
-            address key = map.getKeyAtIndex(i);
-            uint value = map.get(key);
-            _balances[key] = _balances[key].sub(value);
-        }
+        _balancesLocked[buyer] = _balancesLocked[buyer].sub(balance);
+        _balances[seller] = _balances[seller].sub(balance);
 
-        delete _owned[account];
-        emit Transfer(account, address(0), balance);
+        emit Transfer(buyer, address(0), balance);
         return balance;
     }
 

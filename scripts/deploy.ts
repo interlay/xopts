@@ -1,6 +1,6 @@
 import { ethers } from "@nomiclabs/buidler";
 import { 
-	MockCollateral, MockRelay, MockValid, 
+	MockCollateral, MockRelay, MockTxValidator, 
 	MockRegistryAndResolver, OptionPool
 } from "./contracts";
 
@@ -11,7 +11,7 @@ async function main() {
 	const collateral = await MockCollateral(signers[0]);
 
 	const relay = await MockRelay(signers[0]);
-	const validator = await MockValid(signers[0]);
+	const validator = await MockTxValidator(signers[0]);
 	const registry = await MockRegistryAndResolver(signers[0]);
 
 	// finally deploy options over assets

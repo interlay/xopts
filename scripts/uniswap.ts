@@ -1,29 +1,10 @@
 import { ethers } from "@nomiclabs/buidler";
-import { Signer } from "ethers";
 import { ChainId, Token, TokenAmount, Pair } from "@uniswap/sdk";
-import { PutOptionFactory } from "../typechain/PutOptionFactory";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import {
-	MockCollateral, MockRelay, MockValid,
-	MockRegistryAndResolver, OptionPool
+	MockCollateral, MockRelay, MockTxValidator,
+	MockRegistryAndResolver, OptionPool, call, attachOption,
 } from "./contracts";
-
-interface Callable {
-	address: string;
-}
-
-interface Attachable<C> {
-	attach(addr: string): C;
-}
-
-function call<A extends Callable, B extends Attachable<A>>(contract: A, factory: new (from: Signer) => B, signer: Signer): A {
-	let _factory = new factory(signer);
-	return _factory.attach(contract.address);
-}
-
-function attachOption(signer: Signer, address: string) {
-	return new PutOptionFactory(signer).attach(address);
-}
 
 let btcAddress = "0x66c7060feb882664ae62ffad0051fe843e318e85";
 
@@ -44,7 +25,7 @@ async function main() {
 
 	const collateral = await MockCollateral(alice);
 	const relay = await MockRelay(alice);
-	const validator = await MockValid(alice);
+	const validator = await MockTxValidator(alice);
 	const registry = await MockRegistryAndResolver(alice);
 
 	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address, registry.address);

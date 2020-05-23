@@ -4,7 +4,7 @@ import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
-import {IValid} from "./lib/IValid.sol";
+import {ITxValidator} from "./lib/ITxValidator.sol";
 import "./lib/IERC137.sol";
 import "./Option.sol";
 
@@ -16,7 +16,7 @@ contract OptionPool {
 
     // btc relay
     IRelay _relay;
-    IValid _valid;
+    ITxValidator _valid;
 
     IERC137Registry _ens;
 
@@ -25,7 +25,7 @@ contract OptionPool {
     constructor(address collateral, address relay, address valid, address ens) public {
         _collateral = IERC20(collateral);
         _relay = IRelay(relay);
-        _valid = IValid(valid);
+        _valid = ITxValidator(valid);
         _ens = IERC137Registry(ens);
     }
 

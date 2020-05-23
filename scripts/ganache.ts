@@ -2,7 +2,6 @@ import config from "../buidler.config";
 import  * as child from "child_process";
 import contracts from "../contracts";
 
-
 const ganache_cmd = "ganache-cli";
 const port = "-p 8545";
 const mnemonic = "-m ".concat(config.networks.ganache.mnemonic);

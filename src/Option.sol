@@ -4,7 +4,7 @@ import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
-import {IValid} from "./lib/IValid.sol";
+import {ITxValidator} from "./lib/ITxValidator.sol";
 import "./ERC20Lockable.sol";
 import "./lib/IERC137.sol";
 
@@ -16,7 +16,7 @@ contract PutOption is ERC20Lockable {
 
     // btc relay
     IRelay _relay;
-    IValid _valid;
+    ITxValidator _valid;
 
     IERC137Registry _ens;
 
@@ -49,7 +49,7 @@ contract PutOption is ERC20Lockable {
     constructor(
         IERC20 collateral,
         IRelay relay,
-        IValid valid,
+        ITxValidator valid,
         IERC137Registry ens,
         uint256 expiry,
         uint256 premium,
@@ -167,26 +167,6 @@ contract PutOption is ERC20Lockable {
         _btcAddress[caller] = btcAddress;
     }
 
-    function authorsOf(address account) public view returns (bytes20[] memory authors, uint256[] memory amounts) {
-        IterableMapping.Map storage map = _owned[account];
-        uint length = map.size();
-
-        authors = new bytes20[](length);
-        amounts = new uint256[](length);
-
-        for (uint i = 0; i < length; i++) {
-            address key = map.getKeyAtIndex(i);
-            uint value = map.get(key);
-
-            bytes20 author = _btcAddress[key];
-            require(author != bytes20(0), ERR_NO_BTC_ADDRESS);
-            authors[i] = author;
-            amounts[i] = _calculateExercise(value);
-        }
-
-        return (authors, amounts);
-    }
-
     /**
     * @dev Exercise an option before expiry
     **/
@@ -195,20 +175,23 @@ contract PutOption is ERC20Lockable {
         uint256 index,
         bytes32 txid,
         bytes calldata proof,
-        bytes calldata rawtx
+        bytes calldata rawtx,
+        address seller
     ) external {
         require(!expired(), ERR_OPTION_EXPIRED);
         address caller = msg.sender;
         require(isLocked(caller), ERR_ACCOUNT_NOT_LOCKED);
-        uint256 balance = _burnAllLocked(caller);
+        uint256 balance = _burnLocked(caller, seller);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
 
-        // (bytes20[] memory authors, uint256[] memory amounts) = authorsOf(caller);
-        // // we currently do not support multiple outputs
-        // require(authors.length > 0, ERR_VALIDATE_TX);
-        // // verify & validate tx, use default confirmations
-        // require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
-        // require(_valid.validateTx(txid, rawtx, authors[0], amounts[0]), ERR_VALIDATE_TX);
+        bytes20 btcAddress = _btcAddress[seller];
+        require(btcAddress != bytes20(0), ERR_NO_BTC_ADDRESS);
+        uint256 btcAmount = _calculateExercise(balance);
+
+        // we currently do not support multiple outputs
+        // verify & validate tx, use default confirmations
+        require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
+        require(_valid.validateTx(txid, rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
 
         _collateral.transfer(caller, balance);
     }

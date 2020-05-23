@@ -3,9 +3,27 @@ import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 import contracts from "../contracts";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
-import { MockValidFactory } from "../typechain/MockValidFactory";
+import { MockTxValidatorFactory } from "../typechain/MockTxValidatorFactory";
 import { ERC137ResolverFactory } from "../typechain/ERC137ResolverFactory";
 import { ERC137RegistryFactory } from "../typechain/ERC137RegistryFactory";
+import { PutOptionFactory } from "../typechain/PutOptionFactory";
+
+interface Callable {
+	address: string;
+}
+
+interface Attachable<C> {
+	attach(addr: string): C;
+}
+
+export function call<A extends Callable, B extends Attachable<A>>(contract: A, factory: new (from: Signer) => B, signer: Signer): A {
+	let _factory = new factory(signer);
+	return _factory.attach(contract.address);
+}
+
+export function attachOption(signer: Signer, address: string) {
+	return new PutOptionFactory(signer).attach(address);
+}
 
 // use Dai addresses
 export async function Collateral() {
@@ -30,10 +48,10 @@ export async function MockRelay(signer: Signer) {
 	return contract.deployed();
 }
 
-export async function MockValid(signer: Signer) {
-    let factory = new MockValidFactory(signer);
+export async function MockTxValidator(signer: Signer) {
+    let factory = new MockTxValidatorFactory(signer);
 	let contract = await factory.deploy();
-	console.log("MockValid contract:", contract.address);
+	console.log("MockTxValidator contract:", contract.address);
 	return contract.deployed();
 }
 
