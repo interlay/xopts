@@ -116,30 +116,10 @@ describe("Options", () => {
 
   const mint = async function(user: Signer, userAddress: string, collateralAmount: number) {
     if ((await ethers.provider.getNetwork()).chainId == 3) {
-      // await web3.eth.sendTransaction({
-      //   from: userAddress,
-      //   to: contracts.dai_account,
-      //   value: ether('0.1')
-      // });
-      console.log("Getting collateral: ", collateralAmount);
+      let signer = ethers.provider.getSigner(contracts.dai_account);
+      let fromDaiAccount = collateral.connect(signer);
 
-      console.log("Dai balance before (main account): ", collateral.balanceOf(contracts.dai_account).toString());
-      console.log("Dai balance before (user): ", await collateral.balanceOf(userAddress).toString());
-
-      // var web3 = new Web3("http://localhost:8545");
-
-      // const daiContract = new web3.eth.Contract(legos.erc20.abi, contracts.dai);
-
-      // await daiContract.methods
-        // .transfer(userAddress, "100")
-        // .send({from: contracts.dai_account, gasLimit: 800000})
-
-      let fromDaiAccount = collateral.connect(contracts.dai_account);
-      // console.log(fromDaiAccount);
-      // console.log(collateral);
       await fromDaiAccount.transfer(userAddress, "100");
-      console.log("Dai balance after (main account): ", collateral.balanceOf(contracts.dai_account).toString());
-      console.log("Dai balance after (user): ", await collateral.balanceOf(userAddress).toString());
     } else {
       await collateral.mint(userAddress, collateralAmount);
     }
@@ -154,14 +134,10 @@ describe("Options", () => {
     expiry: number,
   ) {
     // bob needs collateral >= the insured amount
-    console.log("Getting Bob collateral");
     await mint(bob, bobAddress, collateralAmount);
-    // await collateral.mint(bobAddress, collateralAmount);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount);
 
     // alice needs fees to pay premium
-    // await collateral.mint(aliceAddress, premium * underlyingAmount);
-    console.log("Getting Alice collateral");
     await mint(alice, aliceAddress, premium * underlyingAmount);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
