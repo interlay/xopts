@@ -4,6 +4,18 @@
   text-align: center;
 }
 
+.buy-option-wizard {
+  text-align: center;
+  width: 30%;
+  height: 500px;
+  padding: 20px;
+  margin: auto;
+}
+
+.form-group {
+  height: 100px;
+}
+
 span {
   &.dangerText {
     color: #dc3545;

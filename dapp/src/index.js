@@ -48,7 +48,7 @@ class App extends Component {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
       try {
-        //window.ethereum.enable();
+        window.ethereum.enable();
         let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
 
         let optionPoolAbi = optionPoolArtifact.abi;
