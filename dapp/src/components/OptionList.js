@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Col, Container, Row, Table, Button, } from "react-bootstrap";
+import { Redirect } from "react-router-dom";
 
 import putOptionArtifact from "./../artifacts/PutOption.json"
 
@@ -12,7 +13,9 @@ export default class OptionList extends Component {
             options: [],
             totalInsured: 0,
             insuranceAvailable: 0,
-            totalVolume: 750000
+            totalVolume: 750000,
+            buy: null,
+            sell: null
         };
     }
 
@@ -62,11 +65,23 @@ export default class OptionList extends Component {
         return options;
     }
 
+    handleBuy = (contract) => {
+        this.setState({
+            buy : contract
+        })
+    }
+
+    handleSell(contract) {
+        this.setState({
+            sell : contract
+        })
+    }
+
     renderTableData() {
 
         if (this.state.options) {
             return this.state.options.map((option, index) => {
-                const { expiry, premium, strikePrice, spotPrice, collateral, btcAddress, insured, premiumEarned } = option
+                const { expiry, premium, strikePrice, spotPrice, collateral, contract, insured, premiumEarned } = option
                 return (
                     <tr key={strikePrice}>
                         <td>{expiry}</td>
@@ -77,11 +92,11 @@ export default class OptionList extends Component {
                         <td>{insured} BTC</td>
                         <td>{premiumEarned} DAI</td>
                         <td>
-                            <Button variant="success">
+                            <Button variant="success" onClick={() => {this.handleBuy(contract)}}>
                                 Buy
                             </Button>
                             {" "}
-                            <Button variant="outline-danger">
+                            <Button variant="outline-danger" onClick={() => {this.handleSell(contract)}}>
                                 Sell
                             </Button>
                         </td>
@@ -95,6 +110,8 @@ export default class OptionList extends Component {
 
 
     render() {
+        if (this.state.buy) return  <Redirect  to={"/buy/" + this.state.buy} />
+        if (this.state.sell) return  <Redirect  to={"/sell/" + this.state.sell} />
         return <Container>
             <Col lg={{ span: 12 }}>
                 <Row>
@@ -190,3 +207,4 @@ export default class OptionList extends Component {
         ]
     }
 }
+

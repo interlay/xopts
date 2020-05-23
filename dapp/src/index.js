@@ -13,6 +13,7 @@ import Topbar from "./components/Topbar";
 import Insure from "./views/Insure";
 import Underwrite from "./views/Underwrite";
 import Buy from "./views/Buy";
+import Sell from "./views/Sell";
 
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 
@@ -95,6 +96,8 @@ class App extends Component {
               <Underwrite />
             </Route>
             <Route path="/buy/:contract" component={Buy} eth = {this.state}/>
+            <Route path="/sell/:contract" component={Sell} eth = {this.state}/>
+
             <Route path="/dashboard">
               <Dashboard />
             </Route>
