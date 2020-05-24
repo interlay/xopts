@@ -15,7 +15,7 @@ import Topbar from "./components/Topbar";
 
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 
-const optionPoolAddress = "0x5429c8fafa53b09386E41F07CbA2479C170faf0b";
+const optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
 const erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
 
 class App extends Component {

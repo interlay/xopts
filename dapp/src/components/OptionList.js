@@ -196,22 +196,20 @@ class OptionList extends Component {
                     </Row>
                 </Card.Body>
             </Card>
-            <div className="wizard-container">
-                <Modal
-                    size="lg"
-                    aria-labelledby="contained-modal-title-vcenter"
-                    centered
-                    show={this.state.showBuy} onHide={() => this.setState({ showBuy: false })}>
-                    <Buy contract={this.state.buy} {...this.props}></Buy>
-                </Modal>
-                <Modal
-                    size="lg"
-                    aria-labelledby="contained-modal-title-vcenter"
-                    centered
-                    show={this.state.showSell} onHide={() => this.setState({ showSell: false })}>
-                    <Sell contract={this.state.sell} {...this.props}></Sell>
-                </Modal>
-            </div>
+            <Modal
+                size="lg"
+                aria-labelledby="contained-modal-title-vcenter"
+                centered
+                show={this.state.showBuy} onHide={() => this.setState({ showBuy: false })}>
+                <Buy contract={this.state.buy} {...this.props}></Buy>
+            </Modal>
+            <Modal
+                size="lg"
+                aria-labelledby="contained-modal-title-vcenter"
+                centered
+                show={this.state.showSell} onHide={() => this.setState({ showSell: false })}>
+                <Sell contract={this.state.sell} {...this.props}></Sell>
+            </Modal>
         </Col>;
     }
     /*

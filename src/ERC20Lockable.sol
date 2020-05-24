@@ -42,10 +42,6 @@ contract ERC20Lockable is IERC20, Context {
         return _totalSupply;
     }
 
-    function totalSupplyLocked() public view returns (uint256) {
-        return _totalSupplyLocked;
-    }
-
     function totalSupplyUnlocked() public view returns (uint256) {
         return _totalSupplyUnlocked;
     }

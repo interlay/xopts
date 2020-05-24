@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
 import {ITxValidator} from "./lib/ITxValidator.sol";
-import "./lib/IERC137.sol";
 import "./Option.sol";
 
 
@@ -19,20 +18,16 @@ contract OptionPool {
     IRelay _relay;
     ITxValidator _valid;
 
-    IERC137Registry _ens;
-
     address[] private _options;
 
     constructor(
         address collateral,
         address relay,
-        address valid,
-        address ens
+        address valid
     ) public {
         _collateral = IERC20(collateral);
         _relay = IRelay(relay);
         _valid = ITxValidator(valid);
-        _ens = IERC137Registry(ens);
     }
 
     /**
@@ -50,7 +45,6 @@ contract OptionPool {
             _collateral,
             _relay,
             _valid,
-            _ens,
             _expiry,
             _premium,
             _strikePrice
@@ -70,9 +64,9 @@ contract OptionPool {
         )
     {
         PutOption opt = PutOption(_options[index]);
-        expiry = opt.getExpiry();
-        premium = opt.getPremium();
-        strikePrice = opt.getStrikePrice();
+        expiry = opt._expiry();
+        premium = opt._premium();
+        strikePrice = opt._strikePrice();
         addr = _options[index];
         return (expiry, premium, strikePrice, addr);
     }

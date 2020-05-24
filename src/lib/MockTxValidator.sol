@@ -5,8 +5,8 @@ import {ITxValidator} from "./ITxValidator.sol";
 contract MockTxValidator is ITxValidator {
     function validateTx(
         bytes calldata rawtx,
-        bytes20 output,
-        uint256 amount
+        bytes calldata btcAddress,
+        uint256 btcAmount
     ) external view returns(bool) {
         return true;
     }
