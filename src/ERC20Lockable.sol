@@ -184,7 +184,7 @@ contract ERC20Lockable is IERC20, Context {
         require(sender != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
         require(recipient != address(0), ERR_TRANSFER_TO_ZERO_ADDRESS);
 
-        require(_locked[sender] == _locked[recipient], ERR_INCOMPATIBLE_ACCOUNTS);
+        // require(_locked[sender] == _locked[recipient], ERR_INCOMPATIBLE_ACCOUNTS);
 
         if (!_locked[sender]) {
             // transfer between unlocked accounts
