@@ -4,7 +4,7 @@ import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
 import putOptionArtifact from "./../artifacts/PutOption.json"
 import { ToastContainer, toast } from 'react-toastify';
-
+import QRCode from "react-qr-code";
 
 
 class SelectSeller extends React.Component {
@@ -18,10 +18,9 @@ class SelectSeller extends React.Component {
     }
 
     async componentDidMount() {
-        console.log(this.props);
         if (this.props.contract && !this.state.loaded) {
             let optionContract = await new ethers.Contract(this.props.contract, putOptionArtifact.abi, this.props.signer);
-            let [sellers, options] = await optionContract.getOptionSellers();
+            let [sellers, options] = await optionContract.getOptionOwnersFor(this.props.address);
             this.setState({
                 loaded: true,
                 sellers: sellers,
@@ -46,20 +45,54 @@ class SelectSeller extends React.Component {
         }
         return (
             <FormGroup>
-                <h5>Select Seller</h5>
+                <h5>Please select your position.</h5>
                 <select name="seller" defaultValue="default" onChange={this.props.handleChange}>
                     <option disabled value="default"> -- Select -- </option>
                     {this.renderOptions()}
                 </select>
+                <p>
+                    If you have purchased the same option from multiple sellers, you need to select a seller from the list.
+                    <i>We currently only support exercising one position at a time.</i>
+                </p>
             </FormGroup>
         )
     }
 }
 
-class EnterAmount extends React.Component {
+class ScanBTC extends React.Component {
     constructor(props) {
         super(props);
+        this.state = {
+            loaded: false,
+            paymentUri: null
+        };
     }
+
+    async componentDidUpdate() {
+        if (this.props.currentStep != 2) {
+            if (this.props.contract && !this.state.loaded) {
+                let optionContract = await new ethers.Contract(this.props.contract, putOptionArtifact.abi, this.props.signer);
+                let btcAddress = await optionContract.getBtcAddress(this.props.seller);
+                console.log(btcAddress);
+
+                btcAddress = btcAddress.toString().substring(2);
+                console.log(btcAddress);
+
+                // TODO: get amount here.
+                let amount = 1;
+
+                let paymentUri = "bitcoin:" + btcAddress + "?amount=" + amount;
+                
+                console.log(paymentUri);
+                this.setState({
+                    loaded: true,
+                    paymentUri: paymentUri
+                });
+                console.log(btcAddress);
+            }
+        }
+    }
+
 
     render() {
         if (this.props.currentStep !== 2) {
@@ -67,22 +100,14 @@ class EnterAmount extends React.Component {
         }
         return (
             <FormGroup>
-                <h5>Enter Amount (BTC)</h5>
-                <FormControl
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    placeholder="Amount"
-                    max={this.props.amount}
-                    defaultValue={this.props.amount}
-                    onChange={this.props.handleChange}
-                />
+                <h5>Make BTC Payment</h5>
+                <QRCode value={this.state.paymentUri} />
             </FormGroup>
         )
     }
 }
 
-class Confirm extends React.Component {
+class SubmitProof extends React.Component {
     constructor(props) {
         super(props);
     }
@@ -92,8 +117,9 @@ class Confirm extends React.Component {
             return null
         }
         return (
+            //TODO
             <FormGroup>
-                <h5>Confirm & Pay</h5>
+                <h5>SubmitProof & Pay</h5>
                 <FormGroup>
                     <ListGroup>
                         <ListGroupItem>{this.props.seller}</ListGroupItem>
@@ -129,6 +155,9 @@ export default class UserPurchasedOptions extends Component {
 
 
     componentDidUpdate() {
+        if(this.state.amount){
+            console.log(this.state.amount);
+        }
         if (this.props.optionPoolContract && this.props.address) {
             if (!this.state.purchasedLoaded) {
                 this.getAvailableOptions();
@@ -246,13 +275,15 @@ export default class UserPurchasedOptions extends Component {
     }
 
     handleChange(event) {
-        const { name, value } = event.target
+        console.log(event.target);
+        const { name, value } = event.target;
         this.setState({
             [name]: value
         });
     }
 
     updateAmount(i) {
+        console.log(i);
         this.setState({
             amount: i
         });
@@ -290,15 +321,15 @@ export default class UserPurchasedOptions extends Component {
 
     }
 
-    cancelRefund() {
+    cancelExercise() {
         this.setState({
+            currentStep: 1,
             exerciseOption: {},
             showExercise: false
         });
     }
 
     _next() {
-        console.log(this.state);
         let currentStep = this.state.currentStep;
         // If the current step is 1 or 2, then add one on "next" button click
         currentStep = currentStep >= 2 ? 3 : currentStep + 1;
@@ -323,7 +354,7 @@ export default class UserPurchasedOptions extends Component {
             return (
                 <button
                     className="btn btn-secondary float-left"
-                    type="button" onClick={this._prev}>
+                    type="button" onClick={() => this._prev()}>
                     Previous
                 </button>
             )
@@ -339,7 +370,7 @@ export default class UserPurchasedOptions extends Component {
             return (
                 <button
                     className="btn btn-primary float-right"
-                    type="button" onClick={this._next}>
+                    type="button" onClick={() => this._next()}>
                     Next
                 </button>
             )
@@ -424,30 +455,30 @@ export default class UserPurchasedOptions extends Component {
                                 <SelectSeller
                                     currentStep={this.state.currentStep}
                                     handleChange={this.handleChange}
+                                    seller={this.state.seller}
                                     updateAmount={this.updateAmount}
-                                    seller={this.state.seller}
-                                    amount={this.state.amount}
                                     contract={this.state.exerciseOption.contract}
-                                    signer = {this.props.signer}
+                                    signer={this.props.signer}
+                                    address={this.props.address}
                                 />
-                                <EnterAmount
-                                    currentStep={this.state.currentStep}
-                                    handleChange={this.handleChange}
-                                    amount={this.state.amount}
-                                />
-                                <Confirm
+                                <ScanBTC
                                     currentStep={this.state.currentStep}
                                     handleChange={this.handleChange}
                                     seller={this.state.seller}
-                                    amount={this.state.amount}
+                                    contract={this.state.exerciseOption.contract}
+                                    signer={this.props.signer}
+                                />
+                                <SubmitProof
+                                    currentStep={this.state.currentStep}
+                                    handleChange={this.handleChange}
+                                    seller={this.state.seller}
                                 />
 
                             </Modal.Body>
                             <Modal.Footer>
                                 {this.previousButton}
                                 {this.nextButton}
-                                <Button onClick={() => this.doRefund()}>Refund</Button>
-                                <Button variant="danger" onClick={() => this.cancelRefund()}>Cancel</Button>
+                                <Button variant="danger" onClick={() => this.cancelExercise()}>Cancel</Button>
                             </Modal.Footer>
                         </form>
 
