@@ -37,7 +37,7 @@ contract OptionPool {
 
     /**
      * @dev Create an option and return it's address
-     * @param _expiry: block number
+     * @param _expiry: unix timestamp
      * @param _premium: fee required to lock and exercise option
      * @param _strikePrice: amount of collateral to payout per token
      **/

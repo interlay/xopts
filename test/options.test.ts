@@ -53,7 +53,7 @@ async function mineUntil(expiry: number) {
 async function getCollateral(user: Signer): Promise<Contract> {
     if ((await ethers.provider.getNetwork()).chainId == 3) {
       const dai = contracts.dai;
-      const collateral =  await ethers.getContractAt(legos.erc20.abi, dai);
+      const collateral = await ethers.getContractAt(legos.erc20.abi, dai);
       return collateral;
     } else {
       let mintableFactory = new CollateralFactory(user);
@@ -158,7 +158,7 @@ describe("Options", () => {
     return option;
   };
 
-  
+
   it("should fail to create an expired option", async () => {
     let blockNumber = await ethers.provider.getBlockNumber();
     let result = optionPool.createOption(blockNumber - 1, 0, 0);
