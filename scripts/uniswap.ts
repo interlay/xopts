@@ -34,10 +34,10 @@ async function main() {
 
     console.log("Creating put option contracts");
     // until May 31, 2020
-	await pool.createOption(1590883200, 1, 1);
+	await pool.createOption(1590883200, 10, 9000);
     // until June 7, 2020
-	// await pool.createOption(1591488000, 2, 3);
-	// await pool.createOption(1591488000, 5, 2);
+	// await pool.createOption(1591488000, 15, 9100);
+	// await pool.createOption(1591488000, 17, 9150);
 
 	let options = await pool.getOptions();
     console.log("Deployed options: ", options.toString());
@@ -48,13 +48,13 @@ async function main() {
 	await mintDai(collateral, eveAddress, 1_000_000);
 
 	let optionAddress = options[0];
-	await call(collateral, CollateralFactory, bob).approve(optionAddress, 200);
-	await attachOption(bob, optionAddress).underwrite(100, btcAddress);
-	await call(collateral, CollateralFactory, charlie).approve(optionAddress, 300);
-	await attachOption(charlie, optionAddress).underwrite(300, btcAddress);
+	await call(collateral, CollateralFactory, bob).approve(optionAddress, 10_000);
+	await attachOption(bob, optionAddress).underwrite(5_000, btcAddress);
+	await call(collateral, CollateralFactory, charlie).approve(optionAddress, 15_000);
+	await attachOption(charlie, optionAddress).underwrite(30_000, btcAddress);
 
-	await call(collateral, CollateralFactory, alice).approve(optionAddress, 100);
-	await attachOption(alice, optionAddress).insure(100, bobAddress);
+	await call(collateral, CollateralFactory, alice).approve(optionAddress, 10_000);
+	await attachOption(alice, optionAddress).insure(10_000, bobAddress);
 
 	// optionAddress = options[2];
 	// await call(collateral, CollateralFactory, eve).approve(optionAddress, 700);
