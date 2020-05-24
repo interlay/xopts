@@ -18,6 +18,7 @@ import Sell from "./views/Sell";
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 
 const optionPoolAddress = "0x5429c8fafa53b09386E41F07CbA2479C170faf0b";
+const erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
 
 class App extends Component {
 
@@ -56,7 +57,8 @@ class App extends Component {
         this.setState({
           isWeb3: true,
           provider: provider,
-          optionPoolContract: optionPoolContract
+          optionPoolContract: optionPoolContract,
+          erc20Address: erc20Address
         });
 
         // Get user account data, if already logged in

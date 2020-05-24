@@ -1,9 +1,10 @@
-import React, { Component, useState } from "react";
-import { Button, Col, Container, Row, Table, Card, Form } from "react-bootstrap";
+import React from "react";
 import { ethers } from 'ethers';
 import { Redirect } from "react-router-dom";
 import optionArtifact from "../artifacts/PutOption.json"
 import ierc20Artifact from "../artifacts/IERC20.json"
+import { ToastContainer, toast } from 'react-toastify';
+import { Container, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
 
 class SelectSeller extends React.Component {
   constructor(props) {
@@ -16,8 +17,8 @@ class SelectSeller extends React.Component {
   }
 
   async componentDidUpdate() {
-    if (this.props.contract && !this.state.loaded) {
-      let [sellers, options] = await this.props.contract.getOptionSellers();
+    if (this.props.optionContract && !this.state.loaded) {
+      let [sellers, options] = await this.props.optionContract.getOptionSellers();
       this.setState({
         loaded: true,
         sellers: sellers,
@@ -41,18 +42,18 @@ class SelectSeller extends React.Component {
       return null
     }
     return(
-      <div className="form-group">
-        <h2>Select Seller</h2>
+      <FormGroup>
+        <h5>Select Seller</h5>
         <select name="seller" defaultValue="default" onChange={this.props.handleChange}>
           <option disabled value="default"> -- Select -- </option>
           {this.renderOptions()}
         </select>
-      </div>
+      </FormGroup>
     )
   }
 }
 
-class ChooseAmount extends React.Component {
+class EnterAmount extends React.Component {
   constructor(props) {
     super(props);
   }
@@ -62,19 +63,18 @@ class ChooseAmount extends React.Component {
       return null
     }
     return(
-      <div className="form-group">
-        <h2>Choose Amount</h2>
-        <input
-          className="form-control"
+      <FormGroup>
+        <h5>Enter Amount (BTC)</h5>
+        <FormControl
           id="amount"
           name="amount"
           type="number"
           placeholder="Amount"
           max={this.props.amount}
-          value={this.props.amount}
+          defaultValue={this.props.amount}
           onChange={this.props.handleChange}
         />
-      </div>
+      </FormGroup>
     )
   }
 }
@@ -89,10 +89,16 @@ class Confirm extends React.Component {
       return null
     }
     return(
-      <div className="form-group">
-        <h2>Confirm & Pay</h2>
+      <FormGroup>
+        <h5>Confirm & Pay</h5>
+        <FormGroup>
+          <ListGroup>
+              <ListGroupItem>{this.props.seller}</ListGroupItem>
+              <ListGroupItem>{this.props.amount} BTC</ListGroupItem>
+          </ListGroup>
+        </FormGroup>
         <button className="btn btn-success btn-block">Pay</button>
-      </div>
+      </FormGroup>
     )
   }
 }
@@ -107,7 +113,8 @@ export default class Buy extends React.Component {
       currentStep: 1,
       seller: '',
       amount: 0,
-      contract: null,
+      optionContract: null,
+      erc20Contract: null,
       redirectToReferrer: false,
     }
 
@@ -116,14 +123,18 @@ export default class Buy extends React.Component {
   }
 
   async componentDidMount() {
-    if (this.props.eth.provider) {
+    if (this.props.eth.signer) {
       const { contract } = this.props.match.params;
 
       let optionAbi = optionArtifact.abi;
-      let optionContract = await new ethers.Contract(contract, optionAbi, this.props.eth.provider);
-      // let [sellers, options] = await optionContract.getOptionSellers();
+      let optionContract = new ethers.Contract(contract, optionAbi, this.props.eth.signer);
+
+      let erc20Abi = ierc20Artifact.abi;
+      let erc20Contract = new ethers.Contract(this.props.eth.erc20Address, erc20Abi, this.props.eth.signer);
+
       this.setState({
-        contract: optionContract,
+        optionContract: optionContract,
+        erc20Contract: erc20Contract,
       });
     }
   }
@@ -145,17 +156,22 @@ export default class Buy extends React.Component {
   // Trigger an alert on form submission
   handleSubmit = async (event) => {
     event.preventDefault();
-    const { seller, amount, contract } = this.state;
-    let erc20Abi = ierc20Artifact.abi;
-    let erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
-    let optionAbi = optionArtifact.abi;
+    const { seller, amount, optionContract, erc20Contract } = this.state;
     try {
-      let erc20Contract = await new ethers.Contract(erc20Address, erc20Abi, this.props.eth.signer);
-      await erc20Contract.approve(contract.address, amount);
-      let optionContract = await new ethers.Contract(contract.address, optionAbi, this.props.eth.signer);
+      await erc20Contract.approve(optionContract.address, amount);
       await optionContract.insure(amount, seller);
     } catch(error) {
-      console.log(error)
+      console.log(error);
+      toast.error('Failed to send transaction...', {
+        position: "bottom-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      return;
     }
 
     this.setState({
@@ -184,7 +200,7 @@ export default class Buy extends React.Component {
   get previousButton(){
     let currentStep = this.state.currentStep;
     // If the current step is not 1, then render the "previous" button
-    if(currentStep !==1){
+    if(currentStep!==1){
       return (
         <button 
           className="btn btn-secondary float-left" 
@@ -200,7 +216,7 @@ export default class Buy extends React.Component {
   get nextButton(){
     let currentStep = this.state.currentStep;
     // If the current step is not 3, then render the "next" button
-    if(currentStep <3){
+    if(currentStep<3){
       return (
         <button 
           className="btn btn-primary float-right" 
@@ -220,34 +236,53 @@ export default class Buy extends React.Component {
     }
     // if(!this.state.eth) return <Redirect to="/"/>    
     return (
-      <div className="buy-option-wizard">
-        <h1>Purchase Insurance</h1>
-          
-        <form onSubmit={this.handleSubmit}>
-          <SelectSeller 
-            currentStep={this.state.currentStep} 
-            handleChange={this.handleChange}
-            updateAmount={this.updateAmount}
-            seller={this.state.seller}
-            amount={this.state.amount}
-            contract={this.state.contract}
-          />
-          <ChooseAmount 
-            currentStep={this.state.currentStep} 
-            handleChange={this.handleChange}
-            amount={this.state.amount}
-            contract={this.state.contract}
-          />
-          <Confirm 
-            currentStep={this.state.currentStep} 
-            handleChange={this.handleChange}
-          />
+      <Container className="p-3">
+        <ToastContainer
+          position="bottom-center"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
+        <div className="container-fluid" style={{marginTop: 10 + 'em'}}>
+          <div className="mr-auto ml-auto col-md-6 col-12">
+            <div className="wizard-container">
 
-          {this.previousButton}
-          {this.nextButton}
-        
-        </form>
-      </div>
+              <h1>Buy Insurance</h1>
+                
+              <form onSubmit={this.handleSubmit}>
+                <SelectSeller 
+                  currentStep={this.state.currentStep} 
+                  handleChange={this.handleChange}
+                  updateAmount={this.updateAmount}
+                  seller={this.state.seller}
+                  amount={this.state.amount}
+                  optionContract={this.state.optionContract}
+                />
+                <EnterAmount 
+                  currentStep={this.state.currentStep} 
+                  handleChange={this.handleChange}
+                  amount={this.state.amount}
+                />
+                <Confirm
+                  currentStep={this.state.currentStep} 
+                  handleChange={this.handleChange}
+                  seller={this.state.seller}
+                  amount={this.state.amount}
+                />
+
+                {this.previousButton}
+                {this.nextButton}
+              
+              </form>
+            </div>
+          </div>
+        </div>
+      </Container>
     )
   }
 }

@@ -4,16 +4,14 @@
   text-align: center;
 }
 
-.buy-option-wizard {
+.wizard-container {
+  background-color: rgba(0,0,0,.03);
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: .25rem;
   text-align: center;
-  width: 30%;
-  height: 500px;
   padding: 20px;
-  margin: auto;
-}
-
-.form-group {
-  height: 100px;
+  display: block;
+  overflow: auto;
 }
 
 span {
