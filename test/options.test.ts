@@ -15,9 +15,6 @@ import config from "../buidler.config";
 import contracts from "../contracts";
 import { legos } from "@studydefi/money-legos";
 import { ERC137Registry } from '../typechain/ERC137Registry';
-import { ERC137RegistryFactory } from '../typechain/ERC137RegistryFactory';
-import { ERC137Resolver } from '../typechain/ERC137Resolver';
-import { ERC137ResolverFactory } from '../typechain/ERC137ResolverFactory';
 import { ErrorCode } from './constants';
 import { fromWei } from './utils';
 
@@ -42,14 +39,6 @@ function call<A extends Callable, B extends Attachable<A>>(contract: A, factory:
   return _factory.attach(contract.address);
 }
 
-async function mineUntil(expiry: number) {
-  let blockNumber = await ethers.provider.getBlockNumber();
-  while (blockNumber < expiry) {
-    await ethers.provider.send("evm_mine", []);
-    blockNumber = await ethers.provider.getBlockNumber();
-  }
-}
-
 async function getCollateral(user: Signer): Promise<Contract> {
     if ((await ethers.provider.getNetwork()).chainId == 3) {
       const dai = contracts.dai;
@@ -61,6 +50,10 @@ async function getCollateral(user: Signer): Promise<Contract> {
     }
 };
 
+
+function getTimeNow() {
+  return Math.round((new Date()).getTime() / 1000);
+}
 
 describe("Options", () => {
   let alice: Signer;
@@ -103,15 +96,8 @@ describe("Options", () => {
     let validFactory = new MockTxValidatorFactory(alice);
     let valid = await validFactory.deploy();
 
-    let resolverFactory = new ERC137ResolverFactory(alice);
-    let aliceResolver = await resolverFactory.deploy(aliceAddress);
-
-    let registryFactory = new ERC137RegistryFactory(alice);
-    registry = await registryFactory.deploy();
-    registry.setResolver(Buffer.alloc(32).fill(0), aliceResolver.address);
-
     let optionFactory = new OptionPoolFactory(bob);
-    optionPool = await optionFactory.deploy(collateral.address, relay.address, valid.address, registry.address);
+    optionPool = await optionFactory.deploy(collateral.address, relay.address, valid.address);
   });
 
   const mint = async function(user: Signer, userAddress: string, collateralAmount: number) {
@@ -158,22 +144,18 @@ describe("Options", () => {
     return option;
   };
 
-
   it("should fail to create an expired option", async () => {
-    let blockNumber = await ethers.provider.getBlockNumber();
-    let result = optionPool.createOption(blockNumber - 1, 0, 0);
+    let result = optionPool.createOption(getTimeNow(), 0, 0);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INIT_EXPIRED);
   });
 
   it("should fail to create an option with 0 premium", async () => {
-    let blockNumber = await ethers.provider.getBlockNumber();
-    let result = optionPool.createOption(blockNumber + 20, 0, 0);
+    let result = optionPool.createOption(getTimeNow() + 1000, 0, 0);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_ZERO_PREMIUM);
   });
 
   it("should fail to create an option with 0 strikePrice", async () => {
-    let blockNumber = await ethers.provider.getBlockNumber();
-    let result = optionPool.createOption(blockNumber + 20, 10, 0);
+    let result = optionPool.createOption(getTimeNow() + 1000, 10, 0);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_ZERO_STRIKE_PRICE);
   });
 
@@ -183,8 +165,8 @@ describe("Options", () => {
     let premium = 1;
     let strikePrice = 1;
 
-    let blockNumber = await ethers.provider.getBlockNumber();
-    let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, blockNumber+20);
+    let now = getTimeNow();
+    let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, now+1000);
 
     // alice now claims option by paying premium
     await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
@@ -205,8 +187,7 @@ describe("Options", () => {
     let premium = 1;
     let strikePrice = 1;
 
-    let blockNumber = await ethers.provider.getBlockNumber();
-    let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, blockNumber+20);
+    let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, getTimeNow() + 1000);
 
     // charlie now becomes the insurer
     await call(option, PutOptionFactory, bob).transfer(charlieAddress, collateralAmount);
@@ -242,8 +223,8 @@ describe("Options", () => {
     let premium = 2;
     let strikePrice = 1;
 
-    let blockNumber = await ethers.provider.getBlockNumber();
-    let expiry = blockNumber + 20;
+    let now = getTimeNow();
+    let expiry = now + 1000;
 
     let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, expiry);
 
@@ -264,7 +245,7 @@ describe("Options", () => {
     await expect(bobRefunds).to.be.revertedWith(ErrorCode.ERR_OPTION_NOT_EXPIRED);
 
     // wait for option to expire
-    await mineUntil(expiry);
+    await ethers.provider.send("evm_increaseTime", [50000]);
 
     let bobCollateral = (await collateral.balanceOf(bobAddress)).toNumber();
     expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount - (strikePrice * underlyingAmount));
@@ -279,8 +260,8 @@ describe("Options", () => {
     let premium = 2;
     let strikePrice = 1;
 
-    let blockNumber = await ethers.provider.getBlockNumber();
-    let expiry = blockNumber + 10;
+    let now = getTimeNow();
+    let expiry = now + 100000;
 
     let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, expiry);
 
@@ -297,7 +278,7 @@ describe("Options", () => {
     await expect(bobRefunds).to.be.revertedWith(ErrorCode.ERR_OPTION_NOT_EXPIRED);
 
     // wait for option to expire
-    await mineUntil(expiry);
+    await ethers.provider.send("evm_increaseTime", [50000]);
 
     // alice can no longer exercise her options
     let aliceExercises = call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx, bobAddress);
