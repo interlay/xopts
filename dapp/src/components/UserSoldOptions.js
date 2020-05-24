@@ -84,7 +84,6 @@ export default class UserSoldOptions extends Component {
 
 
     handleRefund(index) {
-        // TODO: handle refund
         this.setState({
             refundOption: this.state.soldOptions[index],
             showRefund: true
@@ -92,10 +91,8 @@ export default class UserSoldOptions extends Component {
     }
 
     async doRefund() {
-        // TODO: handle refund
         try {
             let optionContract = await new ethers.Contract(this.state.refundOption.contract, putOptionArtifact.abi, this.props.signer);
-            let optionRes = await optionContract.getOptionDetails();
             optionContract.refund();
             toast.success('Refund successful!', {
                 position: "top-center",
@@ -126,9 +123,6 @@ export default class UserSoldOptions extends Component {
     }
 
     cancelRefund() {
-        // TODO: handle refund
-        console.log(this.state.refundOption);
-
         this.setState({
             refundOption: {},
             showRefund: false
@@ -263,6 +257,7 @@ export default class UserSoldOptions extends Component {
     }
 
 
+    /*
     getDummyOptions() {
         return [
             {
@@ -300,4 +295,5 @@ export default class UserSoldOptions extends Component {
             }
         ]
     }
+    */
 }
