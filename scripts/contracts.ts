@@ -9,6 +9,8 @@ import { MockTxValidatorFactory } from "../typechain/MockTxValidatorFactory";
 import { ERC137ResolverFactory } from "../typechain/ERC137ResolverFactory";
 import { ERC137RegistryFactory } from "../typechain/ERC137RegistryFactory";
 import { PutOptionFactory } from "../typechain/PutOptionFactory";
+import IUniswapV2Factory from '@uniswap/v2-core/build/IUniswapV2Factory.json'
+import IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 
 interface Callable {
 	address: string;
@@ -23,11 +25,11 @@ export function call<A extends Callable, B extends Attachable<A>>(contract: A, f
 	return _factory.attach(contract.address);
 }
 
-export async function mintDai(collateral: Contract, userAddress: string, collateralAmount: number) {
+export async function mintDai(collateral: Contract, userAddress: string, collateralAmount: string) {
     let signer = ethers.provider.getSigner(contracts.dai_account);
     let fromDaiAccount = collateral.connect(signer);
 
-    await fromDaiAccount.transfer(userAddress, collateralAmount.toString());
+    await fromDaiAccount.transfer(userAddress, collateralAmount);
 }
 
 export function attachOption(signer: Signer, address: string) {
@@ -85,6 +87,16 @@ export async function Collateral() {
 	console.log("Collateral (Dai)", dai);
 	return collateral;
 }
+
+// Uniswap factory
+export async function createUniswapPair(signer: Signer, tokenA: string, tokenB: string, pairAddress: string) {
+    const abi = IUniswapV2Factory.abi;
+    const factory = await ethers.getContractAt(abi, "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", signer);
+    await factory.createPair(tokenA, tokenB);
+    const pairAbi = IUniswapV2ERC20.abi;
+    return await ethers.getContractAt(pairAbi, pairAddress);
+}
+
 
 export async function MockCollateral(signer: Signer) {
 	let factory = new CollateralFactory(signer);
