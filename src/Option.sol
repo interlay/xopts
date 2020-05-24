@@ -99,7 +99,7 @@ contract PutOption is ERC20Lockable {
         return (sellers, options);
     }
 
-    function getOptionOwnersFor(address account) public view returns (address[] memory sellers, uint256[] memory options) {
+    function getOptionOwnersFor(address account) external view returns (address[] memory sellers, uint256[] memory options) {
         IterableMapping.Map storage map = _owned[account];
 
         uint length = map.size();
@@ -204,7 +204,7 @@ contract PutOption is ERC20Lockable {
         _btcAddress[caller] = btcAddress;
     }
 
-    function getBtcAddress(address account) public returns (bytes20) {
+    function getBtcAddress(address account) external view returns (bytes20) {
         return _btcAddress[account];
     }
 
