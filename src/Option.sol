@@ -82,21 +82,38 @@ contract PutOption is ERC20Lockable {
         return _strikePrice;
     }
 
-    function getOptionSellers() public view returns (address[] memory insurer, uint256[] memory options) {
+    function getOptionSellers() public view returns (address[] memory sellers, uint256[] memory options) {
         IterableMapping.Map storage map = _balancesUnlocked;
 
         uint length = map.size();
-        insurer = new address[](length);
+        sellers = new address[](length);
         options = new uint256[](length);
 
         for (uint i = 0; i < length; i++) {
             address key = map.getKeyAtIndex(i);
             uint value = map.get(key);
-            insurer[i] = key;
+            sellers[i] = key;
             options[i] = value;
         }
 
-        return (insurer, options);
+        return (sellers, options);
+    }
+
+    function getOptionOwnersFor(address account) public view returns (address[] memory sellers, uint256[] memory options) {
+        IterableMapping.Map storage map = _owned[account];
+
+        uint length = map.size();
+        sellers = new address[](length);
+        options = new uint256[](length);
+
+        for (uint i = 0; i < length; i++) {
+            address key = map.getKeyAtIndex(i);
+            uint value = map.get(key);
+            sellers[i] = key;
+            options[i] = value;
+        }
+
+        return (sellers, options);
     }
 
     function getOptionDetails() public view returns(uint, uint, uint, uint, uint, uint) {
@@ -185,6 +202,10 @@ contract PutOption is ERC20Lockable {
         );
         // TODO: associate with tokens?
         _btcAddress[caller] = btcAddress;
+    }
+
+    function getBtcAddress(address account) public returns (bytes20) {
+        return _btcAddress[account];
     }
 
     /**
