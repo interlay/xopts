@@ -3,7 +3,8 @@ import { ChainId, Token, TokenAmount, Pair } from "@uniswap/sdk";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import {
 	Collateral, MockRelay, MockTxValidator,
-	MockRegistryAndResolver, OptionPool, call, attachOption, mintDai
+	MockRegistryAndResolver, OptionPool, call, attachOption, mintDai,
+    satoshiToMbtc, mbtcToSatoshi, mdaiToWeiDai, weiDaiToMdai, daiToWeiDai
 } from "./contracts";
 import contracts from "../contracts";
 
@@ -34,7 +35,7 @@ async function main() {
 
     console.log("Creating put option contracts");
     // until May 31, 2020
-	await pool.createOption(1590883200, 10, 9000);
+	await pool.createOption(1590883200, mdaiToWeiDai(10), daiToWeiDai(9000));
     // until June 7, 2020
 	// await pool.createOption(1591488000, 15, 9100);
 	// await pool.createOption(1591488000, 17, 9150);
@@ -42,19 +43,20 @@ async function main() {
 	let options = await pool.getOptions();
     console.log("Deployed options: ", options.toString());
 
-	await mintDai(collateral, bobAddress, 1_000_000);
-	await mintDai(collateral, charlieAddress, 1_000_000);
-	await mintDai(collateral, daveAddress, 1_000_000);
-	await mintDai(collateral, eveAddress, 1_000_000);
+	await mintDai(collateral, aliceAddress, daiToWeiDai(20));
+	await mintDai(collateral, bobAddress, daiToWeiDai(100));
+	await mintDai(collateral, charlieAddress, daiToWeiDai(100));
+	// await mintDai(collateral, daveAddress, 1_000_000);
+	// await mintDai(collateral, eveAddress, 1_000_000);
 
 	let optionAddress = options[0];
-	await call(collateral, CollateralFactory, bob).approve(optionAddress, 10_000);
-	await attachOption(bob, optionAddress).underwrite(5_000, btcAddress);
-	await call(collateral, CollateralFactory, charlie).approve(optionAddress, 15_000);
-	await attachOption(charlie, optionAddress).underwrite(30_000, btcAddress);
+	await call(collateral, CollateralFactory, bob).approve(optionAddress, daiToWeiDai(100));
+	await attachOption(bob, optionAddress).underwrite(daiToWeiDai(100), btcAddress);
+	await call(collateral, CollateralFactory, charlie).approve(optionAddress, daiToWeiDai(75));
+	await attachOption(charlie, optionAddress).underwrite(daiToWeiDai(75), btcAddress);
 
-	await call(collateral, CollateralFactory, alice).approve(optionAddress, 10_000);
-	await attachOption(alice, optionAddress).insure(10_000, bobAddress);
+	await call(collateral, CollateralFactory, alice).approve(optionAddress, daiToWeiDai(20));
+	await attachOption(alice, optionAddress).insure(mbtcToSatoshi(100), bobAddress);
 
 	// optionAddress = options[2];
 	// await call(collateral, CollateralFactory, eve).approve(optionAddress, 700);
