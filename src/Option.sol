@@ -57,7 +57,7 @@ contract PutOption is ERC20Lockable {
         uint256 premium,
         uint256 strikePrice
     ) public {
-        require(expiry > block.number, ERR_INIT_EXPIRED);
+        require(expiry > block.timestamp, ERR_INIT_EXPIRED);
         require(premium > 0, ERR_ZERO_PREMIUM);
         require(strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
 
@@ -273,7 +273,7 @@ contract PutOption is ERC20Lockable {
     * @dev Checks if the option has expired
     */
     function expired() public view returns (bool) {
-        return (block.number >= _expiry);
+        return (block.timestamp >= _expiry);
     }
 }
 

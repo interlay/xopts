@@ -1,7 +1,7 @@
 import { ethers } from "@nomiclabs/buidler";
 import { CollateralFactory } from "../typechain/CollateralFactory";
-import { 
-	MockCollateral, MockRelay, MockTxValidator, 
+import {
+	MockCollateral, MockRelay, MockTxValidator,
 	MockRegistryAndResolver, OptionPool, call, attachOption
 } from "./contracts";
 
@@ -29,12 +29,12 @@ async function main() {
 
 	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address, registry.address);
 
-	await pool.createOption(1000, 1, 1);
-	await pool.createOption(500, 2, 3);
-	await pool.createOption(2000, 5, 2);
+	await pool.createOption(1590883200, 1, 1);
+	await pool.createOption(1591488000, 2, 3);
+	await pool.createOption(1591488000, 5, 2);
 
 	let options = await pool.getOptions();
-	
+
 	await call(collateral, CollateralFactory, alice).mint(aliceAddress, 1_000_000);
 	await call(collateral, CollateralFactory, alice).mint(bobAddress, 1_000_000);
 	await call(collateral, CollateralFactory, alice).mint(charlieAddress, 1_000_000);

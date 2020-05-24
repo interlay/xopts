@@ -1,4 +1,6 @@
-import { Signer } from "ethers";
+import { ethers } from "@nomiclabs/buidler";
+import { Signer, Wallet, Contract } from "ethers";
+import { legos } from "@studydefi/money-legos";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 import contracts from "../contracts";
@@ -21,6 +23,13 @@ export function call<A extends Callable, B extends Attachable<A>>(contract: A, f
 	return _factory.attach(contract.address);
 }
 
+export async function mintDai(collateral: Contract, userAddress: string, collateralAmount: number) {
+    let signer = ethers.provider.getSigner(contracts.dai_account);
+    let fromDaiAccount = collateral.connect(signer);
+
+    await fromDaiAccount.transfer(userAddress, collateralAmount.toString());
+}
+
 export function attachOption(signer: Signer, address: string) {
 	return new PutOptionFactory(signer).attach(address);
 }
@@ -28,10 +37,10 @@ export function attachOption(signer: Signer, address: string) {
 // use Dai addresses
 export async function Collateral() {
     // if we use the ganache forking option, use the Dai address on Ropsten
-    // otherwise, we use a blank ERC20
 	const dai = contracts.dai;
+    const collateral = await ethers.getContractAt(legos.erc20.abi, dai);
 	console.log("Collateral (Dai)", dai);
-	return dai;
+	return collateral;
 }
 
 export async function MockCollateral(signer: Signer) {
