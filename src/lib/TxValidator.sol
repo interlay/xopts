@@ -12,7 +12,7 @@ contract TxValidator is ITxValidator {
 
     function validateTx(
         bytes calldata rawtx,
-        bytes20 btcAddress,
+        bytes calldata btcAddress,
         uint256 btcAmount
     ) external view returns(bool) {
         (, uint lenInputs) = rawtx.extractInputLength();
@@ -21,19 +21,9 @@ contract TxValidator is ITxValidator {
         require(numOutputs == 1, "Requires exactly one output");
         bytes memory output = outputs.extractOutputAtIndex(0);
         require(output.extractOutputValue() == btcAmount, "Invalid output amount");
-        bytes20 outAddress = toBytes20(output.extractOutputScript().isP2PKH());
-        require(outAddress == btcAddress, "Invalid output address");
+        bytes memory outAddress = output.extractOutputScript().isP2PKH();
+        require(keccak256(outAddress) == keccak256(btcAddress), "Invalid output address");
         return true;
-    }
-
-    function toBytes20(bytes memory _source) internal pure returns (bytes20 result) {
-        if (_source.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(_source, 20))
-        }
     }
 }
 

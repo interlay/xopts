@@ -38,7 +38,9 @@ const config = {
     	target: 'ethers'
   	},
     networks: {
-        buidlerevm : {},
+        buidlerevm : {
+            gas: 1_000_000,
+        },
         ganache: ganache_config,
     },
 };

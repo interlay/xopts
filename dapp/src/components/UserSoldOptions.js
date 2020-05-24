@@ -92,8 +92,8 @@ export default class UserSoldOptions extends Component {
 
     async doRefund() {
         try {
-            let optionContract = await new ethers.Contract(this.state.refundOption.contract, putOptionArtifact.abi, this.props.signer);
-            optionContract.refund();
+            let optionContract = new ethers.Contract(this.state.refundOption.contract, putOptionArtifact.abi, this.props.signer);
+            await optionContract.refund();
             toast.success('Refund successful!', {
                 position: "top-center",
                 autoClose: 3000,

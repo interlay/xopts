@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
 import {ITxValidator} from "./lib/ITxValidator.sol";
 import "./ERC20Lockable.sol";
-import "./lib/IERC137.sol";
 import "./IterableMapping.sol";
 
 contract PutOption is ERC20Lockable {
@@ -20,19 +19,17 @@ contract PutOption is ERC20Lockable {
     IRelay _relay;
     ITxValidator _valid;
 
-    IERC137Registry _ens;
-
     // expiry block of the option
-    uint256 private _expiry;
+    uint256 public _expiry;
 
     // the price to buy the option
-    uint256 private _premium;
+    uint256 public _premium;
 
     // the strike price for 1 FlashBTC
-    uint256 private _strikePrice;
+    uint256 public _strikePrice;
 
     // payout addresses for underwriters
-    mapping(address => bytes20) _btcAddress;
+    mapping(address => bytes) _btcAddress;
 
     string constant ERR_INSUFFICIENT_COLLATERAL = "Insufficient collateral";
     string constant ERR_INSUFFICIENT_UNLOCKED = "Insufficient unlocked";
@@ -52,7 +49,6 @@ contract PutOption is ERC20Lockable {
         IERC20 collateral,
         IRelay relay,
         ITxValidator valid,
-        IERC137Registry ens,
         uint256 expiry,
         uint256 premium,
         uint256 strikePrice
@@ -64,22 +60,9 @@ contract PutOption is ERC20Lockable {
         _collateral = collateral;
         _relay = relay;
         _valid = valid;
-        _ens = ens;
         _expiry = expiry;
         _premium = premium;
         _strikePrice = strikePrice;
-    }
-
-    function getExpiry() public view returns (uint) {
-        return _expiry;
-    }
-
-    function getPremium() public view returns (uint) {
-        return _premium;
-    }
-
-    function getStrikePrice() public view returns (uint) {
-        return _strikePrice;
     }
 
     function getOptionSellers() public view returns (address[] memory sellers, uint256[] memory options) {
@@ -110,7 +93,7 @@ contract PutOption is ERC20Lockable {
             address key = map.getKeyAtIndex(i);
             uint value = map.get(key);
             sellers[i] = key;
-            options[i] = value;
+            options[i] = _calculateExercise(value);
         }
 
         return (sellers, options);
@@ -154,16 +137,15 @@ contract PutOption is ERC20Lockable {
         require(amount > 0, ERR_ZERO_AMOUNT);
 
         // needed for output
-        address caller = msg.sender;
-        require(_btcAddress[seller] != bytes20(0), ERR_NO_BTC_ADDRESS);
+        require(_btcAddress[seller].length > 0, ERR_NO_BTC_ADDRESS);
 
         // require the amount * strike price
         uint256 payout = _calculateInsure(amount);
         require(_balanceOfUnlocked(seller) >= payout, ERR_INSUFFICIENT_UNLOCKED);
 
+        address caller = msg.sender;
         // require the amount * premium
         uint256 premium = _calculatePremium(amount);
-        require(_collateral.balanceOf(caller) >= premium, ERR_INSUFFICIENT_COLLATERAL);
         _collateral.transferFrom(caller, seller, premium);
 
         // lock token from seller
@@ -175,16 +157,15 @@ contract PutOption is ERC20Lockable {
     * @param amount: erc-20 collateral
     * @param btcAddress: recipient address for exercising
     **/
-    function underwrite(uint256 amount, bytes20 btcAddress) external {
+    function underwrite(uint256 amount, bytes calldata btcAddress) external {
         require(!expired(), ERR_OPTION_EXPIRED);
         require(amount > 0, ERR_ZERO_AMOUNT);
 
         address caller = msg.sender;
-        require(_collateral.balanceOf(caller) >= amount, ERR_INSUFFICIENT_BALANCE);
         // we do the transfer here because it requires approval
         _collateral.transferFrom(caller, address(this), amount);
         _mintUnlocked(caller, amount);
-        setBtcAddress(btcAddress);
+        _btcAddress[caller] = btcAddress;
     }
 
     /**
@@ -192,19 +173,17 @@ contract PutOption is ERC20Lockable {
     * @dev facilitates trading underwrite options
     * @param btcAddress: recipient address for exercising
     **/
-    function setBtcAddress(bytes20 btcAddress) public {
+    function setBtcAddress(bytes calldata btcAddress) external {
         // TODO: check balance
         address caller = msg.sender;
         require(
-            _btcAddress[caller] == bytes20(0) ||
-            _btcAddress[caller] == btcAddress,
+            _btcAddress[caller].length == 0,
             ERR_UNEXPECTED_BTC_ADDRESS
         );
-        // TODO: associate with tokens?
         _btcAddress[caller] = btcAddress;
     }
 
-    function getBtcAddress(address account) external view returns (bytes20) {
+    function getBtcAddress(address account) external view returns (bytes memory) {
         return _btcAddress[account];
     }
 
@@ -225,14 +204,13 @@ contract PutOption is ERC20Lockable {
         uint256 balance = _burnLocked(caller, seller);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
 
-        bytes20 btcAddress = _btcAddress[seller];
-        require(btcAddress != bytes20(0), ERR_NO_BTC_ADDRESS);
+        require(_btcAddress[seller].length > 0, ERR_NO_BTC_ADDRESS);
         uint256 btcAmount = _calculateExercise(balance);
 
         // we currently do not support multiple outputs
         // verify & validate tx, use default confirmations
         require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
-        require(_valid.validateTx(rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
+        require(_valid.validateTx(rawtx, _btcAddress[seller], btcAmount), ERR_VALIDATE_TX);
 
         _collateral.transfer(caller, balance);
     }

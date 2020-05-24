@@ -6,7 +6,7 @@ import {
     satoshiToMbtc, mbtcToSatoshi, mdaiToWeiDai, weiDaiToMdai, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC
 } from "./contracts";
 
-let btcAddress = "0x66c7060feb882664ae62ffad0051fe843e318e85";
+let btcAddress = ethers.utils.toUtf8Bytes("19fkEq227H56rqwwjEoGg12rctq1c8L3a4");
 
 async function main() {
 	let signers = await ethers.signers();
@@ -26,9 +26,8 @@ async function main() {
 	const collateral = await MockCollateral(alice);
 	const relay = await MockRelay(alice);
 	const validator = await MockTxValidator(alice);
-	const registry = await MockRegistryAndResolver(alice);
 
-	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address, registry.address);
+	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address);
 
     // get collateral for everyone
 	await call(collateral, CollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
