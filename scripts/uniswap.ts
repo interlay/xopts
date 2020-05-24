@@ -85,10 +85,12 @@ async function main() {
     console.log("Creating pair tokens");
     await pairContract.mint(aliceAddress);
 
+    let pairData = await Pair.fetchData(collateral_token, option_token);
+
     console.log("Alice Dai balance: ", (await collateral.balanceOf(aliceAddress)).toString());
     console.log("Alice Options balance: ", (await attachOption(alice, optionAddress).balanceOf(aliceAddress)).toString());
-    console.log("Liquidity Dai balance: ", (await pairContract.reserveOf(collateral_token)).toString());
-    console.log("Liquidity Options balance: ", (await pairContract.reserveOf(option_token)).toString());
+    console.log("Liquidity Dai balance: ", (await pairData.reserveOf(collateral_token)).toString());
+    console.log("Liquidity Options balance: ", (await pairData.reserveOf(option_token)).toString());
 }
 
 main()
