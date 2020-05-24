@@ -2,9 +2,10 @@ import { ethers } from "@nomiclabs/buidler";
 import { ChainId, Token, TokenAmount, Pair } from "@uniswap/sdk";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import {
-	MockCollateral, MockRelay, MockTxValidator,
-	MockRegistryAndResolver, OptionPool, call, attachOption,
+	Collateral, MockRelay, MockTxValidator,
+	MockRegistryAndResolver, OptionPool, call, attachOption, mintDai
 } from "./contracts";
+import contracts from "../contracts";
 
 let btcAddress = "0x66c7060feb882664ae62ffad0051fe843e318e85";
 
@@ -13,47 +14,59 @@ async function main() {
 
 	let alice = signers[0];
 	let bob = signers[1];
+	let charlie = signers[2];
+	let eve = signers[3];
+	let dave = signers[4];
+
 	let aliceAddress = await alice.getAddress();
 	let bobAddress = await bob.getAddress();
-
-	let charlie = signers[3];
-	let david = signers[4];
-    let eve = signers[5]
 	let charlieAddress = await charlie.getAddress();
-	let davidAddress = await david.getAddress();
-    let eveAddress = await eve.getAddress();
+	let eveAddress = await eve.getAddress();
+	let daveAddress = await dave.getAddress();
 
-	const collateral = await MockCollateral(alice);
+    // use real Dai contract here
+	const collateral = await Collateral();
 	const relay = await MockRelay(alice);
 	const validator = await MockTxValidator(alice);
 	const registry = await MockRegistryAndResolver(alice);
 
 	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address, registry.address);
 
-	await pool.createOption(1000, 1, 1);
-	await pool.createOption(500, 2, 3);
+    console.log("Creating put option contracts");
+    // until May 31, 2020
+	await pool.createOption(1590883200, 10, 9000);
+    // until June 7, 2020
+	// await pool.createOption(1591488000, 15, 9100);
+	// await pool.createOption(1591488000, 17, 9150);
 
 	let options = await pool.getOptions();
+    console.log("Deployed options: ", options.toString());
+
+	await mintDai(collateral, bobAddress, 1_000_000);
+	await mintDai(collateral, charlieAddress, 1_000_000);
+	await mintDai(collateral, daveAddress, 1_000_000);
+	await mintDai(collateral, eveAddress, 1_000_000);
+
 	let optionAddress = options[0];
+	await call(collateral, CollateralFactory, bob).approve(optionAddress, 10_000);
+	await attachOption(bob, optionAddress).underwrite(5_000, btcAddress);
+	await call(collateral, CollateralFactory, charlie).approve(optionAddress, 15_000);
+	await attachOption(charlie, optionAddress).underwrite(30_000, btcAddress);
 
-	await call(collateral, CollateralFactory, alice).mint(aliceAddress, 10000);
-	await call(collateral, CollateralFactory, alice).mint(bobAddress, 10000);
+	await call(collateral, CollateralFactory, alice).approve(optionAddress, 10_000);
+	await attachOption(alice, optionAddress).insure(10_000, bobAddress);
 
-	await call(collateral, CollateralFactory, bob).approve(optionAddress, 100);
-	await attachOption(bob, optionAddress).underwrite(100, btcAddress);
+	// optionAddress = options[2];
+	// await call(collateral, CollateralFactory, eve).approve(optionAddress, 700);
+	// await attachOption(eve, optionAddress).underwrite(700, btcAddress);
+
+	// await call(collateral, CollateralFactory, dave).approve(optionAddress, 250*5);
+	// await attachOption(dave, optionAddress).insure(250, eveAddress);
 
     // Uniswap
     // get the tokens
-    const collateral_token = new Token(31337, collateral.address, 18, 'DAI', 'Dai');
-    const option_token = new Token(31337, optionAddress, 18, 'putBTC', 'BTC_put_option');
-
-    // get tokens for Charlie and David
-	await call(collateral, CollateralFactory, alice).mint(charlieAddress, 10000);
-	await call(collateral, CollateralFactory, alice).mint(davidAddress, 10000);
-
-    // David underwrites for Charlie
-	await call(collateral, CollateralFactory, david).approve(optionAddress, 100);
-	await attachOption(david, optionAddress).underwrite(100, btcAddress);
+    const collateral_token = new Token(3, collateral.address, 18, 'DAI', 'Dai');
+    const option_token = new Token(3, optionAddress, 18, 'putBTC', 'BTC_put_option');
 
     // Charlie buys the options
     // await
