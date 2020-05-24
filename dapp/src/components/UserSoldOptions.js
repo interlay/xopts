@@ -55,19 +55,21 @@ export default class UserSoldOptions extends Component {
         for (var i = 0; i < optionContracts[0].length; i++) {
             let addr = optionContracts[0][i];
             let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
-            let optionRes = await optionContract.getOptionDetails();            let option = {
+            let optionRes = await optionContract.getOptionDetails();  
+            let option = {
                 expiry: parseInt(optionRes[0]._hex),
                 premium: parseInt(optionRes[1]._hex),
                 strikePrice: parseInt(optionRes[2]._hex),
                 totalSupply: parseInt(optionRes[3]._hex),
                 // get total supply locked by this user
-                totalSupplyLocked: optionContracts[1][i],
+                totalSupplyLocked: optionContracts[1][i].toNumber(),
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = optionContracts[0][i];
+            console.log(option);
+
             options.push(option);
         }
-
         // TODO: remove dummy data
         /*
         var index;
@@ -92,9 +94,9 @@ export default class UserSoldOptions extends Component {
     async doRefund() {
         // TODO: handle refund
         try {
-            let optionContract = await new ethers.Contract(this.state.refundOption, putOptionArtifact.abi, this.props.provider);
+            let optionContract = await new ethers.Contract(this.state.refundOption.contract, putOptionArtifact.abi, this.props.signer);
             let optionRes = await optionContract.getOptionDetails();
-            this.state.refundOption.refund();
+            optionContract.refund();
             toast.success('Refund successful!', {
                 position: "top-center",
                 autoClose: 3000,
