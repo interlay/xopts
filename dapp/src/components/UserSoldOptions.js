@@ -17,7 +17,6 @@ export default class UserSoldOptions extends Component {
             insuranceAvailable: 0,
             totalPremium: 0,
             showRefund: false,
-            refundSuccess: false,
             refundOption: {}
         };
     }
@@ -54,8 +53,9 @@ export default class UserSoldOptions extends Component {
 
         let options = [];
         for (var i = 0; i < optionContracts[0].length; i++) {
-            let optionRes = await this.getOptionDetails(optionContracts[0][i]);
-            let option = {
+            let addr = optionContracts[0][i];
+            let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
+            let optionRes = await optionContract.getOptionDetails();            let option = {
                 expiry: parseInt(optionRes[0]._hex),
                 premium: parseInt(optionRes[1]._hex),
                 strikePrice: parseInt(optionRes[2]._hex),
@@ -69,12 +69,14 @@ export default class UserSoldOptions extends Component {
         }
 
         // TODO: remove dummy data
+        /*
         var index;
         options = this.getDummyOptions();
         for (index in options) {
             options[index].spotPrice = this.props.btcPrices.dai;
             options[index].contract = optionContracts[0][i];
         }
+        */
         return options;
     }
 

@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { Col, Badge, Row, Table, Button, Card, Spinner, Modal } from "react-bootstrap";
 import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
+import putOptionArtifact from "./../artifacts/PutOption.json"
 
 
 
@@ -15,6 +16,8 @@ export default class UserPurchasedOptions extends Component {
             totalInsured: 0,
             insuranceAvailable: 0,
             totalPremium: 0,
+            showRefund: false,
+            refundOption: {}
         };
     }
 
@@ -63,33 +66,39 @@ export default class UserPurchasedOptions extends Component {
         }
 
         let options = [];
-        for (var i = 0; i < optionContracts[0].length; i++) {
-            let optionRes = await this.getOptionDetails(optionContracts[0][i]);
-            let option = {
-                expiry: parseInt(optionRes[0]._hex),
-                premium: parseInt(optionRes[1]._hex),
-                strikePrice: parseInt(optionRes[2]._hex),
-                totalSupply: parseInt(optionRes[3]._hex),
-                totalSupplyLocked: parseInt(optionRes[4]._hex),
+        try {
+            for (var i = 0; i < optionContracts[0].length; i++) {
+                let addr = optionContracts[0][i];
+                let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
+                let optionRes = await optionContract.getOptionDetails(); let option = {
+                    expiry: parseInt(optionRes[0]._hex),
+                    premium: parseInt(optionRes[1]._hex),
+                    strikePrice: parseInt(optionRes[2]._hex),
+                    totalSupply: parseInt(optionRes[3]._hex),
+                    totalSupplyLocked: parseInt(optionRes[4]._hex),
+                }
+                option.spotPrice = this.props.btcPrices.dai;
+                option.contract = optionContracts[0][i];
+                options.push(option);
             }
-            console.log(this.props.btcPrices.dai);
-            option.spotPrice = this.props.btcPrices.dai;
-            option.contract = optionContracts[0][i];
-            options.push(option);
-        }
 
-        // TODO: remove dummy data
-        var index;
-        options = this.getDummyOptions();
-        for (index in options){
-            options[index].spotPrice = this.props.btcPrices.dai;
-            options[index].contract = optionContracts[0][i];
+            // TODO: remove dummy data
+            /*
+            var index;
+            options = this.getDummyOptions();
+            for (index in options) {
+                options[index].spotPrice = this.props.btcPrices.dai;
+                options[index].contract = optionContracts[0][i];
+            }
+            */
+        } catch (error){
+            console.log(error);
         }
         return options;
     }
 
 
-    handleExercise(contract){
+    handleExercise(contract) {
         // TODO: handle exercise
     }
     renderTableData() {
@@ -104,7 +113,7 @@ export default class UserPurchasedOptions extends Component {
                     }
                     return (
                         <tr key={strikePrice}>
-                            <td>{new Date(expiry*1000).toLocaleString()}</td>
+                            <td>{new Date(expiry * 1000).toLocaleString()}</td>
                             <td>{strikePrice} DAI</td>
                             <td>{spotPrice} DAI</td>
                             <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
@@ -184,7 +193,7 @@ export default class UserPurchasedOptions extends Component {
                 totalSupplyLocked: 450,
                 totalSupply: 5000,
                 premium: 100,
-               
+
             },
             {
                 expiry: 1590795000,
@@ -212,5 +221,5 @@ export default class UserPurchasedOptions extends Component {
             }
         ]
     }
-    
+
 }
