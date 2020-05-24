@@ -5,6 +5,7 @@ import { ethers } from 'ethers';
 import putOptionArtifact from "./../artifacts/PutOption.json"
 import { ToastContainer, toast } from 'react-toastify';
 import QRCode from "react-qr-code";
+import * as utils from '../utils/utils.js'; 
 
 class SelectSeller extends React.Component {
     constructor(props) {
@@ -31,7 +32,7 @@ class SelectSeller extends React.Component {
     renderOptions() {
         return this.state.sellers.map((seller, index) => {
             let address = seller.toString();
-            let amount = this.state.options[index].toNumber();
+            let amount = utils.satToBtc(this.state.options[index].toNumber());
             return (
                 <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amount} BTC</option>
             );
@@ -71,8 +72,8 @@ class ScanBTC extends React.Component {
     async componentDidUpdate() {
         if (this.props.contract && !this.state.loaded) {
             let optionContract = new ethers.Contract(this.props.contract, putOptionArtifact.abi, this.props.signer);
-            let btcAddress = await optionContract.getBtcAddress(this.props.seller);
-            btcAddress = ethers.utils.toUtf8String(btcAddress.toString());
+            let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
+            let btcAddress = ethers.utils.toUtf8String(btcAddressRaw.toString());
 
             let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amount;
             console.log(paymentUri);
@@ -213,10 +214,10 @@ export default class UserPurchasedOptions extends Component {
                 let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
                 let optionRes = await optionContract.getOptionDetails(); let option = {
                     expiry: parseInt(optionRes[0]._hex),
-                    premium: parseInt(optionRes[1]._hex),
-                    strikePrice: parseInt(optionRes[2]._hex),
-                    totalSupply: parseInt(optionRes[3]._hex),
-                    totalSupplyLocked: parseInt(optionRes[4]._hex),
+                    premium: utils.convertDai(parseInt(optionRes[1]._hex)),
+                    strikePrice: utils.convertDai(parseInt(optionRes[2]._hex)),
+                    totalSupply: utils.convertDai(parseInt(optionRes[3]._hex)),
+                    totalSupplyLocked: utils.convertDai(parseInt(optionRes[4]._hex)),
                 }
                 option.spotPrice = this.props.btcPrices.dai;
                 option.contract = optionContracts[0][i];

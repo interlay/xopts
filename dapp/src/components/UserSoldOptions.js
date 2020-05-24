@@ -4,6 +4,7 @@ import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
 import { ToastContainer, toast } from 'react-toastify';
 import putOptionArtifact from "./../artifacts/PutOption.json"
+import * as utils from '../utils/utils.js'; 
 
 
 
@@ -58,11 +59,11 @@ export default class UserSoldOptions extends Component {
             let optionRes = await optionContract.getOptionDetails();  
             let option = {
                 expiry: parseInt(optionRes[0]._hex),
-                premium: parseInt(optionRes[1]._hex),
-                strikePrice: parseInt(optionRes[2]._hex),
-                totalSupply: parseInt(optionRes[3]._hex),
+                premium: utils.convertDai(parseInt(optionRes[1]._hex)),
+                strikePrice: utils.convertDai(parseInt(optionRes[2]._hex)),
+                totalSupply: utils.convertDai(parseInt(optionRes[3]._hex)),
                 // get total supply locked by this user
-                totalSupplyLocked: optionContracts[1][i].toNumber(),
+                totalSupplyLocked: utils.convertDai(optionContracts[1][i].toNumber()),
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = optionContracts[0][i];

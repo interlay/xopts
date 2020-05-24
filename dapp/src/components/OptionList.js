@@ -3,6 +3,7 @@ import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
 import { withRouter } from 'react-router-dom'
 import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
+import * as utils from '../utils/utils.js'; 
 
 import Buy from "./WizardBuy";
 import Sell from "./WizardSell";
@@ -63,11 +64,11 @@ class OptionList extends Component {
             let optionRes = await optionContract.getOptionDetails();
             let option = {
                 expiry: parseInt(optionRes[0]._hex),
-                premium: parseInt(optionRes[1]._hex),
-                strikePrice: parseInt(optionRes[2]._hex),
-                totalSupply: parseInt(optionRes[3]._hex),
-                totalSupplyLocked: parseInt(optionRes[4]._hex),
-                totalSupplyUnlocked: parseInt(optionRes[5]._hex),
+                premium: utils.convertDai(parseInt(optionRes[1]._hex)),
+                strikePrice: utils.convertDai(parseInt(optionRes[2]._hex)),
+                totalSupply: utils.convertDai(parseInt(optionRes[3]._hex)),
+                totalSupplyLocked: utils.convertDai(parseInt(optionRes[4]._hex)),
+                totalSupplyUnlocked: utils.convertDai(parseInt(optionRes[5]._hex)),
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;

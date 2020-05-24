@@ -5,6 +5,7 @@ import optionArtifact from "../artifacts/PutOption.json"
 import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
+import * as utils from '../utils/utils.js'; 
 
 class SelectSeller extends React.Component {
   constructor(props) {
@@ -30,7 +31,7 @@ class SelectSeller extends React.Component {
   renderOptions() {
     return this.state.sellers.map((seller, index) => {
       let address = seller.toString();
-      let amount = this.state.options[index].toNumber();
+      let amount = utils.convertDai(parseInt(this.state.options[index]._hex));
       return (
         <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amount}</option>
       );
