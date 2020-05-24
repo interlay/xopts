@@ -4,7 +4,7 @@ import { Redirect } from "react-router-dom";
 import optionArtifact from "../artifacts/PutOption.json"
 import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
-import { Container, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
+import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
 
 class EnterAmount extends React.Component {
   render() {
@@ -90,14 +90,14 @@ export default class Buy extends React.Component {
   }
 
   async componentDidMount() {
-    if (this.props.eth.signer) {
-      const { contract } = this.props.match.params;
+    if (this.props.signer) {
+      const contract = this.props.contract;
 
       let erc20Abi = ierc20Artifact.abi;
-      let erc20Contract = new ethers.Contract(this.props.eth.erc20Address, erc20Abi, this.props.eth.signer);
+      let erc20Contract = new ethers.Contract(this.props.erc20Address, erc20Abi, this.props.signer);
 
       let optionAbi = optionArtifact.abi;
-      let optionContract = new ethers.Contract(contract, optionAbi, this.props.eth.signer);
+      let optionContract = new ethers.Contract(contract, optionAbi, this.props.signer);
 
       this.setState({
         erc20Contract: erc20Contract,
@@ -130,12 +130,7 @@ export default class Buy extends React.Component {
         draggable: true,
         progress: undefined,
       });
-      return;
     }
-
-    this.setState({
-      redirectToReferrer: true
-    });
   }
 
   _next() {
@@ -189,53 +184,46 @@ export default class Buy extends React.Component {
   }
   
   render() {
-    const redirectToReferrer = this.state.redirectToReferrer;
-    if (redirectToReferrer === true) {
-        return <Redirect to="/home" />
-    }
     return (
-      <Container className="p-3">
-
-        <ToastContainer
-          position="bottom-center"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-        <div className="container-fluid" style={{marginTop: 10 + 'em'}}>
-          <div className="mr-auto ml-auto col-md-6 col-12">
-            <div className="wizard-container">
-
-              <h1>Sell Insurance</h1>
-                
-              <form onSubmit={this.handleSubmit}>
-                <EnterAmount
-                  currentStep={this.state.currentStep} 
-                  handleChange={this.handleChange}
-                />
-                <EnterAddress
-                  currentStep={this.state.currentStep} 
-                  handleChange={this.handleChange}
-                />
-                <Confirm
-                  currentStep={this.state.currentStep} 
-                  handleChange={this.handleChange}
-                  amount={this.state.amount}
-                  btcAddress={this.state.btcAddress}
-                />
-
-                {this.previousButton}
-                {this.nextButton}
-              
-              </form>
-            </div>
-          </div>
-        </div>
+      <Container>
+        <Modal.Header closeButton>
+          <Modal.Title id="contained-modal-title-vcenter">
+              Buy Options
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <ToastContainer
+            position="bottom-center"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
+          <Form onSubmit={this.handleSubmit}>
+            <EnterAmount
+              currentStep={this.state.currentStep} 
+              handleChange={this.handleChange}
+            />
+            <EnterAddress
+              currentStep={this.state.currentStep} 
+              handleChange={this.handleChange}
+            />
+            <Confirm
+              currentStep={this.state.currentStep} 
+              handleChange={this.handleChange}
+              amount={this.state.amount}
+              btcAddress={this.state.btcAddress}
+            />          
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          {this.previousButton}
+          {this.nextButton}
+        </Modal.Footer>
       </Container>
     )
   }

@@ -4,7 +4,7 @@ import { Redirect } from "react-router-dom";
 import optionArtifact from "../artifacts/PutOption.json"
 import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
-import { Container, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
+import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
 
 class SelectSeller extends React.Component {
   constructor(props) {
@@ -44,10 +44,10 @@ class SelectSeller extends React.Component {
     return(
       <FormGroup>
         <h5>Select Seller</h5>
-        <select name="seller" defaultValue="default" onChange={this.props.handleChange}>
+        <Form.Control as="select" name="seller" defaultValue="default" onChange={this.props.handleChange}>
           <option disabled value="default"> -- Select -- </option>
           {this.renderOptions()}
-        </select>
+        </Form.Control>
       </FormGroup>
     )
   }
@@ -136,14 +136,14 @@ export default class Buy extends React.Component {
   }
 
   async componentDidMount() {
-    if (this.props.eth.signer) {
-      const { contract } = this.props.match.params;
+    if (this.props.signer) {
+      const contract = this.props.contract;
 
       let erc20Abi = ierc20Artifact.abi;
-      let erc20Contract = new ethers.Contract(this.props.eth.erc20Address, erc20Abi, this.props.eth.signer);
+      let erc20Contract = new ethers.Contract(this.props.erc20Address, erc20Abi, this.props.signer);
 
       let optionAbi = optionArtifact.abi;
-      let optionContract = new ethers.Contract(contract, optionAbi, this.props.eth.signer);
+      let optionContract = new ethers.Contract(contract, optionAbi, this.props.signer);
 
       let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getOptionDetails();
 
@@ -191,12 +191,7 @@ export default class Buy extends React.Component {
         draggable: true,
         progress: undefined,
       });
-      return;
     }
-
-    this.setState({
-      redirectToReferrer: true
-    });
   }
 
   _next() {
@@ -250,60 +245,55 @@ export default class Buy extends React.Component {
   }
   
   render() {
-    const redirectToReferrer = this.state.redirectToReferrer;
-    if (redirectToReferrer === true) {
-        return <Redirect to="/home" />
-    }
-    // if(!this.state.eth) return <Redirect to="/"/>    
     return (
-      <Container className="p-3">
-        <ToastContainer
-          position="bottom-center"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-        <div className="container-fluid" style={{marginTop: 10 + 'em'}}>
-          <div className="mr-auto ml-auto col-md-6 col-12">
-            <div className="wizard-container">
+      <Container>
+        <Modal.Header closeButton>
+          <Modal.Title id="contained-modal-title-vcenter">
+              Buy Options
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
 
-              <h1>Buy Insurance</h1>
-                
-              <form onSubmit={this.handleSubmit}>
-                <SelectSeller 
-                  currentStep={this.state.currentStep} 
-                  handleChange={this.handleChange}
-                  updateAmount={this.updateAmount}
-                  seller={this.state.seller}
-                  amount={this.state.amount}
-                  optionContract={this.state.optionContract}
-                />
-                <EnterAmount 
-                  currentStep={this.state.currentStep} 
-                  handleChange={this.handleChange}
-                  amount={this.state.amount}
-                />
-                <Confirm
-                  currentStep={this.state.currentStep} 
-                  handleChange={this.handleChange}
-                  seller={this.state.seller}
-                  amount={this.state.amount}
-                  premium={this.state.premium}
-                  strikePrice={this.state.strikePrice}
-                />
+          <ToastContainer
+            position="bottom-center"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
+          <Form onSubmit={this.handleSubmit}>
+            <SelectSeller 
+              currentStep={this.state.currentStep} 
+              handleChange={this.handleChange}
+              updateAmount={this.updateAmount}
+              seller={this.state.seller}
+              amount={this.state.amount}
+              optionContract={this.state.optionContract}
+            />
+            <EnterAmount 
+              currentStep={this.state.currentStep} 
+              handleChange={this.handleChange}
+              amount={this.state.amount}
+            />
+            <Confirm
+              currentStep={this.state.currentStep} 
+              handleChange={this.handleChange}
+              seller={this.state.seller}
+              amount={this.state.amount}
+              premium={this.state.premium}
+              strikePrice={this.state.strikePrice}
+            />
 
-                {this.previousButton}
-                {this.nextButton}
-              
-              </form>
-            </div>
-          </div>
-        </div>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          {this.previousButton}
+          {this.nextButton}
+        </Modal.Footer>
       </Container>
     )
   }

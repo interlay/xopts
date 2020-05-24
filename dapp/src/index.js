@@ -12,8 +12,6 @@ import 'react-toastify/dist/ReactToastify.css';
 import Dashboard from "./views/Dashboard";
 import Home from "./views/Home";
 import Topbar from "./components/Topbar";
-import Buy from "./views/Buy";
-import Sell from "./views/Sell";
 
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 
@@ -105,12 +103,6 @@ class App extends Component {
         <div>
           <Topbar {...this.state} />
           <Switch>
-
-            <Route path="/buy/:contract"
-              render={(props) => <Buy {...props} eth={this.state}/>} />
-            <Route path="/sell/:contract"
-              render={(props) => <Sell {...props} eth={this.state}/>} />  
-
             <Route path="/dashboard">
               <Dashboard {...this.state}/>
             </Route>

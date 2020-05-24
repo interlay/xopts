@@ -1,8 +1,11 @@
 import React, { Component } from "react";
-import { Col, Badge, Row, Table, Button, Card, Spinner} from "react-bootstrap";
 import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
 import { withRouter } from 'react-router-dom'
+import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
+
+import Buy from "./WizardBuy";
+import Sell from "./WizardSell";
 
 import putOptionArtifact from "./../artifacts/PutOption.json"
 import UserOptions from "./UserPurchasedOptions";
@@ -17,6 +20,8 @@ class OptionList extends Component {
             totalInsured: 0,
             insuranceAvailable: 0,
             avgPremium: 0,
+            showBuy: false,
+            showSell: false,
             buy: null,
             sell: null
         };
@@ -93,14 +98,16 @@ class OptionList extends Component {
 
     handleBuy = (contract) => {
         this.setState({
-            buy: contract
-        })
+            buy: contract,
+            showBuy: true,
+        });
     }
 
     handleSell(contract) {
         this.setState({
-            sell: contract
-        })
+            sell: contract,
+            showSell: true,
+        });
     }
 
     renderTableData() {
@@ -121,7 +128,7 @@ class OptionList extends Component {
                         <td>{premium} DAI/BTC</td>
 
                         <td>
-                            <Button variant="success" onClick={() => { this.handleBuy(contract) }}>
+                            <Button variant="outline-success" onClick={() => { this.handleBuy(contract) }}>
                                 Buy
                             </Button>
                             {" "}
@@ -139,8 +146,6 @@ class OptionList extends Component {
 
 
     render() {
-        if (this.state.buy) return <Redirect to={"/buy/" + this.state.buy} />
-        if (this.state.sell) return <Redirect to={"/sell/" + this.state.sell} />
         return <Col xl={{ span: 8, offset: 2 }}>
             <Card border="dark">
                 <Card.Header>
@@ -191,6 +196,22 @@ class OptionList extends Component {
                     </Row>
                 </Card.Body>
             </Card>
+            <div className="wizard-container">
+                <Modal
+                    size="lg"
+                    aria-labelledby="contained-modal-title-vcenter"
+                    centered
+                    show={this.state.showBuy} onHide={() => this.setState({ showBuy: false })}>
+                    <Buy contract={this.state.buy} {...this.props}></Buy>
+                </Modal>
+                <Modal
+                    size="lg"
+                    aria-labelledby="contained-modal-title-vcenter"
+                    centered
+                    show={this.state.showSell} onHide={() => this.setState({ showSell: false })}>
+                    <Sell contract={this.state.sell} {...this.props}></Sell>
+                </Modal>
+            </div>
         </Col>;
     }
     /*
