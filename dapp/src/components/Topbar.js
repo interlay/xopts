@@ -57,9 +57,6 @@ class TopBar extends Component {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
-            <Link className="nav-link" to="/">
-              Buy/Sell
-            </Link>
             {this.props.isLoggedIn &&
               <Link className="nav-link" to="/dashboard">
                 Account

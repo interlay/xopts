@@ -104,7 +104,7 @@ export default class UserSoldOptions extends Component {
             });
         } catch (error) {
             console.log(error);
-            toast.error('Ups.. Something went wrong!', {
+            toast.error('Oops.. Something went wrong!', {
                 position: "top-center",
                 autoClose: 3000,
                 hideProgressBar: false,
