@@ -62,7 +62,7 @@ class Confirm extends React.Component {
         <FormGroup>
           <ListGroup>
               <ListGroupItem>{this.props.btcAddress}</ListGroupItem>
-              <ListGroupItem>{this.props.amount} DAI</ListGroupItem>
+              <ListGroupItem>{this.props.amount} DAI -> {this.props.amount} XOPT</ListGroupItem>
           </ListGroup>
         </FormGroup>
         <button className="btn btn-success btn-block">Pay</button>
@@ -81,8 +81,8 @@ export default class Buy extends React.Component {
       currentStep: 1,
       amount: 0,
       address: '',
-      optionContract: null,
       erc20Contract: null,
+      optionContract: null,
       redirectToReferrer: false,
     }
 
@@ -93,15 +93,15 @@ export default class Buy extends React.Component {
     if (this.props.eth.signer) {
       const { contract } = this.props.match.params;
 
-      let optionAbi = optionArtifact.abi;
-      let optionContract = new ethers.Contract(contract, optionAbi, this.props.eth.signer);
-
       let erc20Abi = ierc20Artifact.abi;
       let erc20Contract = new ethers.Contract(this.props.eth.erc20Address, erc20Abi, this.props.eth.signer);
 
+      let optionAbi = optionArtifact.abi;
+      let optionContract = new ethers.Contract(contract, optionAbi, this.props.eth.signer);
+
       this.setState({
-        optionContract: optionContract,
         erc20Contract: erc20Contract,
+        optionContract: optionContract,
       });
     }
   }

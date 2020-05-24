@@ -64,7 +64,7 @@ class EnterAmount extends React.Component {
     }
     return(
       <FormGroup>
-        <h5>Enter Amount (BTC)</h5>
+        <h5>Enter Amount (SAT)</h5>
         <FormControl
           id="amount"
           name="amount"
@@ -94,13 +94,23 @@ class Confirm extends React.Component {
         <FormGroup>
           <ListGroup>
               <ListGroupItem>{this.props.seller}</ListGroupItem>
-              <ListGroupItem>{this.props.amount} BTC</ListGroupItem>
+              <ListGroupItem>{this.props.amount} SAT</ListGroupItem>
+              <ListGroupItem>{calculatePremium(this.props.amount, this.props.premium)} DAI</ListGroupItem>
+              <ListGroupItem>{calculateOptions(this.props.amount, this.props.strikePrice)} XOPT</ListGroupItem>
           </ListGroup>
         </FormGroup>
         <button className="btn btn-success btn-block">Pay</button>
       </FormGroup>
     )
   }
+}
+
+function calculatePremium(amount, premium) {
+  return amount * premium;
+}
+
+function calculateOptions(amount, strikePrice) {
+  return amount * strikePrice;
 }
 
 export default class Buy extends React.Component {
@@ -113,8 +123,11 @@ export default class Buy extends React.Component {
       currentStep: 1,
       seller: '',
       amount: 0,
-      optionContract: null,
       erc20Contract: null,
+      optionContract: null,
+      expiry: 0,
+      premium: 0,
+      strikePrice: 0,
       redirectToReferrer: false,
     }
 
@@ -126,15 +139,20 @@ export default class Buy extends React.Component {
     if (this.props.eth.signer) {
       const { contract } = this.props.match.params;
 
-      let optionAbi = optionArtifact.abi;
-      let optionContract = new ethers.Contract(contract, optionAbi, this.props.eth.signer);
-
       let erc20Abi = ierc20Artifact.abi;
       let erc20Contract = new ethers.Contract(this.props.eth.erc20Address, erc20Abi, this.props.eth.signer);
 
+      let optionAbi = optionArtifact.abi;
+      let optionContract = new ethers.Contract(contract, optionAbi, this.props.eth.signer);
+
+      let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getOptionDetails();
+
       this.setState({
-        optionContract: optionContract,
         erc20Contract: erc20Contract,
+        optionContract: optionContract,
+        expiry: expiry,
+        premium: premium,
+        strikePrice: strikePrice,
       });
     }
   }
@@ -156,9 +174,11 @@ export default class Buy extends React.Component {
   // Trigger an alert on form submission
   handleSubmit = async (event) => {
     event.preventDefault();
-    const { seller, amount, optionContract, erc20Contract } = this.state;
+    const { seller, amount, optionContract, erc20Contract, premium } = this.state;
+    let tokensToPay = calculatePremium(amount, premium);
     try {
-      await erc20Contract.approve(optionContract.address, amount);
+      console.log(tokensToPay, amount, seller);
+      await erc20Contract.approve(optionContract.address, tokensToPay);
       await optionContract.insure(amount, seller);
     } catch(error) {
       console.log(error);
@@ -273,6 +293,8 @@ export default class Buy extends React.Component {
                   handleChange={this.handleChange}
                   seller={this.state.seller}
                   amount={this.state.amount}
+                  premium={this.state.premium}
+                  strikePrice={this.state.strikePrice}
                 />
 
                 {this.previousButton}
