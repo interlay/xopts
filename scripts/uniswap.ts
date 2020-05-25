@@ -5,7 +5,7 @@ import {
 	Collateral, MockRelay, MockTxValidator,
 	MockRegistryAndResolver, OptionPool, call, attachOption, mintDai,
     satoshiToMbtc, mbtcToSatoshi, mdaiToWeiDai, weiDaiToMdai, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC,
-    createUniswapPair,
+    createUniswapPair, addLiquidity
 } from "./contracts";
 import contracts from "../contracts";
 
@@ -70,7 +70,7 @@ async function main() {
     );
 
     const pairAddress = Pair.getAddress(collateral_token, option_token);
-    let pairContract = await createUniswapPair(alice, collateral.address, optionAddress, pairAddress);
+    await createUniswapPair(alice, collateral.address, optionAddress);
 
     console.log("Created Uniswap pair address at: ", pairAddress);
 
@@ -78,12 +78,24 @@ async function main() {
     console.log("Alice Dai balance: ", (await collateral.balanceOf(aliceAddress)).toString());
     console.log("Alice Options balance: ", (await attachOption(alice, optionAddress).balanceOf(aliceAddress)).toString());
 
-
+    const liquidityDai = mdaiToWeiDai(10).toString();
+    const liquidityOption = mbtcToSatoshi(10).toString();
     const fromAliceCollateral = collateral.connect(alice);
-    await fromAliceCollateral.transfer(pairAddress.toString(), mdaiToWeiDai(10));
-    await attachOption(alice, optionAddress).transfer(pairAddress.toString(), mbtcToSatoshi(10));
+    await fromAliceCollateral.transfer("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityDai);
+    await attachOption(alice, optionAddress).transfer("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityOption);
     console.log("Creating pair tokens");
-    await pairContract.mint(aliceAddress);
+    await addLiquidity(
+        alice,
+        collateral.address,
+        optionAddress,
+        liquidityDai,
+        liquidityOption,
+        liquidityDai,
+        liquidityOption,
+        aliceAddress,
+        1590883200
+    );
+    // await pairContract.mint(aliceAddress);
 
     let pairData = await Pair.fetchData(collateral_token, option_token);
 

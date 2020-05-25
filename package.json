@@ -37,6 +37,7 @@
     "@types/node": "^13.13.2",
     "@uniswap/sdk": "^2.0.5",
     "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.0.0-beta.0",
     "buidler-typechain": "0.0.5",
     "chai": "^4.2.0",
     "ethereum-waffle": "^2.4.1",
