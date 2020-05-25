@@ -12,6 +12,8 @@ import { PutOptionFactory } from "../typechain/PutOptionFactory";
 import IUniswapV2Factory from '@uniswap/v2-core/build/IUniswapV2Factory.json'
 import IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import IUniswapV2Pair from '@uniswap/v2-core/build/IUniswapV2Pair.json'
+import IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
+
 
 interface Callable {
 	address: string;
@@ -90,13 +92,39 @@ export async function Collateral() {
 }
 
 // Uniswap factory
-export async function createUniswapPair(signer: Signer, tokenA: string, tokenB: string, pairAddress: string) {
+export async function createUniswapPair(signer: Signer, tokenA: string, tokenB: string) {
     const abi = IUniswapV2Factory.abi;
     const factory = await ethers.getContractAt(abi, "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", signer);
     await factory.createPair(tokenA, tokenB);
-    const pairAbi = IUniswapV2Pair.abi;
-    return await ethers.getContractAt(pairAbi, pairAddress);
 }
+
+// Uniswap router
+export async function addLiquidity(
+    signer: Signer,
+    tokenA: string,
+    tokenB: string,
+    amountADesired: string,
+    amountBDesired: string,
+    amountAMin: string,
+    amountBMin: string,
+    account: string,
+    deadline: number
+) {
+    const abi = IUniswapV2Router01.abi;
+    const router = await ethers.getContractAt(abi, "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", signer);
+    const routerFromAlice = router.connect(signer);
+    await router.addLiquidity(
+        tokenA,
+        tokenB,
+        amountADesired,
+        amountBDesired,
+        amountAMin,
+        amountBMin,
+        account,
+        deadline
+    );
+}
+
 
 
 export async function MockCollateral(signer: Signer) {
