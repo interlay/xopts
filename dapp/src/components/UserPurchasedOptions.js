@@ -1,11 +1,11 @@
 import React, { Component } from "react";
-import { Col, Badge, Row, Table, Form, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
+import { Col, Badge, Row, Table, Form, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl, ProgressBar } from "react-bootstrap";
 import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
 import putOptionArtifact from "./../artifacts/PutOption.json"
 import { ToastContainer, toast } from 'react-toastify';
 import QRCode from "react-qr-code";
-import * as utils from '../utils/utils.js'; 
+import * as utils from '../utils/utils.js';
 
 class SelectSeller extends React.Component {
     constructor(props) {
@@ -32,7 +32,7 @@ class SelectSeller extends React.Component {
     renderOptions() {
         return this.state.sellers.map((seller, index) => {
             let address = seller.toString();
-            let amount = utils.satToBtc(this.state.options[index].toNumber());
+            let amount = utils.weiDaiToBtc(this.state.options[index].toNumber());
             return (
                 <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amount} BTC</option>
             );
@@ -73,10 +73,8 @@ class ScanBTC extends React.Component {
         if (this.props.contract && !this.state.loaded) {
             let optionContract = new ethers.Contract(this.props.contract, putOptionArtifact.abi, this.props.signer);
             let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
-            let btcAddress = ethers.utils.toUtf8String(btcAddressRaw.toString());
-
+            let btcAddress = ethers.utils.hexlify(btcAddressRaw).toString();
             let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amount;
-            console.log(paymentUri);
 
             this.setState({
                 loaded: true,
@@ -92,7 +90,8 @@ class ScanBTC extends React.Component {
         return (
             <FormGroup>
                 <Row className="justify-content-md-center">
-                    <Col md="auto">
+                    <Col md="auto" className="text-center">
+                        <p>To exercise the option, please make the following Bitcoin payment</p>
                         <QRCode value={this.state.paymentUri} />
                     </Col>
                 </Row>
@@ -104,38 +103,58 @@ class ScanBTC extends React.Component {
 class SubmitProof extends React.Component {
     constructor(props) {
         super(props);
+        this.state = {
+            progress : 0
+        }
     }
 
+    componentDidMount() {
+        let proofCountdown = setInterval(() => {
+            this.setState({
+                progress: this.state.progress + 10
+            })
+            if ( this.state.progress >= 100) clearInterval(proofCountdown);
+        }, 1000);
+    }
+
+    componentDidUpdate(){
+        if(this.state.progress >= 100){
+
+        }
+    }
     render() {
         if (this.props.currentStep !== 3) {
             return null
         }
         return (
-            //TODO
-            <FormGroup>
-                <h5>Submit Proof & Pay</h5>
-                <Form.Group>
-                    <Form.Label>BlockHeight</Form.Label>
-                    <Form.Control name="height" type="number" onChange={this.props.handleChange}/>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Transaction Index</Form.Label>
-                    <Form.Control name="index" type="text" onChange={this.props.handleChange}/>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Transaction ID</Form.Label>
-                    <Form.Control name="txid" type="text" onChange={this.props.handleChange}/>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Proof</Form.Label>
-                    <Form.Control name="proof" type="text" onChange={this.props.handleChange}/>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Raw Tx</Form.Label>
-                    <Form.Control name="rawtx" type="text" onChange={this.props.handleChange}/>
-                </Form.Group>
-                <button className="btn btn-success btn-block">Exercise</button>
-            </FormGroup>
+            <div>
+                <h4>Watching for Bitcoin payment...</h4>
+                <ProgressBar striped variant="success" now={this.state.progress} />
+                <FormGroup>
+                    <h5>Alternatively, you can submit the proof yourself:</h5>
+                    <Form.Group>
+                        <Form.Label>BlockHeight</Form.Label>
+                        <Form.Control name="height" type="number" onChange={this.props.handleChange} />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Transaction Index</Form.Label>
+                        <Form.Control name="index" type="text" onChange={this.props.handleChange} />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Transaction ID</Form.Label>
+                        <Form.Control name="txid" type="text" onChange={this.props.handleChange} />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Proof</Form.Label>
+                        <Form.Control name="proof" type="text" onChange={this.props.handleChange} />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Raw Tx</Form.Label>
+                        <Form.Control name="rawtx" type="text" onChange={this.props.handleChange} />
+                    </Form.Group>
+                    <button disabled={this.state.progress < 100} className="btn btn-success btn-block">Exercise</button>
+                </FormGroup>
+            </div>
         )
     }
 }
@@ -189,10 +208,10 @@ export default class UserPurchasedOptions extends Component {
 
     async getCurrentOptions() {
         if (this.props.optionPoolContract && this.props.address) {
-            let optionContracts = await this.props.optionPoolContract.getUserSoldOptions(this.props.address);
-            let soldOptions = await this.getOptions(optionContracts)
+            let optionContracts = await this.props.optionPoolContract.getUserPurchasedOptions(this.props.address);
+            let purchasedOptions = await this.getOptions(optionContracts)
             this.setState({
-                soldOptions: soldOptions,
+                purchasedOptions: purchasedOptions,
                 soldLoaded: true
             });
         }
@@ -208,21 +227,31 @@ export default class UserPurchasedOptions extends Component {
         }
 
         let options = [];
+        let insuredBTC = 0;
+        let paidPremium = 0;
         try {
             for (var i = 0; i < optionContracts[0].length; i++) {
                 let addr = optionContracts[0][i];
                 let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
                 let optionRes = await optionContract.getOptionDetails(); let option = {
                     expiry: parseInt(optionRes[0]._hex),
-                    premium: utils.convertDai(parseInt(optionRes[1]._hex)),
-                    strikePrice: utils.convertDai(parseInt(optionRes[2]._hex)),
-                    totalSupply: utils.convertDai(parseInt(optionRes[3]._hex)),
-                    totalSupplyLocked: utils.convertDai(parseInt(optionRes[4]._hex)),
+                    premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
+                    strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
+                    totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
+                    totalSupplyLocked: utils.weiDaiToDai(parseInt(optionContracts[1][i]._hex)),
                 }
                 option.spotPrice = this.props.btcPrices.dai;
                 option.contract = optionContracts[0][i];
+
+                insuredBTC += option.totalSupplyLocked / option.strikePrice;
+                paidPremium += option.premium;
                 options.push(option);
             }
+
+            this.setState({
+                totalPremium: 100,
+                totalInsured: insuredBTC
+            });
         } catch (error) {
             console.log(error);
         }
@@ -287,11 +316,11 @@ export default class UserPurchasedOptions extends Component {
     handleSubmit = async (event) => {
         event.preventDefault();
         const { seller, optionContract, height, index, txid, proof, rawtx } = this.state;
-        console.log(height, index, txid, proof, rawtx)
 
         try {
             let optionContract = new ethers.Contract(this.state.exerciseOption.contract, putOptionArtifact.abi, this.props.signer);
-            await optionContract.exercise(height, index, txid, proof, rawtx, seller);
+            //This is mocked. BTC-Relay connection works, but querying proof in backend is still WIP.
+            await optionContract.exercise(1000, 1, "0xe91669bf43109bbd3ed730d8a5ebdc691b5d7482d2cf034c7a0db12023db8e5f", "0x00", "0x00", seller);
             toast.success('Exercise successful!', {
                 position: "top-center",
                 autoClose: 3000,
@@ -301,6 +330,7 @@ export default class UserPurchasedOptions extends Component {
                 draggable: true,
                 progress: undefined,
             });
+            this.forceUpdate();
         } catch (error) {
             console.log(error);
             toast.error('Oops.. Something went wrong!', {

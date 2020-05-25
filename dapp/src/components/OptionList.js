@@ -64,15 +64,15 @@ class OptionList extends Component {
             let optionRes = await optionContract.getOptionDetails();
             let option = {
                 expiry: parseInt(optionRes[0]._hex),
-                premium: utils.convertDai(parseInt(optionRes[1]._hex)),
-                strikePrice: utils.convertDai(parseInt(optionRes[2]._hex)),
-                totalSupply: utils.convertDai(parseInt(optionRes[3]._hex)),
-                totalSupplyLocked: utils.convertDai(parseInt(optionRes[4]._hex)),
-                totalSupplyUnlocked: utils.convertDai(parseInt(optionRes[5]._hex)),
+                premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
+                strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
+                totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
+                totalSupplyLocked: utils.weiDaiToDai(parseInt(optionRes[4]._hex)),
+                totalSupplyUnlocked: utils.weiDaiToDai(parseInt(optionRes[5]._hex)),
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;
-            totalInsured += option.totalSupplyLocked;
+            totalInsured += option.totalSupplyLocked / option.strikePrice;
             insuranceAvailable += option.totalSupplyUnlocked;
             totalPremium += option.premium;
             options.push(option);
@@ -120,6 +120,8 @@ class OptionList extends Component {
                 if (totalSupply > 0) {
                     percentInsured = Math.round(10000 * totalSupplyLocked / totalSupply) / 100;
                 }
+                let currentDate = Math.floor(Date.now() / 1000);
+
                 return (
                     <tr key={strikePrice}>
                         <td>{new Date(expiry*1000).toLocaleString()}</td>
@@ -129,11 +131,11 @@ class OptionList extends Component {
                         <td>{premium} DAI/BTC</td>
 
                         <td>
-                            <Button variant="outline-success" onClick={() => { this.handleBuy(contract) }}>
+                            <Button disabled={(expiry < currentDate)} variant="outline-success" onClick={() => { this.handleBuy(contract) }}>
                                 Buy
                             </Button>
                             {" "}
-                            <Button variant="outline-danger" onClick={() => { this.handleSell(contract) }}>
+                            <Button  disabled={(expiry < currentDate)} variant="outline-danger" onClick={() => { this.handleSell(contract) }}>
                                 Sell
                             </Button>
                         </td>

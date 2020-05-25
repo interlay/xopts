@@ -31,9 +31,10 @@ class SelectSeller extends React.Component {
   renderOptions() {
     return this.state.sellers.map((seller, index) => {
       let address = seller.toString();
-      let amount = utils.convertDai(parseInt(this.state.options[index]._hex));
+      let amount = utils.weiDaiToDai(parseInt(this.state.options[index]._hex));
+      let amountBtc = amount / this.props.strikePrice;
       return (
-        <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amount}</option>
+        <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amountBtc}</option>
       );
     })
   }
@@ -65,7 +66,7 @@ class EnterAmount extends React.Component {
     }
     return(
       <FormGroup>
-        <h5>Enter Amount (SAT)</h5>
+        <h5>Enter BTC Amount</h5>
         <FormControl
           id="amount"
           name="amount"
@@ -95,9 +96,9 @@ class Confirm extends React.Component {
         <FormGroup>
           <ListGroup>
               <ListGroupItem>{this.props.seller}</ListGroupItem>
-              <ListGroupItem>{this.props.amount} SAT</ListGroupItem>
+              <ListGroupItem>{this.props.amount} SAT ({utils.satToBtc(this.props.amount)} BTC)</ListGroupItem>
               <ListGroupItem>{calculatePremium(this.props.amount, this.props.premium)} DAI</ListGroupItem>
-              <ListGroupItem>{calculateOptions(this.props.amount, this.props.strikePrice)} XOPT</ListGroupItem>
+              <ListGroupItem>{utils.weiDaiToBtc(calculateOptions(this.props.amount, this.props.strikePrice))} XOPT</ListGroupItem>
           </ListGroup>
         </FormGroup>
         <button className="btn btn-success btn-block">Pay</button>
@@ -107,7 +108,7 @@ class Confirm extends React.Component {
 }
 
 function calculatePremium(amount, premium) {
-  return amount * premium;
+  return utils.satToBtc(amount) * premium;
 }
 
 function calculateOptions(amount, strikePrice) {
@@ -152,15 +153,18 @@ export default class Buy extends React.Component {
         erc20Contract: erc20Contract,
         optionContract: optionContract,
         expiry: expiry,
-        premium: premium,
-        strikePrice: strikePrice,
+        premium: utils.weiDaiToBtc(parseInt(premium._hex)),
+        strikePrice: utils.weiDaiToBtc(parseInt(strikePrice._hex)),
       });
     }
   }
 
   // Use the submitted data to set the state
   handleChange(event) {
-    const {name, value} = event.target
+    let {name, value} = event.target
+    if(name == "amount"){
+      value = utils.btcToSat(value);
+    }
     this.setState({
       [name]: value
     });
@@ -176,15 +180,23 @@ export default class Buy extends React.Component {
   handleSubmit = async (event) => {
     event.preventDefault();
     const { seller, amount, optionContract, erc20Contract, premium } = this.state;
-    let tokensToPay = calculatePremium(amount, premium);
+    let tokensToPay = utils.daiToWeiDai(calculatePremium(amount, premium));
     try {
-      console.log(tokensToPay, amount, seller);
-      await erc20Contract.approve(optionContract.address, tokensToPay);
-      await optionContract.insure(amount, seller);
+      await erc20Contract.approve(optionContract.address, tokensToPay.toString());
+      await optionContract.insure(amount.toString(), seller);
+      toast.success('Successfully purchased option!', {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     } catch(error) {
       console.log(error);
       toast.error('Failed to send transaction...', {
-        position: "bottom-center",
+        position: "top-center",
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
@@ -250,7 +262,7 @@ export default class Buy extends React.Component {
       <Container>
         <Modal.Header closeButton>
           <Modal.Title id="contained-modal-title-vcenter">
-              Buy Options
+              Buy Option
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -273,6 +285,7 @@ export default class Buy extends React.Component {
               updateAmount={this.updateAmount}
               seller={this.state.seller}
               amount={this.state.amount}
+              strikePrice={this.state.strikePrice}
               optionContract={this.state.optionContract}
             />
             <EnterAmount 

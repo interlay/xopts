@@ -15,6 +15,7 @@ export default class UserSoldOptions extends Component {
             soldLoaded: false,
             soldOptions: [],
             totalInsured: 0,
+            btcInsured: 0,
             insuranceAvailable: 0,
             totalPremium: 0,
             showRefund: false,
@@ -53,33 +54,38 @@ export default class UserSoldOptions extends Component {
         }
 
         let options = [];
+        let totalInsured = 0;
+        let totalPremium =  0;
+        let btcInsured = 0;
         for (var i = 0; i < optionContracts[0].length; i++) {
             let addr = optionContracts[0][i];
             let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
             let optionRes = await optionContract.getOptionDetails();  
             let option = {
                 expiry: parseInt(optionRes[0]._hex),
-                premium: utils.convertDai(parseInt(optionRes[1]._hex)),
-                strikePrice: utils.convertDai(parseInt(optionRes[2]._hex)),
-                totalSupply: utils.convertDai(parseInt(optionRes[3]._hex)),
+                premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
+                strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
+                totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
                 // get total supply locked by this user
-                totalSupplyLocked: utils.convertDai(optionContracts[1][i].toNumber()),
+                totalSupplyLocked: utils.weiDaiToDai(parseInt(optionRes[4]._hex)),
+
+                //totalSupplyLocked: utils.weiDaiToDai(parseInt(optionContracts[1][i]._hex)),
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = optionContracts[0][i];
             console.log(option);
 
+            totalPremium += option.premium;
+            totalInsured += option.totalSupplyLocked;
+            btcInsured += option.totalSupplyLocked / option.strikePrice;
             options.push(option);
         }
-        // TODO: remove dummy data
-        /*
-        var index;
-        options = this.getDummyOptions();
-        for (index in options) {
-            options[index].spotPrice = this.props.btcPrices.dai;
-            options[index].contract = optionContracts[0][i];
-        }
-        */
+
+        this.setState({
+            totalPremium: totalPremium,
+            totalInsured: totalInsured,
+            btcInsured: btcInsured
+        });
         return options;
     }
 
@@ -104,6 +110,7 @@ export default class UserSoldOptions extends Component {
                 draggable: true,
                 progress: undefined,
             });
+            this.forceUpdate()
         } catch (error) {
             console.log(error);
             toast.error('Oops.. Something went wrong!', {
@@ -189,15 +196,15 @@ export default class UserSoldOptions extends Component {
                             <Row className="text-center">
                                 <Badge>
                                     <Col md={4}>
-                                        <h3>{this.state.totalInsured}</h3>
+                                        <h3>{this.state.btcInsured}</h3>
                                         <h6>BTC
                             Insured</h6>
                                     </Col>
                                 </Badge>
                                 <Badge>
                                     <Col md={4}>
-                                        <h3>{this.state.insuranceAvailable}</h3>
-                                        <h6>DAI Insurance Available</h6>
+                                        <h3>{this.state.totalInsured}</h3>
+                                        <h6>DAI Insurance Sold</h6>
                                     </Col>
                                 </Badge>
                                 <Badge>

@@ -5,6 +5,7 @@ import optionArtifact from "../artifacts/PutOption.json"
 import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
+import * as utils from '../utils/utils.js'; 
 
 class EnterAmount extends React.Component {
   render() {
@@ -13,7 +14,7 @@ class EnterAmount extends React.Component {
     }
     return(
       <FormGroup>
-        <h5>Enter Amount (DAI)</h5>
+        <h5>How much DAI do you want to underwrite (insurance collateral)?</h5>
         <FormControl
           id="amount"
           name="amount"
@@ -33,7 +34,7 @@ class EnterAddress extends React.Component {
     }
     return(
       <FormGroup>
-        <h5>Enter BTC Address</h5>
+        <h5>Enter your BTC Address</h5>
         <input
           className="form-control"
           id="btcAddress"
@@ -62,7 +63,7 @@ class Confirm extends React.Component {
         <FormGroup>
           <ListGroup>
               <ListGroupItem>{this.props.btcAddress}</ListGroupItem>
-              <ListGroupItem>{this.props.amount} DAI -> {this.props.amount} XOPT</ListGroupItem>
+              <ListGroupItem>{utils.weiDaiToDai(this.props.amount)} DAI -> {utils.weiDaiToDai(this.props.amount)} XOPT</ListGroupItem>
           </ListGroup>
         </FormGroup>
         <button className="btn btn-success btn-block">Pay</button>
@@ -107,7 +108,11 @@ export default class Buy extends React.Component {
   }
 
   handleChange(event) {
-    const {name, value} = event.target
+    let {name, value} = event.target
+    if(name == "amount"){
+      value = utils.daiToWeiDai(value);
+    }
+    console.log(value);
     this.setState({
       [name]: value
     });
@@ -117,8 +122,18 @@ export default class Buy extends React.Component {
     event.preventDefault();
     const { amount, btcAddress, optionContract, erc20Contract } = this.state;
     try {
-      await erc20Contract.approve(optionContract.address, amount);
-      await optionContract.underwrite(amount, btcAddress);
+      console.log(amount);
+      await erc20Contract.approve(optionContract.address, amount.toString());
+      await optionContract.underwrite(amount.toString(), ethers.utils.arrayify(btcAddress));
+      toast.success('Successfully sold option!', {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     } catch(error) {
       console.log(error);
       toast.error('Failed to send transaction...', {
@@ -188,7 +203,7 @@ export default class Buy extends React.Component {
       <Container>
         <Modal.Header closeButton>
           <Modal.Title id="contained-modal-title-vcenter">
-              Buy Options
+              Sell Options
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
