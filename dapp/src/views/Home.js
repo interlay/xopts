@@ -14,7 +14,7 @@ class Home extends Component {
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
           <div className="container">
-            <h1>Decentralized Bitcoin Options</h1>
+            <h1>Trustless Bitcoin-Native Options</h1>
             <p className="lead text-muted">Buy and Sell Insurance against Bitcoin Price Fluctuations. </p>
 
           </div>
