@@ -34,29 +34,29 @@ async function main() {
 
     console.log("Creating put option contracts");
     // until May 31, 2020
-	await pool.createOption(1590883200, premiumInDaiForOneBTC(10), strikePriceInDaiForOneBTC(9000));
+	await pool.createOption(1590883200, premiumInDaiForOneBTC(10), strikePriceInDaiForOneBTC(10_000));
 
 	let options = await pool.getOptions();
     console.log("Deployed options: ", options.toString());
 
-	await mintDai(collateral, aliceAddress, daiToWeiDai(120).toString());
-	await mintDai(collateral, bobAddress, daiToWeiDai(100).toString());
-	await mintDai(collateral, charlieAddress, daiToWeiDai(200).toString());
+	await mintDai(collateral, aliceAddress, daiToWeiDai(200).toString());
+	await mintDai(collateral, bobAddress, daiToWeiDai(2_000).toString());
+	// await mintDai(collateral, charlieAddress, daiToWeiDai(20_000).toString());
 
 	let optionAddress = options[0];
     console.log("Adding data to option: ", optionAddress);
-    console.log("Bob underwriting 100 Dai");
-	await call(collateral, CollateralFactory, bob).approve(optionAddress, daiToWeiDai(100));
-	await attachOption(bob, optionAddress).underwrite(daiToWeiDai(100), btcAddress);
-    console.log("Charlie underwriting 75 Dai");
-	await call(collateral, CollateralFactory, charlie).approve(optionAddress, daiToWeiDai(75));
-	await attachOption(charlie, optionAddress).underwrite(daiToWeiDai(75), btcAddress);
+    console.log("Bob underwriting 2,000 Dai");
+	await call(collateral, CollateralFactory, bob).approve(optionAddress, daiToWeiDai(2_000));
+	await attachOption(bob, optionAddress).underwrite(daiToWeiDai(2_000), btcAddress);
+    // console.log("Charlie underwriting 7,500 Dai");
+	// await call(collateral, CollateralFactory, charlie).approve(optionAddress, daiToWeiDai(7_500));
+	// await attachOption(charlie, optionAddress).underwrite(daiToWeiDai(7_500), btcAddress);
     var details = await attachOption(alice, optionAddress).getOptionDetails();
     console.log("Option details: ", details.toString());
 
-    console.log("Alice insuring 0.01 BTC");
-	await call(collateral, CollateralFactory, alice).approve(optionAddress, daiToWeiDai(20));
-	await attachOption(alice, optionAddress).insure(mbtcToSatoshi(10), bobAddress);
+    console.log("Alice insuring 0.2 BTC");
+	await call(collateral, CollateralFactory, alice).approve(optionAddress, daiToWeiDai(200));
+	await attachOption(alice, optionAddress).insure(mbtcToSatoshi(200), bobAddress);
 
     // Uniswap
     // get the tokens
@@ -65,8 +65,8 @@ async function main() {
 
     // create a Dai to option token pair with the trading price at the current premium
     const DAI_putBTC = new Pair(
-        new TokenAmount(collateral_token, daiToWeiDai(10).toString()),
-        new TokenAmount(option_token, mbtcToSatoshi(1000).toString())
+        new TokenAmount(collateral_token, daiToWeiDai(2).toString()),
+        new TokenAmount(option_token, mbtcToSatoshi(200).toString())
     );
 
     const pairAddress = Pair.getAddress(collateral_token, option_token);
@@ -78,31 +78,30 @@ async function main() {
     console.log("Alice Dai balance: ", (await collateral.balanceOf(aliceAddress)).toString());
     console.log("Alice Options balance: ", (await attachOption(alice, optionAddress).balanceOf(aliceAddress)).toString());
 
-    const liquidityDai = mdaiToWeiDai(10).toString();
-    const liquidityOption = mbtcToSatoshi(10).toString();
+    const liquidityDai = daiToWeiDai(2).toString();
+    const liquidityOption = mbtcToSatoshi(200).toString();
     const fromAliceCollateral = collateral.connect(alice);
-    await fromAliceCollateral.transfer("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityDai);
-    await attachOption(alice, optionAddress).transfer("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityOption);
+    await fromAliceCollateral.approve("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityDai);
+    await attachOption(alice, optionAddress).approve("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityOption);
     console.log("Creating pair tokens");
-    await addLiquidity(
-        alice,
-        collateral.address,
-        optionAddress,
-        liquidityDai,
-        liquidityOption,
-        liquidityDai,
-        liquidityOption,
-        aliceAddress,
-        1590883200
-    );
-    // await pairContract.mint(aliceAddress);
+    // await addLiquidity(
+    //     alice,
+    //     collateral.address,
+    //     optionAddress,
+    //     liquidityDai,
+    //     liquidityOption,
+    //     "0",
+    //     "0",
+    //     aliceAddress,
+    //     1590883200
+    // );
 
-    let pairData = await Pair.fetchData(collateral_token, option_token);
+    // let pairData = await Pair.fetchData(collateral_token, option_token);
 
-    console.log("Alice Dai balance: ", (await collateral.balanceOf(aliceAddress)).toString());
-    console.log("Alice Options balance: ", (await attachOption(alice, optionAddress).balanceOf(aliceAddress)).toString());
-    console.log("Liquidity Dai balance: ", (await pairData.reserveOf(collateral_token)).toString());
-    console.log("Liquidity Options balance: ", (await pairData.reserveOf(option_token)).toString());
+    // console.log("Alice Dai balance: ", (await collateral.balanceOf(aliceAddress)).toString());
+    // console.log("Alice Options balance: ", (await attachOption(alice, optionAddress).balanceOf(aliceAddress)).toString());
+    // console.log("Liquidity Dai balance: ", (await pairData.reserveOf(collateral_token)).toString());
+    // console.log("Liquidity Options balance: ", (await pairData.reserveOf(option_token)).toString());
 }
 
 main()
