@@ -2,7 +2,7 @@
 
 <div align="center">
 	<p align="center">
-		<img src="media/icon_256.png" alt="logo" width="128" height="128">
+		<img src="media/xopt.svg.png" alt="logo" width="128" height="128">
 	</p>
 	<p>
 		<h3 align="center">XOPTS: Bitcoin Backed Options on Ethereum</h3>
@@ -15,6 +15,16 @@ In traditional finance, an [option](https://en.wikipedia.org/wiki/Option_(financ
 XOPTS extends the native capabilities of Ethereum to track and execute PUT Options against BTC. Specifically, we enable sellers to lock DAI collateral in a contract to mint ERC-20 compatible option
 tokens that can be traded on [Uniswap](https://uniswap.org/). Buyers can then insure an arbitrary amount of BTC relative to the contract's strike price and pay in an amount of DAI collateral as premium.
 Finally, options can be exercised once the buyer proves payment to the respective underwriters of that contract using an on-chain Bitcoin SPV client.
+
+
+### Protocol
+
+- A seller (underwriter) creates a BTC put option with a strike price (the value of BTC the seller is willing to insure in Dai), an expiry time (the validity of the option), and a premium (the fee paid to the seller for buying an option in Dai).
+- A seller underwrites an option contract previously created by locking a number of Dai into the option contract. This creates a number of option tokens with the specific expiry, premium and strike price that are now available for buyers to obtain. During this process the seller also attaches his BTC address to the option tokens. For example, if the strike price is 10,000 Dai for a BTC and the seller locks 1,000 Dai, he would have generated 1,000 option tokens.
+- The buyer then goes ahead and buys a number of option tokens at a specific expiry, premium, and strike price.
+- During the expiry time, the buyer can exercise the option. To achieve this, he must send a number of BTC to the seller. Then, he proves that he sent the required number of BTC to the option smart contract. In return, the option tokens are burned and the buyer obtains underlying Dai provided by the seller.
+- After the expiry time, the seller can reclaim any unused collateral.
+- At any time a buyer can exchange his option tokens on Uniswap in a (Dai/Options) trading pair.
 
 ### Built with
 
