@@ -1,7 +1,6 @@
 import React from "react";
 import { ethers } from 'ethers';
-import { Redirect } from "react-router-dom";
-import optionArtifact from "../artifacts/PutOption.json"
+import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
 import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
@@ -83,7 +82,7 @@ export default class Buy extends React.Component {
       amount: 0,
       address: '',
       erc20Contract: null,
-      optionContract: null,
+      optionSellableContract: null,
       redirectToReferrer: false,
     }
 
@@ -97,12 +96,12 @@ export default class Buy extends React.Component {
       let erc20Abi = ierc20Artifact.abi;
       let erc20Contract = new ethers.Contract(this.props.erc20Address, erc20Abi, this.props.signer);
 
-      let optionAbi = optionArtifact.abi;
-      let optionContract = new ethers.Contract(contract, optionAbi, this.props.signer);
+      let optionAbi = optionSellableArtifact.abi;
+      let optionSellableContract = new ethers.Contract(contract, optionAbi, this.props.signer);
 
       this.setState({
         erc20Contract: erc20Contract,
-        optionContract: optionContract,
+        optionSellableContract: optionSellableContract,
       });
     }
   }
@@ -120,11 +119,11 @@ export default class Buy extends React.Component {
   
   handleSubmit = async (event) => {
     event.preventDefault();
-    const { amount, btcAddress, optionContract, erc20Contract } = this.state;
+    const { amount, btcAddress, optionSellableContract, erc20Contract } = this.state;
     try {
-      console.log(amount);
-      await erc20Contract.approve(optionContract.address, amount.toString());
-      await optionContract.underwrite(amount.toString(), ethers.utils.arrayify(btcAddress));
+      console.log(optionSellableContract.address);
+      await erc20Contract.approve(optionSellableContract.address, amount.toString());
+      await optionSellableContract.underwrite(amount.toString(), ethers.utils.toUtf8Bytes(btcAddress));
       toast.success('Successfully sold option!', {
         position: "top-center",
         autoClose: 3000,

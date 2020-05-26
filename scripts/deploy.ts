@@ -15,7 +15,7 @@ async function main() {
 	const registry = await MockRegistryAndResolver(signers[0]);
 
 	// finally deploy options over assets
-	return OptionPool(signers[0], collateral.address, relay.address, validator.address, registry.address);
+	return OptionPool(signers[0], collateral.address, relay.address, validator.address);
 }
 
 main()

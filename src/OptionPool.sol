@@ -5,8 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import {IRelay} from "./lib/IRelay.sol";
 import {ITxValidator} from "./lib/ITxValidator.sol";
-import "./Option.sol";
-
+import {IERC20Buyable} from "./IERC20Buyable.sol";
+import {IERC20Sellable} from "./IERC20Sellable.sol";
+import {ERC20Sellable} from "./ERC20Sellable.sol";
 
 contract OptionPool {
     using SafeMath for uint256;
@@ -16,18 +17,21 @@ contract OptionPool {
 
     // btc relay
     IRelay _relay;
-    ITxValidator _valid;
+
+    // tx validation
+    ITxValidator _validator;
 
     address[] private _options;
+    mapping (address => address) _pair;
 
     constructor(
         address collateral,
         address relay,
-        address valid
+        address validator
     ) public {
         _collateral = IERC20(collateral);
         _relay = IRelay(relay);
-        _valid = ITxValidator(valid);
+        _validator = ITxValidator(validator);
     }
 
     /**
@@ -41,43 +45,26 @@ contract OptionPool {
         uint256 _premium,
         uint256 _strikePrice
     ) public returns (address) {
-        PutOption option = new PutOption(
+        ERC20Sellable option = new ERC20Sellable(
             _collateral,
             _relay,
-            _valid,
+            _validator,
             _expiry,
             _premium,
             _strikePrice
         );
-        _options.push(address(option));
-        return address(option);
-    }
-
-    function getOptionInfoAt(uint256 index)
-        external
-        view
-        returns (
-            uint256 expiry,
-            uint256 premium,
-            uint256 strikePrice,
-            address addr
-        )
-    {
-        PutOption opt = PutOption(_options[index]);
-        expiry = opt._expiry();
-        premium = opt._premium();
-        strikePrice = opt._strikePrice();
-        addr = _options[index];
-        return (expiry, premium, strikePrice, addr);
+        address sellable = address(option);
+        address buyable = option.getBuyable();
+        _options.push(sellable);
+        _pair[sellable] = buyable;
+        return sellable;
     }
 
     function getOptions() external view returns (address[] memory) {
         return _options;
     }
 
-    function getUserPurchasedOptions(address user)
-        external
-        view
+    function getUserPurchasedOptions(address user) external view
         returns (
             address[] memory options,
             uint256[] memory currentOptions
@@ -87,21 +74,18 @@ contract OptionPool {
         currentOptions = new uint256[](_options.length);
 
         for (uint256 i = 0; i < _options.length; i++) {
-            PutOption opt = PutOption(_options[i]);
-            uint256 current_options = opt
-                .getCurrentOptionsForUser(user);
-            if (current_options != 0) {
+            IERC20Buyable opt = IERC20Buyable(_pair[_options[i]]);
+            uint256 current = opt.balanceOf(user);
+            if (current != 0) {
                 options[i] = _options[i];
-                currentOptions[i] = current_options;
+                currentOptions[i] = current;
             }
         }
 
         return (options, currentOptions);
     }
 
-    function getUserSoldOptions(address user)
-        external
-        view
+    function getUserSoldOptions(address user) external view
         returns (
             address[] memory options,
             uint256[] memory availableOptions
@@ -111,12 +95,11 @@ contract OptionPool {
         availableOptions = new uint256[](_options.length);
 
         for (uint256 i = 0; i < _options.length; i++) {
-            PutOption opt = PutOption(_options[i]);
-            uint256 available_options = opt
-                .getAvailableOptionsForUser(user);
-            if (available_options != 0) {
+            IERC20Sellable opt = IERC20Sellable(_options[i]);
+            uint256 available = opt.balanceOf(user);
+            if (available != 0) {
                 options[i] = _options[i];
-                availableOptions[i] = available_options;
+                availableOptions[i] = available;
             }
         }
         return (options, availableOptions);

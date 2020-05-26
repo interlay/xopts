@@ -3,10 +3,9 @@ import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, Toast } from "rea
 import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
 import { ToastContainer, toast } from 'react-toastify';
-import putOptionArtifact from "./../artifacts/PutOption.json"
+import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
+import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
 import * as utils from '../utils/utils.js'; 
-
-
 
 export default class UserSoldOptions extends Component {
     constructor(props) {
@@ -59,8 +58,8 @@ export default class UserSoldOptions extends Component {
         let btcInsured = 0;
         for (var i = 0; i < optionContracts[0].length; i++) {
             let addr = optionContracts[0][i];
-            let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
-            let optionRes = await optionContract.getOptionDetails();  
+            let optionContract = new ethers.Contract(addr, optionSellableArtifact.abi, this.props.provider);
+            let optionRes = await optionContract.getDetails(); 
             let option = {
                 expiry: parseInt(optionRes[0]._hex),
                 premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
@@ -99,7 +98,7 @@ export default class UserSoldOptions extends Component {
 
     async doRefund() {
         try {
-            let optionContract = new ethers.Contract(this.state.refundOption.contract, putOptionArtifact.abi, this.props.signer);
+            let optionContract = new ethers.Contract(this.state.refundOption.contract, optionSellableArtifact.abi, this.props.signer);
             await optionContract.refund();
             toast.success('Refund successful!', {
                 position: "top-center",

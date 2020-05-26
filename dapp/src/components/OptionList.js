@@ -8,7 +8,7 @@ import * as utils from '../utils/utils.js';
 import Buy from "./WizardBuy";
 import Sell from "./WizardSell";
 
-import putOptionArtifact from "./../artifacts/PutOption.json"
+import putOptionArtifact from "../artifacts/IERC20Sellable.json"
 import UserOptions from "./UserPurchasedOptions";
 
 class OptionList extends Component {
@@ -60,8 +60,8 @@ class OptionList extends Component {
         let totalPremium = 0;
         for (index in optionContracts) {
             let addr = optionContracts[index];
-            let optionContract = await new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
-            let optionRes = await optionContract.getOptionDetails();
+            let optionContract = new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
+            let optionRes = await optionContract.getDetails();
             let option = {
                 expiry: parseInt(optionRes[0]._hex),
                 premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),

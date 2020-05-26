@@ -1,7 +1,8 @@
 import React from "react";
 import { ethers } from 'ethers';
 import { Redirect } from "react-router-dom";
-import optionArtifact from "../artifacts/PutOption.json"
+import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
+import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
 import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
@@ -18,8 +19,8 @@ class SelectSeller extends React.Component {
   }
 
   async componentDidUpdate() {
-    if (this.props.optionContract && !this.state.loaded) {
-      let [sellers, options] = await this.props.optionContract.getOptionSellers();
+    if (this.props.optionSellableContract && !this.state.loaded) {
+      let [sellers, options] = await this.props.optionSellableContract.getOptionSellers();
       this.setState({
         loaded: true,
         sellers: sellers,
@@ -126,7 +127,8 @@ export default class Buy extends React.Component {
       seller: '',
       amount: 0,
       erc20Contract: null,
-      optionContract: null,
+      optionSellableContract: null,
+      optionBuyableContract: null,
       expiry: 0,
       premium: 0,
       strikePrice: 0,
@@ -144,14 +146,16 @@ export default class Buy extends React.Component {
       let erc20Abi = ierc20Artifact.abi;
       let erc20Contract = new ethers.Contract(this.props.erc20Address, erc20Abi, this.props.signer);
 
-      let optionAbi = optionArtifact.abi;
-      let optionContract = new ethers.Contract(contract, optionAbi, this.props.signer);
+      let optionSellableContract = new ethers.Contract(contract, optionSellableArtifact.abi, this.props.signer);
+      let optionBuyableAddress = await optionSellableContract.getBuyable();
+      let optionBuyableContract = new ethers.Contract(optionBuyableAddress, optionBuyableArtifact.abi, this.props.signer);
 
-      let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getOptionDetails();
+      let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionSellableContract.getDetails();
 
       this.setState({
         erc20Contract: erc20Contract,
-        optionContract: optionContract,
+        optionSellableContract: optionSellableContract,
+        optionBuyableContract: optionBuyableContract,
         expiry: expiry,
         premium: utils.weiDaiToBtc(parseInt(premium._hex)),
         strikePrice: utils.weiDaiToBtc(parseInt(strikePrice._hex)),
@@ -179,11 +183,11 @@ export default class Buy extends React.Component {
   // Trigger an alert on form submission
   handleSubmit = async (event) => {
     event.preventDefault();
-    const { seller, amount, optionContract, erc20Contract, premium } = this.state;
+    const { seller, amount, optionBuyableContract, erc20Contract, premium } = this.state;
     let tokensToPay = utils.daiToWeiDai(calculatePremium(amount, premium));
     try {
-      await erc20Contract.approve(optionContract.address, tokensToPay.toString());
-      await optionContract.insure(amount.toString(), seller);
+      await erc20Contract.approve(optionBuyableContract.address, tokensToPay.toString());
+      await optionBuyableContract.insure(seller, amount.toString());
       toast.success('Successfully purchased option!', {
         position: "top-center",
         autoClose: 3000,
@@ -286,7 +290,7 @@ export default class Buy extends React.Component {
               seller={this.state.seller}
               amount={this.state.amount}
               strikePrice={this.state.strikePrice}
-              optionContract={this.state.optionContract}
+              optionSellableContract={this.state.optionSellableContract}
             />
             <EnterAmount 
               currentStep={this.state.currentStep} 

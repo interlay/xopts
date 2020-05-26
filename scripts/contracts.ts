@@ -8,12 +8,12 @@ import { MockRelayFactory } from "../typechain/MockRelayFactory";
 import { MockTxValidatorFactory } from "../typechain/MockTxValidatorFactory";
 import { ERC137ResolverFactory } from "../typechain/ERC137ResolverFactory";
 import { ERC137RegistryFactory } from "../typechain/ERC137RegistryFactory";
-import { PutOptionFactory } from "../typechain/PutOptionFactory";
+import { ERC20SellableFactory } from "../typechain/ERC20SellableFactory";
+import { ERC20BuyableFactory } from "../typechain/ERC20BuyableFactory";
 import IUniswapV2Factory from '@uniswap/v2-core/build/IUniswapV2Factory.json'
 import IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import IUniswapV2Pair from '@uniswap/v2-core/build/IUniswapV2Pair.json'
 import IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
-
 
 interface Callable {
 	address: string;
@@ -35,8 +35,12 @@ export async function mintDai(collateral: Contract, userAddress: string, collate
     await fromDaiAccount.transfer(userAddress, collateralAmount);
 }
 
-export function attachOption(signer: Signer, address: string) {
-	return new PutOptionFactory(signer).attach(address);
+export function attachSellableOption(signer: Signer, address: string) {
+	return new ERC20SellableFactory(signer).attach(address);
+}
+
+export function attachBuyableOption(signer: Signer, address: string) {
+	return new ERC20BuyableFactory(signer).attach(address);
 }
 
 // convert a BTC amount to satoshis
@@ -124,8 +128,6 @@ export async function addLiquidity(
         deadline
     );
 }
-
-
 
 export async function MockCollateral(signer: Signer) {
 	let factory = new CollateralFactory(signer);

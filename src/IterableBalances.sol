@@ -2,7 +2,7 @@ pragma solidity ^0.5.15;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-library IterableMapping {
+library IterableBalances {
     using SafeMath for uint;
 
     struct Map {
