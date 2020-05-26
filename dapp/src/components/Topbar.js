@@ -66,9 +66,9 @@ class TopBar extends Component {
             </Link>
             }
             <a className="nav-link" href="https://www.cryptocompare.com/" target="__blank"> | &nbsp; Prices: &nbsp;
-            {this.props.btcPrices.dai} DAI/BTC, &nbsp;
-            {this.props.btcPrices.usd} USD/BTC, &nbsp;
-            {this.props.daiPrices.usd} USD/DAI
+            {this.props.btcPrices.dai} BTC/DAI, &nbsp;
+            {this.props.btcPrices.usd} BTC/USD, &nbsp;
+            {this.props.daiPrices.usd} DAI/USD
             </a>
           </Nav>
           
