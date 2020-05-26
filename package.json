@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@studydefi/money-legos": "^2.1.0",
+    "bootswatch": "^4.5.0",
     "qrcode.react": "^1.0.0",
     "react-qr-code": "^1.0.2",
     "uikit": "^3.4.4"

@@ -10,6 +10,8 @@ import Sell from "./WizardSell";
 
 import putOptionArtifact from "../artifacts/IERC20Sellable.json"
 import UserOptions from "./UserPurchasedOptions";
+import NavbarCollapse from "react-bootstrap/NavbarCollapse";
+import { isNoSubstitutionTemplateLiteral } from "typescript";
 
 class OptionList extends Component {
 
@@ -123,19 +125,23 @@ class OptionList extends Component {
                 let currentDate = Math.floor(Date.now() / 1000);
 
                 return (
-                    <tr key={strikePrice}>
-                        <td>{new Date(expiry*1000).toLocaleString()}</td>
+                    <tr key={strikePrice} disabled={expiry < currentDate}>
+                        <td>{new Date(expiry*1000).toLocaleString()}
+                        {(expiry < currentDate) &&
+                        <b> (Expired)</b>
+                        }
+                        </td>
                         <td>{strikePrice} DAI</td>
                         <td>{spotPrice} DAI</td>
                         <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
                         <td>{premium} DAI/BTC</td>
 
                         <td>
-                            <Button disabled={(expiry < currentDate)} variant="outline-success" onClick={() => { this.handleBuy(contract) }}>
+                            <Button disabled={(expiry < currentDate) || (totalSupplyLocked <= 0)} variant="outline-success" onClick={() => { this.handleBuy(contract) }} >
                                 Buy
                             </Button>
                             {" "}
-                            <Button  disabled={(expiry < currentDate)} variant="outline-danger" onClick={() => { this.handleSell(contract) }}>
+                            <Button  disabled={(expiry < currentDate)} variant="outline-danger" onClick={() => { this.handleSell(contract) }} >
                                 Sell
                             </Button>
                         </td>
@@ -153,33 +159,31 @@ class OptionList extends Component {
             <Card border="dark">
                 <Card.Header>
                     <Card.Title><h2>BTC/DAI Put Option Contracts</h2>
-                        <Row className="text-center">
-                            <Badge>
-                                <Col md={4}>
+                        <Row className="text-left">
+                           
+                                <Col md={2}>
                                     <h3>{this.state.totalInsured}</h3>
                                     <h6>BTC
                             Insured</h6>
                                 </Col>
-                            </Badge>
-                            <Badge>
-                                <Col md={4}>
+                      
+                                <Col md={2}>
                                     <h3>{this.state.insuranceAvailable}</h3>
-                                    <h6>Insurance Available</h6>
+                                    <h6>DAI Insurance Available</h6>
                                 </Col>
-                            </Badge>
-                            <Badge>
-                                <Col md={4}>
+                           
+                                <Col md={3}>
                                     <h3>{this.state.avgPremium}</h3>
                                     <h6>DAI/BTC
                             Average Premium</h6>
                                 </Col>
-                            </Badge>
+
                         </Row>
                     </Card.Title>
                 </Card.Header>
                 <Card.Body>
                     <Row>
-                        <Table hover responsive>
+                        <Table hover responsive size={"md"}>
                             <thead>
                                 <tr>
                                     <th>Expiry</th>

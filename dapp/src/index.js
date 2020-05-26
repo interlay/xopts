@@ -6,7 +6,9 @@ import { withRouter } from 'react-router-dom'
 
 // Importing Sass with Bootstrap CSS
 import "./App.scss";
-import 'bootstrap/dist/css/bootstrap.min.css';
+//import 'bootswatch/dist/cerulean/bootstrap.min.css'; // Bootstrap THEME
+//import 'bootstrap/dist/css/bootstrap.min.css';
+import './assets/css/custom-bootstrap.css';
 import 'react-toastify/dist/ReactToastify.css';
 
 import Dashboard from "./views/Dashboard";
@@ -15,8 +17,8 @@ import Topbar from "./components/Topbar";
 
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 
-const optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
-const erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
+const optionPoolAddress = "0xf4e77E5Da47AC3125140c470c71cBca77B5c638c";
+const erc20Address = "0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F";
 
 class App extends Component {
 
@@ -31,6 +33,11 @@ class App extends Component {
       optionPoolContract: null,
       btcPrices: {
         dai: null,
+        usd: null,
+        eth: null
+      },
+      optionPoolContract: null,
+      daiPrices: {
         usd: null,
         eth: null
       }
@@ -82,7 +89,7 @@ class App extends Component {
   }
 
   async getPriceData() {
-    fetch("https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC&tsyms=DAI,USD,ETH&api_key=0fe74ac7dd16554406f7ec8d305807596571e13bd6b3c8ac496ac436c17c26e2").then(res => res.json())
+    fetch("https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC,DAI&tsyms=DAI,USD,ETH&api_key=0fe74ac7dd16554406f7ec8d305807596571e13bd6b3c8ac496ac436c17c26e2").then(res => res.json())
       .then(
         (result) => {
           this.setState({
@@ -90,6 +97,10 @@ class App extends Component {
               dai: result.BTC.DAI,
               usd: result.BTC.USD,
               eth: result.BTC.ETH
+            },
+            daiPrices: {
+              usd: result.DAI.USD,
+              eth: result.DAI.ETH
             }
           })
         }

@@ -40,7 +40,7 @@ class Web3LogIn extends Component {
     } else if (this.props.isWeb3) {
       return <Link className="nav-link" to=""><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Link>
     } else {
-      return <Link className="nav-link" to="https://metamask.io/download.html" target="__blank"><Badge pill variant="primary"> Get MetaMask</Badge></Link>
+      return <a className="nav-link" href="https://metamask.io/download.html" target="__blank"><Badge pill variant="primary"> Get MetaMask</Badge></a>
     }
   }
 }
@@ -57,12 +57,21 @@ class TopBar extends Component {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
+            <Link className="nav-link" to="/">
+                Market
+            </Link>
             {this.props.isLoggedIn &&
               <Link className="nav-link" to="/dashboard">
                 Account
             </Link>
             }
+            <a className="nav-link" href="https://www.cryptocompare.com/" target="__blank"> | &nbsp; Prices: &nbsp;
+            {this.props.btcPrices.dai} DAI/BTC, &nbsp;
+            {this.props.btcPrices.usd} USD/BTC, &nbsp;
+            {this.props.daiPrices.usd} USD/DAI
+            </a>
           </Nav>
+          
           <Nav>
             <Web3LogInWithRouter {...this.props} />
           </Nav>
