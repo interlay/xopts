@@ -1,15 +1,11 @@
 import React, { Component } from "react";
-import { Redirect } from "react-router-dom";
 import { ethers } from 'ethers';
 import { withRouter } from 'react-router-dom'
 import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
 import * as utils from '../utils/utils.js'; 
-
 import Buy from "./WizardBuy";
 import Sell from "./WizardSell";
-
 import putOptionArtifact from "../artifacts/IERC20Sellable.json"
-import UserOptions from "./UserPurchasedOptions";
 
 class OptionList extends Component {
 
@@ -26,6 +22,9 @@ class OptionList extends Component {
             buy: null,
             sell: null
         };
+
+        this.hideBuy = this.hideBuy.bind(this)
+        this.hideSell = this.hideSell.bind(this)
     }
 
     componentDid() {
@@ -97,18 +96,30 @@ class OptionList extends Component {
         return options;
     }
 
-    handleBuy = (contract) => {
+    showBuy = (contract) => {
         this.setState({
             buy: contract,
             showBuy: true,
         });
     }
 
-    handleSell(contract) {
+    hideBuy() {
+        this.setState({
+            showBuy: false,
+        })
+    }
+
+    showSell(contract) {
         this.setState({
             sell: contract,
             showSell: true,
         });
+    }
+
+    hideSell() {
+        this.setState({
+            showSell: false,
+        })
     }
 
     renderTableData() {
@@ -131,11 +142,11 @@ class OptionList extends Component {
                         <td>{premium} DAI/BTC</td>
 
                         <td>
-                            <Button disabled={(expiry < currentDate)} variant="outline-success" onClick={() => { this.handleBuy(contract) }}>
+                            <Button disabled={(expiry < currentDate)} variant="outline-success" onClick={() => { this.showBuy(contract) }}>
                                 Buy
                             </Button>
                             {" "}
-                            <Button  disabled={(expiry < currentDate)} variant="outline-danger" onClick={() => { this.handleSell(contract) }}>
+                            <Button  disabled={(expiry < currentDate)} variant="outline-danger" onClick={() => { this.showSell(contract) }}>
                                 Sell
                             </Button>
                         </td>
@@ -204,14 +215,14 @@ class OptionList extends Component {
                 aria-labelledby="contained-modal-title-vcenter"
                 centered
                 show={this.state.showBuy} onHide={() => this.setState({ showBuy: false })}>
-                <Buy contract={this.state.buy} {...this.props}></Buy>
+                <Buy contract={this.state.buy} hide={this.hideBuy} {...this.props}></Buy>
             </Modal>
             <Modal
                 size="lg"
                 aria-labelledby="contained-modal-title-vcenter"
                 centered
                 show={this.state.showSell} onHide={() => this.setState({ showSell: false })}>
-                <Sell contract={this.state.sell} {...this.props}></Sell>
+                <Sell contract={this.state.sell} hide={this.hideSell} {...this.props}></Sell>
             </Modal>
         </Col>;
     }

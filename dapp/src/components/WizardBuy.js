@@ -186,8 +186,10 @@ export default class Buy extends React.Component {
     const { seller, amount, optionBuyableContract, erc20Contract, premium } = this.state;
     let tokensToPay = utils.daiToWeiDai(calculatePremium(amount, premium));
     try {
-      await erc20Contract.approve(optionBuyableContract.address, tokensToPay.toString());
-      await optionBuyableContract.insure(seller, amount.toString());
+      let tx = await erc20Contract.approve(optionBuyableContract.address, tokensToPay.toString());
+      await tx.wait(1);
+      tx = await optionBuyableContract.insure(seller, amount.toString());
+      await tx.wait(1);
       toast.success('Successfully purchased option!', {
         position: "top-center",
         autoClose: 3000,
@@ -197,6 +199,7 @@ export default class Buy extends React.Component {
         draggable: true,
         progress: undefined,
       });
+      this.props.hide();
     } catch(error) {
       console.log(error);
       toast.error('Failed to send transaction...', {
