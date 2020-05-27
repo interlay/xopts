@@ -15,8 +15,6 @@ import Topbar from "./components/Topbar";
 
 import optionPoolArtifact from "./artifacts/OptionPool.json"
 
-const optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
-const erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
 
 class App extends Component {
 
@@ -42,15 +40,23 @@ class App extends Component {
     this.getPriceData();
   }
 
-
   async getBlockchainData() {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
       try {
         // get Ethereum smart contract details
-        let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
-        let optionPoolAbi = optionPoolArtifact.abi;
-        let optionPoolContract = await new ethers.Contract(optionPoolAddress, optionPoolAbi, provider);
+        let provider = new ethers.providers.Web3Provider(web3.currentProvider);
+
+        let optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
+        let erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";        
+
+        let network = await provider.getNetwork();
+        if (network.name === "ropsten") {
+          optionPoolAddress = "0x2900a6b10d83C4Be83CBd80784a34D8ba4A1D99D";
+          erc20Address = "0x117054F477B40128A290a0d48Eb8aF6e12F333ce";
+        }
+
+        let optionPoolContract = new ethers.Contract(optionPoolAddress, optionPoolArtifact.abi, provider);
 
         this.setState({
           isWeb3: true,

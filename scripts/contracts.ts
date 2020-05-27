@@ -6,6 +6,7 @@ import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 import contracts from "../contracts";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
 import { MockTxValidatorFactory } from "../typechain/MockTxValidatorFactory";
+import { TxValidatorFactory } from "../typechain/TxValidatorFactory";
 import { ERC137ResolverFactory } from "../typechain/ERC137ResolverFactory";
 import { ERC137RegistryFactory } from "../typechain/ERC137RegistryFactory";
 import { ERC20SellableFactory } from "../typechain/ERC20SellableFactory";
@@ -147,6 +148,13 @@ export async function MockTxValidator(signer: Signer) {
     let factory = new MockTxValidatorFactory(signer);
 	let contract = await factory.deploy();
 	console.log("MockTxValidator contract:", contract.address);
+	return contract.deployed();
+}
+
+export async function TxValidator(signer: Signer) {
+    let factory = new TxValidatorFactory(signer);
+	let contract = await factory.deploy();
+	console.log("TxValidator contract:", contract.address);
 	return contract.deployed();
 }
 

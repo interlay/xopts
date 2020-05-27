@@ -16,7 +16,6 @@ XOPTS extends the native capabilities of Ethereum to track and execute PUT Optio
 tokens that can be traded on [Uniswap](https://uniswap.org/). Buyers can then insure an arbitrary amount of BTC relative to the contract's strike price and pay in an amount of DAI collateral as premium.
 Finally, options can be exercised once the buyer proves payment to the respective underwriters of that contract using an on-chain Bitcoin SPV client.
 
-
 ### Protocol
 
 - A seller (underwriter) creates a BTC put option with a strike price (the value of BTC the seller is willing to insure in Dai), an expiry time (the validity of the option), and a premium (the fee paid to the seller for buying an option in Dai).
@@ -93,9 +92,15 @@ yarn install
 yarn start
 ```
 
-## Usage
+## Deployments
 
-## Roadmap
+### Ropsten
+
+```
+Collateral (ERC20): 0x117054F477B40128A290a0d48Eb8aF6e12F333ce
+TxValidator: 0xD82ad83De34dea5E5B0D6c3716557D1c9EC0A699
+OptionPool: 0x2900a6b10d83C4Be83CBd80784a34D8ba4A1D99D
+```
 
 ## Contributing
 
