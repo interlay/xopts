@@ -71,6 +71,30 @@ class Confirm extends React.Component {
   }
 }
 
+function showSuccessToast(msg, ms) {
+  toast.success(msg, {
+    position: "top-center",
+    autoClose: ms,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+  });
+}
+
+function showFailureToast(msg, ms) {
+  toast.error(msg, {
+    position: "bottom-center",
+    autoClose: ms,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+  });
+}
+
 export default class Buy extends React.Component {
 
   constructor(props) {
@@ -83,7 +107,6 @@ export default class Buy extends React.Component {
       address: '',
       erc20Contract: null,
       optionSellableContract: null,
-      redirectToReferrer: false,
     }
 
     this.handleChange = this.handleChange.bind(this)
@@ -121,29 +144,17 @@ export default class Buy extends React.Component {
     event.preventDefault();
     const { amount, btcAddress, optionSellableContract, erc20Contract } = this.state;
     try {
-      console.log(optionSellableContract.address);
-      await erc20Contract.approve(optionSellableContract.address, amount.toString());
-      await optionSellableContract.underwrite(amount.toString(), ethers.utils.toUtf8Bytes(btcAddress));
-      toast.success('Successfully sold option!', {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+      let tx = await erc20Contract.approve(optionSellableContract.address, amount.toString());
+      showSuccessToast('Awaiting confirmations...', 15000);
+      await tx.wait(1);
+      tx = await optionSellableContract.underwrite(amount.toString(), ethers.utils.toUtf8Bytes(btcAddress));
+      showSuccessToast('Awaiting confirmations...', 15000);
+      await tx.wait(1);
+      this.props.hide();
+      showSuccessToast('Successfully sold options!', 3000);
     } catch(error) {
       console.log(error);
-      toast.error('Failed to send transaction...', {
-        position: "bottom-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+      showFailureToast('Failed to send transaction...', 3000);
     }
   }
 
