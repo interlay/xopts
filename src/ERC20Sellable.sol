@@ -21,7 +21,6 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     string constant ERR_ZERO_PREMIUM = "Requires non-zero premium";
     string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
-    string constant ERR_UNEXPECTED_BTC_ADDRESS = "Cannot change BTC address";
     string constant ERR_VERIFY_TX = "Cannot verify tx inclusion";
     string constant ERR_VALIDATE_TX = "Cannot validate tx format";
     string constant ERR_TRANSFER_EXCEEDS_BALANCE = "ERC20: transfer amount exceeds balance";
@@ -111,8 +110,8 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
 
     function _setBtcAddress(address account, bytes memory btcAddress) internal {
         require(
-            _btcAddress[account].length == 0 || keccak256(_btcAddress[account]) == keccak256(btcAddress),
-            ERR_UNEXPECTED_BTC_ADDRESS
+            btcAddress.length > 0,
+            ERR_NO_BTC_ADDRESS
         );
         _btcAddress[account] = btcAddress;
     }
