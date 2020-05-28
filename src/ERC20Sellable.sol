@@ -132,12 +132,12 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     * @dev Get the configured BTC address for an account
     * @param account: minter address
     **/
-    function getBtcAddress(address account) public view returns (bytes memory) {
+    function getBtcAddress(address account) external view returns (bytes memory) {
         return _btcAddress[account];
     }
 
     function insureOption(address buyer, address seller, uint256 satoshis) external notExpired onlyOwner {
-        require(getBtcAddress(seller).length > 0, ERR_NO_BTC_ADDRESS);
+        require(_btcAddress[seller].length > 0, ERR_NO_BTC_ADDRESS);
         // require the satoshis * strike price
         uint256 options = _calculateInsure(satoshis);
         // lock token from seller
@@ -156,7 +156,7 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         bytes calldata rawtx
     ) external notExpired onlyOwner returns (uint) {
         (uint amount, uint btcAmount) = _buyable.exerciseOption(buyer, seller);
-        bytes memory btcAddress = getBtcAddress(seller);
+        bytes memory btcAddress = _btcAddress[seller];
 
         // we currently do not support multiple outputs
         // verify & validate tx, use default confirmations

@@ -163,19 +163,18 @@ export default class Buy extends React.Component {
 
   updateAmount(i) {
     this.setState({
-      amount: i
+      amount: utils.satToBtc(i),
     });
   }
   
   // Trigger an alert on form submission
   handleSubmit = async (event) => {
     event.preventDefault();
-    const { seller, amount, optionContract, premium } = this.state;
-    let tokensToPay = utils.daiToWeiDai(calculatePremium(amount, premium));
+    const { seller, amount, optionContract } = this.state;
     try {
       let contracts = this.props.contracts;
       await contracts.checkAllowance();
-      await contracts.insureOption(optionContract.address, seller, tokensToPay.toString());
+      await contracts.insureOption(optionContract.address, seller, amount);
       showSuccessToast(toast, 'Successfully purchased option!', 3000);
       this.props.hide();
     } catch(error) {
