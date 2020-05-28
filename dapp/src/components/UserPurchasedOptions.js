@@ -71,7 +71,8 @@ class ScanBTC extends React.Component {
         if (this.props.contract && this.props.contracts && !this.state.loaded) {
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
-            let btcAddress = ethers.utils.hexlify(btcAddressRaw).toString();
+            let btcAddress = ethers.utils.toUtf8String(ethers.utils.hexlify(btcAddressRaw));
+            console.log(btcAddress);
             let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amount;
 
             this.setState({
