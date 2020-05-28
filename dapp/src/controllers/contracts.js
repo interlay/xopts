@@ -11,14 +11,12 @@ export class Contracts {
     constructor(signer) {
         this.signer = signer;
 
-        let optionPoolAddress = "0xf4e77E5Da47AC3125140c470c71cBca77B5c638c";
-        let erc20Address = "0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F";
+        let optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
+        let erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
 
-        // let network = await provider.getNetwork();
-        // if (network.name === "ropsten") {
-        //   optionPoolAddress = "0x2900a6b10d83C4Be83CBd80784a34D8ba4A1D99D";
-        //   erc20Address = "0x117054F477B40128A290a0d48Eb8aF6e12F333ce";
-        // }
+        // Ropsten:
+        // optionPoolAddress = "0xB972583F9e7887546E0eC287D4869B25f8F8c341";
+        // erc20Address = "0xe0148a2105302251Ced6eB59e4ee60265F8B0109";
 
         this.optionPoolContract = new ethers.Contract(optionPoolAddress, optionPoolArtifact.abi, signer);
         this.erc20Contract = new ethers.Contract(erc20Address, erc20Artifact.abi, signer);
@@ -36,12 +34,13 @@ export class Contracts {
         return this.optionPoolContract.getUserSoldOptions(address);
     }
 
-    async checkAllowance() {
+    async checkAllowance(amount) {
         let address = await this.signer.getAddress();
         let allowance = await this.erc20Contract.allowance(address, this.optionPoolContract.address);
-
-        let tx = await this.erc20Contract.approve(this.optionPoolContract.address, ethers.constants.MaxUint256);
-        await tx.wait(1);
+        if (allowance < amount) {
+            let tx = await this.erc20Contract.approve(this.optionPoolContract.address, ethers.constants.MaxUint256);
+            await tx.wait(1);                
+        }
     }
 
     attachOption(address) {
@@ -94,5 +93,9 @@ export class Option {
 
     getBtcAddress(address) {
         return this.sellable.getBtcAddress(address);
+    }
+
+    async hasSellers() {
+        return (await this.sellable.totalSupplyUnsold()) > 0;
     }
 }
