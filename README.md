@@ -120,6 +120,8 @@ TxValidator: 0xD82ad83De34dea5E5B0D6c3716557D1c9EC0A699
 OptionPool: 0x2900a6b10d83C4Be83CBd80784a34D8ba4A1D99D
 ```
 
+You can interact with a locally deployed front-end on [localhost:3000](http://localhost:3000).
+
 ## Roadmap
 
 - [x] Integration with [Uniswap v2](https://uniswap.org/docs/v2).
