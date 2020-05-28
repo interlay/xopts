@@ -1,16 +1,21 @@
 pragma solidity ^0.5.15;
 
-import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/GSN/Context.sol";
+import {IterableAddresses} from "./IterableAddresses.sol";
 import {IRelay} from "./lib/IRelay.sol";
 import {ITxValidator} from "./lib/ITxValidator.sol";
 import {IERC20Buyable} from "./IERC20Buyable.sol";
 import {IERC20Sellable} from "./IERC20Sellable.sol";
 import {ERC20Sellable} from "./ERC20Sellable.sol";
 
-contract OptionPool {
+contract OptionPool is Context {
     using SafeMath for uint256;
+    using IterableAddresses for IterableAddresses.List;
+
+    string constant ERR_INVALID_OPTION = "Option does not exist";
+    string constant ERR_ZERO_AMOUNT = "Requires non-zero amount";
 
     // backing asset (eg. Dai or USDC)
     IERC20 _collateral;
@@ -21,8 +26,7 @@ contract OptionPool {
     // tx validation
     ITxValidator _validator;
 
-    address[] private _options;
-    mapping (address => address) _pair;
+    IterableAddresses.List private _options;
 
     constructor(
         address collateral,
@@ -46,22 +50,65 @@ contract OptionPool {
         uint256 _strikePrice
     ) public returns (address) {
         ERC20Sellable option = new ERC20Sellable(
-            _collateral,
             _relay,
             _validator,
             _expiry,
             _premium,
             _strikePrice
         );
-        address sellable = address(option);
-        address buyable = option.getBuyable();
-        _options.push(sellable);
-        _pair[sellable] = buyable;
-        return sellable;
+        _options.set(address(option));
+        return address(option);
+    }
+
+    function underwriteOption(address option, uint256 amount, bytes calldata btcAddress) external {
+        require(_options.exists(option), ERR_INVALID_OPTION);
+        require(amount > 0, ERR_ZERO_AMOUNT);
+        address seller = _msgSender();
+        IERC20Sellable(option).underwriteOption(seller, amount, btcAddress);
+        _collateral.transferFrom(seller, address(this), amount);
+    }
+
+    function refundOption(address option) external {
+        require(_options.exists(option), ERR_INVALID_OPTION);
+        address seller = _msgSender();
+        uint amount = IERC20Sellable(option).refundOption(seller);
+        _collateral.transfer(seller, amount);
+    }
+
+    function insureOption(address option, address seller, uint256 satoshis) external {
+        require(_options.exists(option), ERR_INVALID_OPTION);
+        require(satoshis > 0, ERR_ZERO_AMOUNT);
+        // require(seller != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
+
+        address buyer = _msgSender();
+        IERC20Sellable sellable = IERC20Sellable(option);
+
+        // require the satoshis * premium
+        uint256 premium = sellable.calculatePremium(satoshis);
+        _collateral.transferFrom(buyer, seller, premium);
+
+        sellable.insureOption(buyer, seller, satoshis);
+    }
+
+    function exerciseOption(
+        address option,
+        address seller,
+        uint256 height,
+        uint256 index,
+        bytes32 txid,
+        bytes calldata proof,
+        bytes calldata rawtx
+    ) external returns (uint) {
+        require(_options.exists(option), ERR_INVALID_OPTION);
+        address buyer = _msgSender();
+        uint amount = IERC20Sellable(option).exerciseOption(
+            buyer, seller, height, index, txid, proof, rawtx
+        );
+        _collateral.transfer(buyer, amount);
     }
 
     function getOptions() external view returns (address[] memory) {
-        return _options;
+        return _options.keys;
     }
 
     function getUserPurchasedOptions(address user) external view
@@ -70,14 +117,19 @@ contract OptionPool {
             uint256[] memory currentOptions
         )
     {
-        options = new address[](_options.length);
-        currentOptions = new uint256[](_options.length);
+        IterableAddresses.List storage list = _options;
 
-        for (uint256 i = 0; i < _options.length; i++) {
-            IERC20Buyable opt = IERC20Buyable(_pair[_options[i]]);
-            uint256 current = opt.balanceOf(user);
+        uint length = list.size();
+        options = new address[](length);
+        currentOptions = new uint256[](length);
+
+        for (uint i = 0; i < length; i++) {
+            address key = list.getKeyAtIndex(i);
+            IERC20Sellable sell = IERC20Sellable(key);
+            IERC20Buyable buy = IERC20Buyable(sell.getBuyable());
+            uint256 current = buy.balanceOf(user);
             if (current != 0) {
-                options[i] = _options[i];
+                options[i] = key;
                 currentOptions[i] = current;
             }
         }
@@ -91,14 +143,18 @@ contract OptionPool {
             uint256[] memory availableOptions
         )
     {
-        options = new address[](_options.length);
-        availableOptions = new uint256[](_options.length);
+        IterableAddresses.List storage list = _options;
 
-        for (uint256 i = 0; i < _options.length; i++) {
-            IERC20Sellable opt = IERC20Sellable(_options[i]);
-            uint256 available = opt.balanceOf(user);
+        uint length = list.size();
+        options = new address[](length);
+        availableOptions = new uint256[](length);
+
+        for (uint i = 0; i < length; i++) {
+            address key = list.getKeyAtIndex(i);
+            IERC20Sellable sell = IERC20Sellable(key);
+            uint256 available = sell.balanceOf(user);
             if (available != 0) {
-                options[i] = _options[i];
+                options[i] = key;
                 availableOptions[i] = available;
             }
         }

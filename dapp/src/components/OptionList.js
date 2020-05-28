@@ -1,11 +1,9 @@
 import React, { Component } from "react";
-import { ethers } from 'ethers';
 import { withRouter } from 'react-router-dom'
 import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
 import * as utils from '../utils/utils.js'; 
 import Buy from "./WizardBuy";
 import Sell from "./WizardSell";
-import putOptionArtifact from "../artifacts/IERC20Sellable.json"
 
 class OptionList extends Component {
 
@@ -40,8 +38,8 @@ class OptionList extends Component {
     }
 
     async getOptions() {
-        if (this.props.optionPoolContract) {
-            let optionContracts = await this.props.optionPoolContract.getOptions();
+        if (this.props.contracts) {
+            let optionContracts = await this.props.contracts.getOptions();
             let options = await this.getOptionDetails(optionContracts);
             this.setState({
                 loaded: true,
@@ -59,7 +57,7 @@ class OptionList extends Component {
         let totalPremium = 0;
         for (index in optionContracts) {
             let addr = optionContracts[index];
-            let optionContract = new ethers.Contract(addr, putOptionArtifact.abi, this.props.provider);
+            let optionContract = this.props.contracts.attachOption(addr);
             let optionRes = await optionContract.getDetails();
             let option = {
                 expiry: parseInt(optionRes[0]._hex),

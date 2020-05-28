@@ -1,7 +1,9 @@
 pragma solidity ^0.5.15;
 
+import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IterableBalances} from "./IterableBalances.sol";
 import {IRelay} from "./lib/IRelay.sol";
@@ -11,13 +13,17 @@ import {Expirable} from "./Expirable.sol";
 import {IERC20Buyable} from "./IERC20Buyable.sol";
 import {IERC20Sellable} from "./IERC20Sellable.sol";
 
-contract ERC20Sellable is IERC20Sellable, Context, Expirable {
+contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     using SafeMath for uint;
     using IterableBalances for IterableBalances.Map;
 
     string constant ERR_INSUFFICIENT_BALANCE = "Insufficient balance";
-    string constant ERR_ZERO_AMOUNT = "Requires non-zero amount";
+    string constant ERR_ZERO_PREMIUM = "Requires non-zero premium";
+    string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
+    string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
     string constant ERR_UNEXPECTED_BTC_ADDRESS = "Cannot change BTC address";
+    string constant ERR_VERIFY_TX = "Cannot verify tx inclusion";
+    string constant ERR_VALIDATE_TX = "Cannot validate tx format";
     string constant ERR_TRANSFER_EXCEEDS_BALANCE = "ERC20: transfer amount exceeds balance";
     string constant ERR_APPROVE_TO_ZERO_ADDRESS = "ERC20: approve to the zero address";
     string constant ERR_TRANSFER_TO_ZERO_ADDRESS = "ERC20: transfer to the zero address";
@@ -26,14 +32,17 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable {
 
     event Underwrite(address indexed minter, uint256 amount);
 
-    // backing asset (eg. Dai or USDC)
-    IERC20 _collateral;
-
     // btc relay
     IRelay _relay;
 
     // tx validation
-    ITxValidator _valid;
+    ITxValidator _validator;
+
+    // the price to buy the option
+    uint256 public _premium;
+
+    // the strike price for one satoshi
+    uint256 public _strikePrice;
 
     // child contract
     IERC20Buyable _buyable;
@@ -55,15 +64,22 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable {
     uint256 internal _totalSupplyUnsold;
 
     constructor(
-        IERC20 collateral,
         IRelay relay,
-        ITxValidator valid,
+        ITxValidator validator,
         uint256 expiry,
         uint256 premium,
         uint256 strikePrice
-    ) public Expirable(expiry) {
-        _collateral = collateral;
-        _buyable = new ERC20Buyable(collateral, relay, valid, IERC20Sellable(this), expiry, premium, strikePrice);
+    ) public Expirable(expiry) Ownable() {
+        require(premium > 0, ERR_ZERO_PREMIUM);
+        require(strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
+
+        _relay = relay;
+        _validator = validator;
+
+        _premium = premium;
+        _strikePrice = strikePrice;
+
+        _buyable = new ERC20Buyable(expiry, strikePrice);
     }
 
     function totalSupply() external view returns (uint256) {
@@ -78,21 +94,10 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable {
         return address(_buyable);
     }
 
-    /**
-    * @dev Underwrite an option, can be called multiple times
-    * @param amount: erc-20 collateral
-    * @param btcAddress: recipient address for exercising
-    **/
-    function underwrite(uint256 amount, bytes calldata btcAddress) external notExpired {
-        require(amount > 0, ERR_ZERO_AMOUNT);
-
-        address caller = _msgSender();
-        // we do the transfer here because it requires approval
-        _collateral.transferFrom(caller, address(this), amount);
-        _mint(caller, amount);
-        _setBtcAddress(caller, btcAddress);
-
-        emit Underwrite(caller, amount);
+    function underwriteOption(address account, uint256 amount, bytes calldata btcAddress) external notExpired onlyOwner {
+        _mint(account, amount);
+        _setBtcAddress(account, btcAddress);
+        emit Underwrite(account, amount);
     }
 
     function _mint(address owner, uint256 amount) internal {
@@ -127,33 +132,46 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable {
     * @dev Get the configured BTC address for an account
     * @param account: minter address
     **/
-    function getBtcAddress(address account) external view returns (bytes memory) {
+    function getBtcAddress(address account) public view returns (bytes memory) {
         return _btcAddress[account];
     }
 
-    function buyOptions(address account, uint256 amount) external notExpired returns (bool) {
-        require(_msgSender() == address(_buyable), "must buy through buyer");
-        _balancesUnsold.set(account, _balancesUnsold.get(account).sub(amount));
-        _totalSupplyUnsold = _totalSupplyUnsold.sub(amount);
-        return true;
+    function insureOption(address buyer, address seller, uint256 satoshis) external notExpired onlyOwner {
+        require(getBtcAddress(seller).length > 0, ERR_NO_BTC_ADDRESS);
+        // require the satoshis * strike price
+        uint256 options = _calculateInsure(satoshis);
+        // lock token from seller
+        _balancesUnsold.set(seller, _balancesUnsold.get(seller).sub(options));
+        _totalSupplyUnsold = _totalSupplyUnsold.sub(options);
+        _buyable.insureOption(buyer, seller, options);
     }
 
-    function sellOptions(address buyer, address seller, uint256 amount) external notExpired returns (bool) {
-        require(_msgSender() == address(_buyable), "must sell through buyer");
+    function exerciseOption(
+        address buyer,
+        address seller,
+        uint256 height,
+        uint256 index,
+        bytes32 txid,
+        bytes calldata proof,
+        bytes calldata rawtx
+    ) external notExpired onlyOwner returns (uint) {
+        (uint amount, uint btcAmount) = _buyable.exerciseOption(buyer, seller);
+        bytes memory btcAddress = getBtcAddress(seller);
+
+        // we currently do not support multiple outputs
+        // verify & validate tx, use default confirmations
+        require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
+        require(_validator.validateTx(rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
+
         _balancesTotal[seller] = _balancesTotal[seller].sub(amount);
         _totalSupply = _totalSupply.sub(amount);
-        _collateral.transfer(buyer, amount);
-        return true;
+        return amount;
     }
 
-    /**
-    * @dev Claim collateral for tokens after expiry
-    **/
-    function refundOptions() external hasExpired {
-        address caller = _msgSender();
-        uint256 balance = _burn(caller);
+    function refundOption(address account) external hasExpired onlyOwner returns (uint) {
+        uint256 balance = _burn(account);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
-        _collateral.transfer(caller, balance);
+        return balance;
     }
 
     function _burn(address owner) internal returns (uint) {
@@ -183,13 +201,12 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable {
     }
 
     function getDetails() external view returns(uint, uint, uint, uint, uint, uint) {
-        (uint expiry, uint premium, uint strikePrice, uint totalBought) = _buyable.getDetails();
         return (
-            expiry,
-            premium,
-            strikePrice,
+            _expiry,
+            _premium,
+            _strikePrice,
             _totalSupply,
-            totalBought,
+            _buyable.totalSupply(),
             _totalSupplyUnsold
         );
     }
@@ -248,5 +265,21 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable {
         _balancesUnsold.set(recipient, _balancesUnsold.get(recipient).add(amount));
 
         emit Transfer(sender, recipient, amount);
+    }
+
+    /**
+    * @dev Computes the insure payout from the amount and the strikePrice
+    * @param amount: asset to exchange
+    */
+    function _calculateInsure(uint256 amount) private view returns (uint256) {
+        return amount.mul(_strikePrice);
+    }
+
+    /**
+    * @dev Computes the premium per option
+    * @param amount: asset to exchange
+    */
+    function calculatePremium(uint256 amount) external view returns (uint256) {
+        return amount.mul(_premium);
     }
 }

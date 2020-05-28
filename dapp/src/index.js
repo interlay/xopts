@@ -13,8 +13,7 @@ import Dashboard from "./views/Dashboard";
 import Home from "./views/Home";
 import Topbar from "./components/Topbar";
 
-import optionPoolArtifact from "./artifacts/OptionPool.json"
-
+import { Contracts } from './controllers/contracts';
 
 class App extends Component {
 
@@ -26,7 +25,7 @@ class App extends Component {
       signer: null,
       address: null,
       provider: null,
-      optionPoolContract: null,
+      contracts: null,
       btcPrices: {
         dai: null,
         usd: null,
@@ -47,22 +46,9 @@ class App extends Component {
         // get Ethereum smart contract details
         let provider = new ethers.providers.Web3Provider(web3.currentProvider);
 
-        let optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
-        let erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";        
-
-        let network = await provider.getNetwork();
-        if (network.name === "ropsten") {
-          optionPoolAddress = "0x2900a6b10d83C4Be83CBd80784a34D8ba4A1D99D";
-          erc20Address = "0x117054F477B40128A290a0d48Eb8aF6e12F333ce";
-        }
-
-        let optionPoolContract = new ethers.Contract(optionPoolAddress, optionPoolArtifact.abi, provider);
-
         this.setState({
           isWeb3: true,
           provider: provider,
-          optionPoolContract: optionPoolContract,
-          erc20Address: erc20Address
         });
 
         // Get user account data, if already logged in
@@ -77,10 +63,13 @@ class App extends Component {
     try {
       let signer = await provider.getSigner();
       let address = await signer.getAddress();
+      let contracts = new Contracts(signer);
+
       this.setState({
         isLoggedIn: true,
         signer: signer,
         address: address,
+        contracts: contracts,
       });
     } catch (error) {
       console.log("Not logged in.")
