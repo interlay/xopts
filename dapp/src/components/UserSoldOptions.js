@@ -6,6 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
 import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
 import * as utils from '../utils/utils.js'; 
+import { ButtonTool } from "./ButtonTool";
 
 export default class UserSoldOptions extends Component {
     constructor(props) {
@@ -152,10 +153,15 @@ export default class UserSoldOptions extends Component {
                             <td>{premium} DAI/BTC</td>
 
                             <td>
-                                <Button variant={'outline-danger'} onClick={() => { this.handleRefund(index) }}
-                                    disabled={(expiry >= currentDate)}>
-                                    Refund
-                            </Button>
+                                <ButtonTool
+                                    disable={(expiry >= currentDate)}
+                                    reason={(expiry >= currentDate) ? "Not Expired" : null}
+                                    placement={"right"}
+                                    text={"Refund"}
+                                    variant={"outline-danger"}
+                                    show={this.handleRefund}
+                                    showValue={index}
+                                />
                             </td>
                         </tr>
                     )
@@ -221,9 +227,7 @@ export default class UserSoldOptions extends Component {
                                         <th>Current Price</th>
                                         <th>Insurance Issued</th>
                                         <th>Premium</th>
-                                        <th>
-                                            Action
-                                </th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -242,12 +246,12 @@ export default class UserSoldOptions extends Component {
                     <Modal.Header closeButton>
                         <Modal.Title id="contained-modal-title-vcenter">
                             Refund {this.state.refundOption.totalSupplyLocked} DAI From Option Contract?
-                    </Modal.Title>
+                        </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <p>
                             Are you sure you want to refund this option contract, worth <strong>{this.state.refundOption.totalSupplyLocked} DAI</strong> to <strong>{this.props.address}</strong>?
-                    </p>
+                        </p>
                     </Modal.Body>
                     <Modal.Footer>
                         <Button onClick={() => this.doRefund()}>Refund</Button>

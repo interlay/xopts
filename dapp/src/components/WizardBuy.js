@@ -3,6 +3,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
 import * as utils from '../utils/utils.js'; 
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
+import { SpinButton } from './SpinButton';
 
 class SelectSeller extends React.Component {
   constructor(props) {
@@ -31,7 +32,7 @@ class SelectSeller extends React.Component {
       let amount = utils.weiDaiToDai(parseInt(this.state.options[index]._hex));
       let amountBtc = amount / this.props.strikePrice;
       return (
-        <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amountBtc}</option>
+        <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amountBtc} BTC</option>
       );
     })
   }
@@ -98,7 +99,7 @@ class Confirm extends React.Component {
               <ListGroupItem>{utils.weiDaiToBtc(calculateOptions(this.props.amount, this.props.strikePrice))} XOPT</ListGroupItem>
           </ListGroup>
         </FormGroup>
-        <button className="btn btn-success btn-block">Pay</button>
+        <SpinButton spinner={this.props.spinner}/>
       </FormGroup>
     )
   }
@@ -126,7 +127,7 @@ export default class Buy extends React.Component {
       expiry: 0,
       premium: 0,
       strikePrice: 0,
-      redirectToReferrer: false,
+      spinner: false,
     }
 
     this.handleChange = this.handleChange.bind(this)
@@ -170,6 +171,7 @@ export default class Buy extends React.Component {
   // Trigger an alert on form submission
   handleSubmit = async (event) => {
     event.preventDefault();
+    this.setState({spinner: true});
     const { seller, amount, optionContract } = this.state;
     try {
       let contracts = this.props.contracts;
@@ -181,6 +183,7 @@ export default class Buy extends React.Component {
       console.log(error);
       showFailureToast(toast, 'Failed to send transaction...', 3000);
     }
+    this.setState({spinner: false});
   }
 
   _next() {
@@ -276,8 +279,8 @@ export default class Buy extends React.Component {
               amount={this.state.amount}
               premium={this.state.premium}
               strikePrice={this.state.strikePrice}
+              spinner={this.state.spinner}
             />
-
           </Form>
         </Modal.Body>
         <Modal.Footer>

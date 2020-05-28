@@ -1,8 +1,9 @@
 import React from "react";
 import { ToastContainer, toast } from 'react-toastify';
-import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
+import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal, Button, Spinner } from "react-bootstrap";
 import * as utils from '../utils/utils.js';
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
+import { SpinButton } from './SpinButton';
 
 class EnterAmount extends React.Component {
   render() {
@@ -63,7 +64,7 @@ class Confirm extends React.Component {
               <ListGroupItem>{utils.weiDaiToDai(this.props.amount)} DAI -> {utils.weiDaiToDai(this.props.amount)} XOPT</ListGroupItem>
           </ListGroup>
         </FormGroup>
-        <button className="btn btn-success btn-block">Pay</button>
+        <SpinButton spinner={this.props.spinner}/>
       </FormGroup>
     )
   }
@@ -80,6 +81,7 @@ export default class Buy extends React.Component {
       amount: 0,
       address: '',
       optionContract: null,
+      spinner: false,
     }
 
     this.handleChange = this.handleChange.bind(this)
@@ -111,10 +113,11 @@ export default class Buy extends React.Component {
   
   handleSubmit = async (event) => {
     event.preventDefault();
+    this.setState({spinner: true});
     const { amount, btcAddress, optionContract } = this.state;
     try {
       let contracts = this.props.contracts;
-      await contracts.checkAllowance();
+      await contracts.checkAllowance(amount);
       await contracts.underwriteOption(optionContract.address, amount, btcAddress);
       this.props.hide();
       showSuccessToast(toast, 'Successfully sold options!', 3000);
@@ -122,6 +125,7 @@ export default class Buy extends React.Component {
       console.log(error);
       showFailureToast(toast, 'Failed to send transaction...', 3000);
     }
+    this.setState({spinner: false});
   }
 
   _next() {
@@ -208,6 +212,7 @@ export default class Buy extends React.Component {
               handleChange={this.handleChange}
               amount={this.state.amount}
               btcAddress={this.state.btcAddress}
+              spinner={this.state.spinner}
             />          
           </Form>
         </Modal.Body>

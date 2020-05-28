@@ -1,9 +1,10 @@
 import React, { Component } from "react";
 import { withRouter } from 'react-router-dom'
-import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl } from "react-bootstrap";
+import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl, OverlayTrigger, Tooltip } from "react-bootstrap";
 import * as utils from '../utils/utils.js'; 
 import Buy from "./WizardBuy";
 import Sell from "./WizardSell";
+import { ButtonTool } from "./ButtonTool.js";
 
 class OptionList extends Component {
 
@@ -20,6 +21,9 @@ class OptionList extends Component {
             buy: null,
             sell: null
         };
+
+        this.showBuy = this.showBuy.bind(this)
+        this.showSell = this.showSell.bind(this)
 
         this.hideBuy = this.hideBuy.bind(this)
         this.hideSell = this.hideSell.bind(this)
@@ -66,6 +70,7 @@ class OptionList extends Component {
                 totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
                 totalSupplyLocked: utils.weiDaiToDai(parseInt(optionRes[4]._hex)),
                 totalSupplyUnlocked: utils.weiDaiToDai(parseInt(optionRes[5]._hex)),
+                hasSellers: await optionContract.hasSellers(),
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;
@@ -94,7 +99,7 @@ class OptionList extends Component {
         return options;
     }
 
-    showBuy = (contract) => {
+    showBuy(contract) {
         this.setState({
             buy: contract,
             showBuy: true,
@@ -144,13 +149,25 @@ class OptionList extends Component {
                         <td>{premium} DAI/BTC</td>
 
                         <td>
-                            <Button disabled={(expiry < currentDate)} variant="outline-success" onClick={() => { this.showBuy(contract) }}>
-                                Buy
-                            </Button>
+                            <ButtonTool
+                                disable={(expiry < currentDate) || !option.hasSellers}
+                                reason={(expiry < currentDate) ? "Expired" : (!option.hasSellers) ? "No Options" : null}
+                                placement={"left"}
+                                text={"Buy"}
+                                variant={"outline-success"}
+                                show={this.showBuy}
+                                showValue={contract}
+                            />
                             {" "}
-                            <Button  disabled={(expiry < currentDate)} variant="outline-danger" onClick={() => { this.showSell(contract) }}>
-                                Sell
-                            </Button>
+                            <ButtonTool
+                                disable={(expiry < currentDate)}
+                                reason={(expiry < currentDate) ? "Expired" : null}
+                                placement={"right"}
+                                text={"Sell"}
+                                variant={"outline-danger"}
+                                show={this.showSell}
+                                showValue={contract}
+                            />
                         </td>
                     </tr>
                 )
