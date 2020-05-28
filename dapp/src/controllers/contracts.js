@@ -40,8 +40,8 @@ export class Contracts {
         let address = await this.signer.getAddress();
         let allowance = await this.erc20Contract.allowance(address, this.optionPoolContract.address);
 
-        // let tx = await erc20Contract.approve(optionPoolContract.address, ethers.constants.MaxUint256);
-        // await tx.wait(1);
+        let tx = await this.erc20Contract.approve(this.optionPoolContract.address, ethers.constants.MaxUint256);
+        await tx.wait(1);
     }
 
     attachOption(address) {
@@ -90,5 +90,9 @@ export class Option {
         let buyableAddress = await this.sellable.getBuyable();
         let buyable = new ethers.Contract(buyableAddress, optionBuyableArtifact.abi, this.signer);
         return buyable.getOptionOwnersFor(address);
+    }
+
+    getBtcAddress(address) {
+        return this.sellable.getBtcAddress(address);
     }
 }
