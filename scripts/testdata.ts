@@ -6,6 +6,7 @@ import {
     satoshiToMbtc, mbtcToSatoshi, mdaiToWeiDai, weiDaiToMdai, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC
 } from "./contracts";
 import { Signer } from "ethers";
+import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 
 let btcAddress = ethers.utils.toUtf8Bytes("19fkEq227H56rqwwjEoGg12rctq1c8L3a4");
 
@@ -53,8 +54,8 @@ async function main() {
 	let buyableAddress = await getBuyable(sellableAddress, bob)
 
     console.log("Adding data to option: ", sellableAddress);
-	await call(collateral, CollateralFactory, bob).approve(sellableAddress, daiToWeiDai(10_000));
-	await attachSellableOption(bob, sellableAddress).underwrite(daiToWeiDai(5_000), btcAddress);
+	await call(collateral, CollateralFactory, bob).approve(pool.address, daiToWeiDai(10_000));
+	await call(pool, OptionPoolFactory, bob).underwriteOption(sellableAddress, daiToWeiDai(5_000), btcAddress);
 
     var details = await attachSellableOption(alice, sellableAddress).getDetails();
     console.log("Option details: ", details.toString());
@@ -72,33 +73,35 @@ async function main() {
 	sellableAddress = options[1];
 	buyableAddress = await getBuyable(sellableAddress, bob)
 
-    console.log("Adding data to option: ", sellableAddress);
+	console.log("Adding data to option: ", sellableAddress);
+
     console.log("Bob underwriting 9000 Dai");
-	await call(collateral, CollateralFactory, bob).approve(sellableAddress, daiToWeiDai(9_000));
-	await attachSellableOption(bob, sellableAddress).underwrite(daiToWeiDai(9_000), btcAddress);
+	await call(collateral, CollateralFactory, bob).approve(pool.address, daiToWeiDai(9_000));
+	await call(pool, OptionPoolFactory, bob).underwriteOption(sellableAddress, daiToWeiDai(9_000), btcAddress);
+
     console.log("Charlie underwriting 4000 Dai");
-	await call(collateral, CollateralFactory, charlie).approve(sellableAddress, daiToWeiDai(4_000));
-	await attachSellableOption(charlie, sellableAddress).underwrite(daiToWeiDai(3_000), btcAddress);
+	await call(collateral, CollateralFactory, charlie).approve(pool.address, daiToWeiDai(4_000));
+	await call(pool, OptionPoolFactory, charlie).underwriteOption(sellableAddress, daiToWeiDai(3_000), btcAddress);
 
     details = await attachSellableOption(alice, sellableAddress).getDetails();
     console.log("Option details: ", details.toString());
 
     console.log("Alice insuring 0.8 BTC");
     console.log(strikePriceInDaiForOneBTC(9000).mul(mbtcToSatoshi(800)).toString());
-	await call(collateral, CollateralFactory, alice).approve(buyableAddress, daiToWeiDai(200));
-	await attachBuyableOption(alice, buyableAddress).insure(bobAddress, mbtcToSatoshi(800));
+	await call(collateral, CollateralFactory, alice).approve(pool.address, daiToWeiDai(200));
+	await call(pool, OptionPoolFactory, alice).insureOption(sellableAddress, bobAddress, mbtcToSatoshi(800));
 
 	sellableAddress = options[3];
 	buyableAddress = await getBuyable(sellableAddress, bob)
 
     console.log("Adding data to option: ", sellableAddress);
     console.log("Eve underwriting 20.000 Dai");
-	await call(collateral, CollateralFactory, eve).approve(sellableAddress, daiToWeiDai(20_000));
-	await attachSellableOption(eve, sellableAddress).underwrite(daiToWeiDai(20_000), btcAddress);
+	await call(collateral, CollateralFactory, eve).approve(pool.address, daiToWeiDai(20_000));
+	await call(pool, OptionPoolFactory, eve).underwriteOption(sellableAddress, daiToWeiDai(20_000), btcAddress);
 
-    console.log("Alice insuring 1.27 BTC");
-	await call(collateral, CollateralFactory, dave).approve(buyableAddress, daiToWeiDai(2*17));
-	await attachBuyableOption(dave, buyableAddress).insure(eveAddress, mbtcToSatoshi(1270));
+    console.log("Dave insuring 1.27 BTC");
+	await call(collateral, CollateralFactory, dave).approve(pool.address, daiToWeiDai(2*17));
+	await call(pool, OptionPoolFactory, dave).insureOption(sellableAddress, eveAddress, mbtcToSatoshi(1270));
 
     details = await attachSellableOption(alice, sellableAddress).getDetails();
     console.log("Option details: ", details.toString());

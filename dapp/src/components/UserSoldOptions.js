@@ -22,9 +22,8 @@ export default class UserSoldOptions extends Component {
         };
     }
 
-
     componentDidUpdate() {
-        if (this.props.optionPoolContract && this.props.address) {
+        if (this.props.contracts && this.props.address) {
             if (!this.state.soldLoaded) {
                 this.getCurrentOptions();
             }
@@ -32,8 +31,8 @@ export default class UserSoldOptions extends Component {
     }
 
     async getCurrentOptions() {
-        if (this.props.optionPoolContract && this.props.address) {
-            let optionContracts = await this.props.optionPoolContract.getUserSoldOptions(this.props.address);
+        if (this.props.contracts && this.props.address) {
+            let optionContracts = await this.props.contracts.getUserSoldOptions(this.props.address);
             let soldOptions = await this.getOptions(optionContracts)
             this.setState({
                 soldOptions: soldOptions,
@@ -58,7 +57,7 @@ export default class UserSoldOptions extends Component {
         let btcInsured = 0;
         for (var i = 0; i < optionContracts[0].length; i++) {
             let addr = optionContracts[0][i];
-            let optionContract = new ethers.Contract(addr, optionSellableArtifact.abi, this.props.provider);
+            let optionContract = this.props.contracts.attachOption(addr);
             let optionRes = await optionContract.getDetails(); 
             let option = {
                 expiry: parseInt(optionRes[0]._hex),
@@ -98,8 +97,7 @@ export default class UserSoldOptions extends Component {
 
     async doRefund() {
         try {
-            let optionContract = new ethers.Contract(this.state.refundOption.contract, optionSellableArtifact.abi, this.props.signer);
-            await optionContract.refund();
+            await this.props.contracts.refundOption(this.state.refundOption.contract);
             toast.success('Refund successful!', {
                 position: "top-center",
                 autoClose: 3000,

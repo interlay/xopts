@@ -4,19 +4,24 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract IERC20Buyable is IERC20 {
 
-    function insure(address seller, uint256 satoshis) external;
+    /**
+    * @dev Claim options by paying the premium
+    * @param buyer: account purchasing insurance
+    * @param seller: account selling insurance
+    * @param amount: erc-20 underlying
+    **/
+    function insureOption(address buyer, address seller, uint256 amount) external;
 
-    function exercise(
-        uint256 height,
-        uint256 index,
-        bytes32 txid,
-        bytes calldata proof,
-        bytes calldata rawtx,
+    /**
+    * @dev Exercise options before expiry
+    * @param buyer: account purchasing insurance
+    * @param seller: account selling insurance
+    **/
+    function exerciseOption(
+        address buyer,
         address seller
-    ) external;
+    ) external returns (uint amount, uint btcAmount);
 
     function getOptionOwnersFor(address account) external view returns (address[] memory sellers, uint256[] memory options);
-
-    function getDetails() external view returns (uint, uint, uint, uint);
 
 }

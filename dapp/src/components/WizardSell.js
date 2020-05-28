@@ -1,10 +1,8 @@
 import React from "react";
-import { ethers } from 'ethers';
-import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
-import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
-import * as utils from '../utils/utils.js'; 
+import * as utils from '../utils/utils.js';
+import { showSuccessToast, showFailureToast } from '../controllers/toast';
 
 class EnterAmount extends React.Component {
   render() {
@@ -71,30 +69,6 @@ class Confirm extends React.Component {
   }
 }
 
-function showSuccessToast(msg, ms) {
-  toast.success(msg, {
-    position: "top-center",
-    autoClose: ms,
-    hideProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-  });
-}
-
-function showFailureToast(msg, ms) {
-  toast.error(msg, {
-    position: "bottom-center",
-    autoClose: ms,
-    hideProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-  });
-}
-
 export default class Buy extends React.Component {
 
   constructor(props) {
@@ -105,8 +79,7 @@ export default class Buy extends React.Component {
       currentStep: 1,
       amount: 0,
       address: '',
-      erc20Contract: null,
-      optionSellableContract: null,
+      optionContract: null,
     }
 
     this.handleChange = this.handleChange.bind(this)
@@ -116,15 +89,11 @@ export default class Buy extends React.Component {
     if (this.props.signer) {
       const contract = this.props.contract;
 
-      let erc20Abi = ierc20Artifact.abi;
-      let erc20Contract = new ethers.Contract(this.props.erc20Address, erc20Abi, this.props.signer);
-
-      let optionAbi = optionSellableArtifact.abi;
-      let optionSellableContract = new ethers.Contract(contract, optionAbi, this.props.signer);
+      let contracts = this.props.contracts;
+      let optionContract = contracts.attachOption(contract);
 
       this.setState({
-        erc20Contract: erc20Contract,
-        optionSellableContract: optionSellableContract,
+        optionContract: optionContract,
       });
     }
   }
@@ -142,19 +111,16 @@ export default class Buy extends React.Component {
   
   handleSubmit = async (event) => {
     event.preventDefault();
-    const { amount, btcAddress, optionSellableContract, erc20Contract } = this.state;
+    const { amount, btcAddress, optionContract } = this.state;
     try {
-      let tx = await erc20Contract.approve(optionSellableContract.address, amount.toString());
-      showSuccessToast('Awaiting confirmations...', 15000);
-      await tx.wait(1);
-      tx = await optionSellableContract.underwrite(amount.toString(), ethers.utils.toUtf8Bytes(btcAddress));
-      showSuccessToast('Awaiting confirmations...', 15000);
-      await tx.wait(1);
+      let contracts = this.props.contracts;
+      await contracts.checkAllowance();
+      await contracts.underwriteOption(optionContract.address, amount, btcAddress);
       this.props.hide();
-      showSuccessToast('Successfully sold options!', 3000);
+      showSuccessToast(toast, 'Successfully sold options!', 3000);
     } catch(error) {
       console.log(error);
-      showFailureToast('Failed to send transaction...', 3000);
+      showFailureToast(toast, 'Failed to send transaction...', 3000);
     }
   }
 

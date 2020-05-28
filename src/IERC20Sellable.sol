@@ -8,17 +8,33 @@ contract IERC20Sellable is IERC20 {
 
     function totalSupplyUnsold() external view returns (uint256);
 
-    function underwrite(uint256 amount, bytes calldata btcAddress) external;
-
     function setBtcAddress(bytes calldata btcAddress) external;
 
-    function getBtcAddress(address account) external view returns (bytes memory);
+    /**
+    * @dev Underwrite an option, can be called multiple times
+    * @param amount: erc-20 collateral
+    * @param btcAddress: recipient address for exercising
+    **/
+    function underwriteOption(address account, uint256 amount, bytes calldata btcAddress) external;
 
-    function buyOptions(address account, uint256 amount) external returns (bool);
+    /**
+    * @dev Claim collateral for tokens after expiry
+    **/
+    function refundOption(address account) external returns (uint);
 
-    function sellOptions(address buyer, address seller, uint256 amount) external returns (bool);
+    function insureOption(address buyer, address seller, uint256 amount) external;
 
-    function refundOptions() external;
+    function exerciseOption(
+        address buyer,
+        address seller,
+        uint256 height,
+        uint256 index,
+        bytes32 txid,
+        bytes calldata proof,
+        bytes calldata rawtx
+    ) external returns (uint);
+
+    function calculatePremium(uint256 amount) external view returns (uint256);
 
     function getOptionSellers() external view returns (address[] memory sellers, uint256[] memory options);
 
