@@ -6,7 +6,9 @@ import { withRouter } from 'react-router-dom'
 
 // Importing Sass with Bootstrap CSS
 import "./App.scss";
-import 'bootstrap/dist/css/bootstrap.min.css';
+//import 'bootswatch/dist/cerulean/bootstrap.min.css'; // Bootstrap THEME
+//import 'bootstrap/dist/css/bootstrap.min.css';
+import './assets/css/custom-bootstrap.css';
 import 'react-toastify/dist/ReactToastify.css';
 
 import Dashboard from "./views/Dashboard";
@@ -28,6 +30,11 @@ class App extends Component {
       contracts: null,
       btcPrices: {
         dai: null,
+        usd: null,
+        eth: null
+      },
+      optionPoolContract: null,
+      daiPrices: {
         usd: null,
         eth: null
       }
@@ -77,7 +84,7 @@ class App extends Component {
   }
 
   async getPriceData() {
-    fetch("https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC&tsyms=DAI,USD,ETH&api_key=0fe74ac7dd16554406f7ec8d305807596571e13bd6b3c8ac496ac436c17c26e2").then(res => res.json())
+    fetch("https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC,DAI&tsyms=DAI,USD,ETH&api_key=0fe74ac7dd16554406f7ec8d305807596571e13bd6b3c8ac496ac436c17c26e2").then(res => res.json())
       .then(
         (result) => {
           this.setState({
@@ -85,6 +92,10 @@ class App extends Component {
               dai: result.BTC.DAI,
               usd: result.BTC.USD,
               eth: result.BTC.ETH
+            },
+            daiPrices: {
+              usd: result.DAI.USD,
+              eth: result.DAI.ETH
             }
           })
         }

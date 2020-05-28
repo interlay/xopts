@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "bootstrap": "^4.4.1",
+    "bootswatch": "^4.5.0",
     "cryptocurrency-icons": "^0.16.1",
     "ethers": "^4.0.47",
     "lightweight-charts": "^2.0.0",

@@ -71,7 +71,6 @@ export default class UserSoldOptions extends Component {
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = optionContracts[0][i];
-            console.log(option);
 
             totalPremium += option.premium;
             totalInsured += option.totalSupplyLocked;
@@ -109,7 +108,6 @@ export default class UserSoldOptions extends Component {
             });
             this.forceUpdate()
         } catch (error) {
-            console.log(error);
             toast.error('Oops.. Something went wrong!', {
                 position: "top-center",
                 autoClose: 3000,
