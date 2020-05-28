@@ -491,6 +491,7 @@ export default class UserPurchasedOptions extends Component {
                                 updateAmount={this.updateAmount}
                                 seller={this.state.seller}
                                 contract={this.state.exerciseOption.contract}
+                                contracts={this.props.contracts}
                                 signer={this.props.signer}
                                 amount={this.state.amount}
                             />

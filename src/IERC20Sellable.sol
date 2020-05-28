@@ -10,6 +10,8 @@ contract IERC20Sellable is IERC20 {
 
     function setBtcAddress(bytes calldata btcAddress) external;
 
+    function getBtcAddress(address account) external view returns (bytes memory);
+
     /**
     * @dev Underwrite an option, can be called multiple times
     * @param amount: erc-20 collateral
