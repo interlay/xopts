@@ -1,19 +1,9 @@
 import React, { Component } from "react";
 import { Col, Badge, Row, Table, Form, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl, ProgressBar } from "react-bootstrap";
 import { ethers } from 'ethers';
-import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
-import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
 import { ToastContainer, toast } from 'react-toastify';
 import QRCode from "react-qr-code";
 import * as utils from '../utils/utils.js';
-
-async function getBuyableAndSellable(optionSellableAddress, signer) {
-    let optionSellableContract = new ethers.Contract(optionSellableAddress, optionSellableArtifact.abi, signer);
-    let optionBuyableAddress = await optionSellableContract.getBuyable();
-    let optionBuyableContract = new ethers.Contract(optionBuyableAddress, optionBuyableArtifact.abi, signer);
-    console.log("!!!!!", optionBuyableContract)
-    return {optionBuyableContract, optionSellableContract};
-}
 
 class SelectSeller extends React.Component {
     constructor(props) {
@@ -26,9 +16,9 @@ class SelectSeller extends React.Component {
     }
 
     async componentDidMount() {
-        if (this.props.contract && !this.state.loaded) {
-            const {optionBuyableContract, optionSellableContract} = await getBuyableAndSellable(this.props.contract, this.props.signer);
-            let [sellers, options] = await optionBuyableContract.getOptionOwnersFor(this.props.address);
+        if (this.props.contract && this.props.contracts && !this.state.loaded) {
+            let optionContract = this.props.contracts.attachOption(this.props.contract);
+            let [sellers, options] = await optionContract.getOptionOwnersFor(this.props.address);
             this.setState({
                 loaded: true,
                 sellers: sellers,
@@ -78,8 +68,8 @@ class ScanBTC extends React.Component {
     }
 
     async componentDidUpdate() {
-        if (this.props.contract && !this.state.loaded) {
-            let optionContract = new ethers.Contract(this.props.contract, optionSellableArtifact.abi, this.props.signer);
+        if (this.props.contract && this.props.contracts && !this.state.loaded) {
+            let optionContract = this.props.contracts.attachOption(this.props.contract);
             let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
             let btcAddress = ethers.utils.hexlify(btcAddressRaw).toString();
             let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amount;
@@ -193,7 +183,7 @@ export default class UserPurchasedOptions extends Component {
     }
 
     componentDidUpdate() {
-        if (this.props.optionPoolContract && this.props.address) {
+        if (this.props.contracts && this.props.address) {
             if (!this.state.purchasedLoaded) {
                 this.getAvailableOptions();
             }
@@ -204,8 +194,8 @@ export default class UserPurchasedOptions extends Component {
     }
 
     async getAvailableOptions() {
-        if (this.props.optionPoolContract && this.props.address) {
-            let optionContracts = await this.props.optionPoolContract.getUserPurchasedOptions(this.props.address);
+        if (this.props.contracts && this.props.address) {
+            let optionContracts = await this.props.contracts.getUserPurchasedOptions(this.props.address);
             let purchasedOptions = await this.getOptions(optionContracts)
             this.setState({
                 purchasedOptions: purchasedOptions,
@@ -215,10 +205,8 @@ export default class UserPurchasedOptions extends Component {
     }
 
     async getCurrentOptions() {
-        if (this.props.optionPoolContract && this.props.address) {
-            let optionContracts = await this.props.optionPoolContract.getUserPurchasedOptions(this.props.address);
-            console.log(optionContracts[0][3])
-
+        if (this.props.contracts && this.props.address) {
+            let optionContracts = await this.props.contracts.getUserPurchasedOptions(this.props.address);
             let purchasedOptions = await this.getOptions(optionContracts)
             this.setState({
                 purchasedOptions: purchasedOptions,
@@ -242,7 +230,7 @@ export default class UserPurchasedOptions extends Component {
         try {
             for (var i = 0; i < optionContracts[0].length; i++) {
                 let addr = optionContracts[0][i];
-                let optionContract = new ethers.Contract(addr, optionSellableArtifact.abi, this.props.provider);
+                let optionContract = this.props.contracts.attachOption(addr);
                 let optionRes = await optionContract.getDetails();
                 let option = {
                     expiry: parseInt(optionRes[0]._hex),
@@ -311,7 +299,6 @@ export default class UserPurchasedOptions extends Component {
     }
 
     handleChange(event) {
-        console.log(event.target);
         const { name, value } = event.target;
         this.setState({
             [name]: value
@@ -326,12 +313,11 @@ export default class UserPurchasedOptions extends Component {
 
     handleSubmit = async (event) => {
         event.preventDefault();
-        const { seller, optionContract, height, index, txid, proof, rawtx } = this.state;
+        const { seller, height, index, txid, proof, rawtx, exerciseOption } = this.state;
 
         try {
-            let optionContract = new ethers.Contract(this.state.exerciseOption.contract, optionBuyableArtifact.abi, this.props.signer);
             // This is mocked. BTC-Relay connection works, but querying proof in backend is still WIP.
-            await optionContract.exercise(1000, 1, "0xe91669bf43109bbd3ed730d8a5ebdc691b5d7482d2cf034c7a0db12023db8e5f", "0x00", "0x00", seller);
+            await this.props.contracts.exerciseOption(exerciseOption.contract, seller, 1000, 1, "0xe91669bf43109bbd3ed730d8a5ebdc691b5d7482d2cf034c7a0db12023db8e5f", "0x00", "0x00");
             toast.success('Exercise successful!', {
                 position: "top-center",
                 autoClose: 3000,
@@ -495,6 +481,7 @@ export default class UserPurchasedOptions extends Component {
                                 amount={this.state.amount}
                                 updateAmount={this.updateAmount}
                                 contract={this.state.exerciseOption.contract}
+                                contracts={this.props.contracts}
                                 signer={this.props.signer}
                                 address={this.props.address}
                             />

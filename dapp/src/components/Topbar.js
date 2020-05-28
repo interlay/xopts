@@ -52,7 +52,7 @@ class TopBar extends Component {
 
   render() {
     return (
-      <Navbar bg="light" expand="md" className="border-bottom shadow-sm">
+      <Navbar bg="light" expand="lg" className="border-bottom shadow-sm">
         <Navbar.Brand><Link to="/" className="text-decoration-none">XOpts</Link></Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">

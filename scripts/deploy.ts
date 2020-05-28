@@ -1,21 +1,28 @@
 import { ethers } from "@nomiclabs/buidler";
 import { 
-	MockCollateral, MockRelay, MockTxValidator, 
-	MockRegistryAndResolver, OptionPool
+	TxValidator, OptionPool, MockCollateral, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC
 } from "./contracts";
+
+// ROPSTEN
+
+const relay = "0x9e2c52a91790c4d29f57ce2f42AEaA75de99Ec92";
 
 async function main() {
 	let signers = await ethers.signers();
 
-	// this will be a stablecoin
 	const collateral = await MockCollateral(signers[0]);
+	await collateral.mint(await signers[0].getAddress(), daiToWeiDai(100_000));
 
-	const relay = await MockRelay(signers[0]);
-	const validator = await MockTxValidator(signers[0]);
-	const registry = await MockRegistryAndResolver(signers[0]);
+	const validator = await TxValidator(signers[0]);
+	let pool = await OptionPool(signers[0], collateral.address, relay, validator.address);
 
-	// finally deploy options over assets
-	return OptionPool(signers[0], collateral.address, relay.address, validator.address);
+	var date = new Date();
+	date.setFullYear(date.getFullYear() + 1);
+	let expiry = Math.round(date.getTime()/1000);
+
+	await pool.createOption(expiry, premiumInDaiForOneBTC(10), strikePriceInDaiForOneBTC(9_200));
+	await pool.createOption(expiry, premiumInDaiForOneBTC(11), strikePriceInDaiForOneBTC(9000));
+	await pool.createOption(expiry, premiumInDaiForOneBTC(17), strikePriceInDaiForOneBTC(8950));
 }
 
 main()

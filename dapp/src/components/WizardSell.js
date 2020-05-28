@@ -1,10 +1,8 @@
 import React from "react";
-import { ethers } from 'ethers';
-import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
-import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
-import * as utils from '../utils/utils.js'; 
+import * as utils from '../utils/utils.js';
+import { showSuccessToast, showFailureToast } from '../controllers/toast';
 
 class EnterAmount extends React.Component {
   render() {
@@ -81,9 +79,7 @@ export default class Buy extends React.Component {
       currentStep: 1,
       amount: 0,
       address: '',
-      erc20Contract: null,
-      optionSellableContract: null,
-      redirectToReferrer: false,
+      optionContract: null,
     }
 
     this.handleChange = this.handleChange.bind(this)
@@ -93,15 +89,11 @@ export default class Buy extends React.Component {
     if (this.props.signer) {
       const contract = this.props.contract;
 
-      let erc20Abi = ierc20Artifact.abi;
-      let erc20Contract = new ethers.Contract(this.props.erc20Address, erc20Abi, this.props.signer);
-
-      let optionAbi = optionSellableArtifact.abi;
-      let optionSellableContract = new ethers.Contract(contract, optionAbi, this.props.signer);
+      let contracts = this.props.contracts;
+      let optionContract = contracts.attachOption(contract);
 
       this.setState({
-        erc20Contract: erc20Contract,
-        optionSellableContract: optionSellableContract,
+        optionContract: optionContract,
       });
     }
   }
@@ -119,31 +111,16 @@ export default class Buy extends React.Component {
   
   handleSubmit = async (event) => {
     event.preventDefault();
-    const { amount, btcAddress, optionSellableContract, erc20Contract } = this.state;
+    const { amount, btcAddress, optionContract } = this.state;
     try {
-      console.log(optionSellableContract.address);
-      await erc20Contract.approve(optionSellableContract.address, amount.toString());
-      await optionSellableContract.underwrite(amount.toString(), ethers.utils.toUtf8Bytes(btcAddress));
-      toast.success('Successfully sold option!', {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+      let contracts = this.props.contracts;
+      await contracts.checkAllowance();
+      await contracts.underwriteOption(optionContract.address, amount, btcAddress);
+      this.props.hide();
+      showSuccessToast(toast, 'Successfully sold options!', 3000);
     } catch(error) {
       console.log(error);
-      toast.error('Failed to send transaction...', {
-        position: "bottom-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+      showFailureToast(toast, 'Failed to send transaction...', 3000);
     }
   }
 

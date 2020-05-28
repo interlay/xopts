@@ -1,12 +1,8 @@
 import React from "react";
-import { ethers } from 'ethers';
-import { Redirect } from "react-router-dom";
-import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
-import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
-import ierc20Artifact from "../artifacts/IERC20.json"
 import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
 import * as utils from '../utils/utils.js'; 
+import { showSuccessToast, showFailureToast } from '../controllers/toast';
 
 class SelectSeller extends React.Component {
   constructor(props) {
@@ -19,8 +15,8 @@ class SelectSeller extends React.Component {
   }
 
   async componentDidUpdate() {
-    if (this.props.optionSellableContract && !this.state.loaded) {
-      let [sellers, options] = await this.props.optionSellableContract.getOptionSellers();
+    if (this.props.optionContract && !this.state.loaded) {
+      let [sellers, options] = await this.props.optionContract.getOptionSellers();
       this.setState({
         loaded: true,
         sellers: sellers,
@@ -126,9 +122,7 @@ export default class Buy extends React.Component {
       currentStep: 1,
       seller: '',
       amount: 0,
-      erc20Contract: null,
-      optionSellableContract: null,
-      optionBuyableContract: null,
+      optionContract: null,
       expiry: 0,
       premium: 0,
       strikePrice: 0,
@@ -143,19 +137,12 @@ export default class Buy extends React.Component {
     if (this.props.signer) {
       const contract = this.props.contract;
 
-      let erc20Abi = ierc20Artifact.abi;
-      let erc20Contract = new ethers.Contract(this.props.erc20Address, erc20Abi, this.props.signer);
-
-      let optionSellableContract = new ethers.Contract(contract, optionSellableArtifact.abi, this.props.signer);
-      let optionBuyableAddress = await optionSellableContract.getBuyable();
-      let optionBuyableContract = new ethers.Contract(optionBuyableAddress, optionBuyableArtifact.abi, this.props.signer);
-
-      let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionSellableContract.getDetails();
+      let contracts = this.props.contracts;
+      let optionContract = contracts.attachOption(contract);
+      let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getDetails();
 
       this.setState({
-        erc20Contract: erc20Contract,
-        optionSellableContract: optionSellableContract,
-        optionBuyableContract: optionBuyableContract,
+        optionContract: optionContract,
         expiry: expiry,
         premium: utils.weiDaiToBtc(parseInt(premium._hex)),
         strikePrice: utils.weiDaiToBtc(parseInt(strikePrice._hex)),
@@ -183,31 +170,17 @@ export default class Buy extends React.Component {
   // Trigger an alert on form submission
   handleSubmit = async (event) => {
     event.preventDefault();
-    const { seller, amount, optionBuyableContract, erc20Contract, premium } = this.state;
+    const { seller, amount, optionContract, premium } = this.state;
     let tokensToPay = utils.daiToWeiDai(calculatePremium(amount, premium));
     try {
-      await erc20Contract.approve(optionBuyableContract.address, tokensToPay.toString());
-      await optionBuyableContract.insure(seller, amount.toString());
-      toast.success('Successfully purchased option!', {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+      let contracts = this.props.contracts;
+      await contracts.checkAllowance();
+      await contracts.insureOption(optionContract.address, seller, tokensToPay.toString());
+      showSuccessToast(toast, 'Successfully purchased option!', 3000);
+      this.props.hide();
     } catch(error) {
       console.log(error);
-      toast.error('Failed to send transaction...', {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+      showFailureToast(toast, 'Failed to send transaction...', 3000);
     }
   }
 
@@ -290,7 +263,7 @@ export default class Buy extends React.Component {
               seller={this.state.seller}
               amount={this.state.amount}
               strikePrice={this.state.strikePrice}
-              optionSellableContract={this.state.optionSellableContract}
+              optionContract={this.state.optionContract}
             />
             <EnterAmount 
               currentStep={this.state.currentStep} 

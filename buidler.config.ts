@@ -24,6 +24,9 @@ if (INFURA_ID) {
     ganache_config = {...ganache_config, ...{unlocked_accounts: [contracts.dai_account, contracts.dai]}};
 }
 
+const INFURA_API_KEY = process.env.INFURA_API_KEY || '';
+const ROPSTEN_PRIVATE_KEY = process.env.ROPSTEN_PRIVATE_KEY || '';
+
 const config = {
 	defaultNetwork: "buidlerevm",
 	solc: {
@@ -43,6 +46,10 @@ const config = {
             gas: 1_000_000,
         },
         ganache: ganache_config,
+        ropsten: {
+            url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
+            accounts: [ROPSTEN_PRIVATE_KEY]
+        },
     },
 };
 

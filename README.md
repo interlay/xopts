@@ -16,7 +16,6 @@ XOPTS extends the native capabilities of Ethereum to track and execute PUT Optio
 tokens that can be traded on [Uniswap](https://uniswap.org/). Buyers can then insure an arbitrary amount of BTC relative to the contract's strike price and pay in an amount of DAI collateral as premium.
 Finally, options can be exercised once the buyer proves payment to the respective underwriters of that contract using an on-chain Bitcoin SPV client.
 
-
 ### Protocol
 
 - A seller (underwriter) creates a BTC put option with a strike price (the value of BTC the seller is willing to insure in Dai), an expiry time (the validity of the option), and a premium (the fee paid to the seller for buying an option in Dai).
@@ -37,38 +36,32 @@ Finally, options can be exercised once the buyer proves payment to the respectiv
 
 Make sure you have [node](https://nodejs.org/en/) installed. Generally, we also recommend managing different version of node via version manager like [NVM](https://github.com/nvm-sh/nvm).
 
-First, clone this repository and enter into its root folder.
+First, clone this repository, initialize its submodules and enter into its root folder.
 
 ```bash
-git clone git@gitlab.com:interlay/xflash.git
-cd xflash
+git clone git@gitlab.com:interlay/xopts.git
+git submodule init && git submodule update
+cd xopts
 ```
 
-Next, install the required node packages.
+### Smart Contracts
+
+Install the required node packages.
 
 ```bash
 npm install
 ```
 
-Compile the XFLASH contracts.
+Compile the XOPTS contracts.
 
 ```bash
 npm run compile
 ```
 
-Deploy the XFLASH contracts.
+Deploy the XOPTS contracts.
 
 ```bash
 npm run deploy
-```
-
-### Ganache
-
-Start ganache and then run deploy against localhost:
-
-```bash
-npm run ganache
-npm run deploy -- --network localhost
 ```
 
 ### Development
@@ -85,6 +78,28 @@ Run tests.
 npm test
 ```
 
+### Testdata
+
+Make sure ganache or buidlerevm is running in one terminal window.
+
+**ganache**
+
+```bash
+npm run ganache
+```
+
+**buidlerevm**
+
+```bash
+npx buidler node
+```
+
+In another terminal, create test data that can be used in the front-end. Execute this from the root folder of the project.
+
+```bash
+npx buidler run scripts/testdata.ts --network localhost
+```
+
 ### React UI
 
 ```bash
@@ -93,15 +108,32 @@ yarn install
 yarn start
 ```
 
-## Usage
+You can interact with a locally deployed front-end on [localhost:3000](http://localhost:3000).
+
+## Deployments
+
+### Ropsten
+
+```
+Collateral (ERC20): 0x117054F477B40128A290a0d48Eb8aF6e12F333ce
+TxValidator: 0xD82ad83De34dea5E5B0D6c3716557D1c9EC0A699
+OptionPool: 0x2900a6b10d83C4Be83CBd80784a34D8ba4A1D99D
+```
+
+You can interact with a locally deployed front-end on [localhost:3000](http://localhost:3000).
 
 ## Roadmap
+
+- [x] Integration with [Uniswap v2](https://uniswap.org/docs/v2).
+- [ ] Integration with [ENS](https://ens.domains/).
+- [ ] Deployment on Ropsten.
+- [ ] Development of call options.
 
 ## Contributing
 
 ## License
 
-XFLASH is licensed under the terms of the Apache License (Version 2.0). See [LICENSE](LICENSE).
+XOPTS is licensed under the terms of the Apache License (Version 2.0). See [LICENSE](LICENSE).
 
 ## Contact
 

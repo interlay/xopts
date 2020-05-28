@@ -7,8 +7,8 @@ import { Collateral } from "../typechain/Collateral";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPool } from "../typechain/OptionPool";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
-import { PutOption } from "../typechain/PutOption";
-import { PutOptionFactory } from "../typechain/PutOptionFactory";
+import { ERC20BuyableFactory } from "../typechain/ERC20BuyableFactory";
+import { ERC20SellableFactory } from "../typechain/ERC20SellableFactory";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
 import { MockTxValidatorFactory } from "../typechain/MockTxValidatorFactory";
 import config from "../buidler.config";
@@ -21,9 +21,13 @@ import { fromWei } from './utils';
 chai.use(solidity);
 const { expect } = chai;
 
-async function getOption(address: string, signer: Signer): Promise<PutOption> {
-  const factory = (await ethers.getContract("PutOption")).connect(signer);
-  return factory.attach(address) as PutOption;
+async function getBuyableAndSellable(sellableAddress: string, signer: Signer) {
+  let sellableFactory = new ERC20SellableFactory(signer);
+  let sellableContract = sellableFactory.attach(sellableAddress);
+  let buyableAddress = await sellableContract.getBuyable();
+  let buyableFactory = new ERC20BuyableFactory(signer);
+  let buyableContract = buyableFactory.attach(buyableAddress);
+  return {sellableContract, buyableContract};
 }
 
 interface Callable {
@@ -50,7 +54,6 @@ async function getCollateral(user: Signer): Promise<Contract> {
     }
 };
 
-
 function getTimeNow() {
   return Math.round((new Date()).getTime() / 1000);
 }
@@ -64,7 +67,6 @@ describe("Options", () => {
   let bobAddress: string;
   let charlieAddress: string;
 
-  let registry: ERC137Registry
   let collateral: Contract;
   let optionPool: OptionPool;
 
@@ -129,19 +131,19 @@ describe("Options", () => {
 
     await optionPool.createOption(expiry, premium, strikePrice);
 
-    let address = (await optionPool.getOptions())[0];
-    let option = await getOption(address, alice);
+    let optionPoolAddress = optionPool.address;
+    let optionAddress = (await optionPool.getOptions())[0];
+    let {sellableContract, buyableContract} = await getBuyableAndSellable(optionAddress, alice);
 
     // bob should approve collateral transfer and underwrite
-    await call(collateral, CollateralFactory, bob).approve(address, collateralAmount);
-    await call(option, PutOptionFactory, bob).underwrite(collateralAmount, btcAddress);
-
-    await call(option, PutOptionFactory, bob).approve(address, collateralAmount);
+    await call(collateral, CollateralFactory, bob).approve(optionPoolAddress, collateralAmount);
+    await call(optionPool, OptionPoolFactory, bob).underwriteOption(optionAddress, collateralAmount, btcAddress);
 
     // balances should be adjusted accordingly
     expect((await collateral.balanceOf(await bob.getAddress())).toNumber()).to.eq(0);
+    expect((await sellableContract.balanceOf(await bob.getAddress())).toNumber()).to.eq(collateralAmount);
 
-    return option;
+    return {sellableContract, buyableContract};
   };
 
   it("should fail to create an expired option", async () => {
@@ -166,18 +168,18 @@ describe("Options", () => {
     let strikePrice = 1;
 
     let now = getTimeNow();
-    let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, now+1000);
+    let {sellableContract, buyableContract} = await put(collateralAmount, underlyingAmount, premium, strikePrice, now+1000);
 
     // alice now claims option by paying premium
-    await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
-    await call(option, PutOptionFactory, alice).insure(underlyingAmount, bobAddress);
+    await call(collateral, CollateralFactory, alice).approve(optionPool.address, premium * underlyingAmount);
+    await call(optionPool, OptionPoolFactory, alice).insureOption(sellableContract.address, bobAddress, underlyingAmount);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
     // alice has equivalent options
-    expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
+    expect((await buyableContract.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // alice exercises and burns options to redeem collateral
-    await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx, bobAddress);
+    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(collateralAmount);
   });
 
@@ -187,33 +189,32 @@ describe("Options", () => {
     let premium = 1;
     let strikePrice = 1;
 
-    let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, getTimeNow() + 1000);
+    let {sellableContract, buyableContract} = await put(collateralAmount, underlyingAmount, premium, strikePrice, getTimeNow() + 1000);
 
     // charlie now becomes the insurer
-    await call(option, PutOptionFactory, bob).transfer(charlieAddress, collateralAmount);
+    await call(sellableContract, ERC20SellableFactory, bob).transfer(charlieAddress, collateralAmount);
+    expect((await sellableContract.balanceOf(bobAddress)).toNumber()).to.eq(0);
+    expect((await sellableContract.balanceOf(charlieAddress)).toNumber()).to.eq(collateralAmount);
 
-    expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(0);
-    expect((await option.balanceOf(charlieAddress)).toNumber()).to.eq(collateralAmount);
-
-    // alice claims option by paying premium
-    await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
-    let insureCall = call(option, PutOptionFactory, alice).insure(underlyingAmount, charlieAddress);
+    // alice tries to claim options from charlie by paying premium
+    await call(collateral, CollateralFactory, alice).approve(optionPool.address, premium * underlyingAmount);
+    let insureCall = call(optionPool, OptionPoolFactory, alice).insureOption(sellableContract.address, charlieAddress, underlyingAmount);
     await expect(insureCall).to.be.reverted;
 
     // charlie should set btc payout address
-    await call(option, PutOptionFactory, charlie).setBtcAddress(btcAddress);
+    await call(sellableContract, ERC20SellableFactory, charlie).setBtcAddress(btcAddress);
 
     // alice now can insure
-    await call(option, PutOptionFactory, alice).insure(underlyingAmount, charlieAddress);
+    await call(optionPool, OptionPoolFactory, alice).insureOption(sellableContract.address, charlieAddress, underlyingAmount);
 
     // charlie should have premium * amount
     expect((await collateral.balanceOf(charlieAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
     // alice has equivalent options
-    expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
+    expect((await buyableContract.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // alice exercises and burns options to redeem collateral
-    await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx, charlieAddress);
+    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, charlieAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(collateralAmount);
   }).timeout(100000);
 
@@ -226,31 +227,31 @@ describe("Options", () => {
     let now = getTimeNow();
     let expiry = now + 1000;
 
-    let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, expiry);
+    let {sellableContract, buyableContract} = await put(collateralAmount, underlyingAmount, premium, strikePrice, expiry);
 
     // alice now claims option by paying premium
-    await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
-    await call(option, PutOptionFactory, alice).insure(underlyingAmount, bobAddress);
+    await call(collateral, CollateralFactory, alice).approve(optionPool.address, premium * underlyingAmount);
+    await call(optionPool, OptionPoolFactory, alice).insureOption(sellableContract.address, bobAddress, underlyingAmount);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
     // alice has equivalent options
-    expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
+    expect((await buyableContract.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // alice exercises and burns options to redeem collateral
-    await call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx, bobAddress);
+    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // bob cannot refund his options / authored tokens until after expiry
-    let bobRefunds = call(option, PutOptionFactory, bob).refund();
-    await expect(bobRefunds).to.be.revertedWith(ErrorCode.ERR_OPTION_NOT_EXPIRED);
+    let bobRefunds = call(optionPool, OptionPoolFactory, bob).refundOption(sellableContract.address);
+    await expect(bobRefunds).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
 
     // wait for option to expire
     await ethers.provider.send("evm_increaseTime", [50000]);
 
     let bobCollateral = (await collateral.balanceOf(bobAddress)).toNumber();
-    expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount - (strikePrice * underlyingAmount));
-    await call(option, PutOptionFactory, bob).refund();
-    expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(0);
+    expect((await sellableContract.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount - (strikePrice * underlyingAmount));
+    await call(optionPool, OptionPoolFactory, bob).refundOption(sellableContract.address);
+    expect((await sellableContract.balanceOf(bobAddress)).toNumber()).to.eq(0);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(bobCollateral + (collateralAmount - (strikePrice * underlyingAmount)))
   }).timeout(100000);
 
@@ -263,31 +264,31 @@ describe("Options", () => {
     let now = getTimeNow();
     let expiry = now + 100000;
 
-    let option = await put(collateralAmount, underlyingAmount, premium, strikePrice, expiry);
+    let {sellableContract, buyableContract} = await put(collateralAmount, underlyingAmount, premium, strikePrice, expiry);
 
     // alice now claims option by paying premium
-    await call(collateral, CollateralFactory, alice).approve(option.address, premium * underlyingAmount);
-    await call(option, PutOptionFactory, alice).insure(underlyingAmount, bobAddress);
+    await call(collateral, CollateralFactory, alice).approve(optionPool.address, premium * underlyingAmount);
+    await call(optionPool, OptionPoolFactory, alice).insureOption(sellableContract.address, bobAddress, underlyingAmount);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
 
     // alice has equivalent options
-    expect((await option.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
+    expect((await buyableContract.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // bob cannot refund his options / authored tokens until after expiry
-    let bobRefunds = call(option, PutOptionFactory, bob).refund();
-    await expect(bobRefunds).to.be.revertedWith(ErrorCode.ERR_OPTION_NOT_EXPIRED);
+    let bobRefunds = call(optionPool, OptionPoolFactory, bob).refundOption(sellableContract.address);
+    await expect(bobRefunds).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
 
     // wait for option to expire
     await ethers.provider.send("evm_increaseTime", [50000]);
 
     // alice can no longer exercise her options
-    let aliceExercises = call(option, PutOptionFactory, alice).exercise(mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx, bobAddress);
-    await expect(aliceExercises).to.be.revertedWith(ErrorCode.ERR_OPTION_EXPIRED);
+    let aliceExercises = call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
+    await expect(aliceExercises).to.be.revertedWith(ErrorCode.ERR_EXPIRED);
 
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);
-    expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount - (strikePrice * underlyingAmount));
-    await call(option, PutOptionFactory, bob).refund();
-    expect((await option.balanceOf(bobAddress)).toNumber()).to.eq(0);
+    expect((await sellableContract.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount - (strikePrice * underlyingAmount));
+    await call(optionPool, OptionPoolFactory, bob).refundOption(sellableContract.address);
+    expect((await sellableContract.balanceOf(bobAddress)).toNumber()).to.eq(0);
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(collateralAmount + (premium * underlyingAmount));
   });
 

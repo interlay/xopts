@@ -2,8 +2,8 @@ pragma solidity ^0.5.15;
 
 import {ITxValidator} from "./ITxValidator.sol";
 import {BytesLib} from "@summa-tx/bitcoin-spv-sol/contracts/BytesLib.sol";
-import {Parser} from "./btc-relay-sol/src/Parser.sol";
-import {Script} from "./btc-relay-sol/src/Script.sol";
+import {Parser} from "@interlay/btc-relay-sol/src/Parser.sol";
+import {Script} from "@interlay/btc-relay-sol/src/Script.sol";
 
 contract TxValidator is ITxValidator {
     using BytesLib for bytes;
