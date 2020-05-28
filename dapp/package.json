@@ -22,7 +22,7 @@
     "web3": "^1.2.8"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "npm run build --prefix '../' && cp -r ../artifacts src/artifacts && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
