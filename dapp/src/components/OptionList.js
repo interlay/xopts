@@ -75,7 +75,7 @@ class OptionList extends Component {
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;
-            totalInsured = utils.add(totalInsured, utils.calculateInsure(option.totalSupplyLocked, option.strikePrice));
+            totalInsured = utils.add(totalInsured, utils.calculateExercise(option.totalSupplyLocked, option.strikePrice));
             insuranceAvailable = utils.add(insuranceAvailable, option.totalSupplyUnlocked);
             totalPremium = utils.add(totalPremium, option.premium);
             options.push(option);
