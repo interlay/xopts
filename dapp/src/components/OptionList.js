@@ -66,18 +66,18 @@ class OptionList extends Component {
             let optionRes = await optionContract.getDetails();
             let option = {
                 expiry: parseInt(optionRes[0]._hex),
-                premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
-                strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
-                totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
-                totalSupplyLocked: utils.weiDaiToDai(parseInt(optionRes[4]._hex)),
-                totalSupplyUnlocked: utils.weiDaiToDai(parseInt(optionRes[5]._hex)),
+                premium: utils.weiDaiToBtc(optionRes[1]),
+                strikePrice: utils.weiDaiToBtc(optionRes[2]),
+                totalSupply: utils.weiDaiToDai(optionRes[3]),
+                totalSupplyLocked: utils.weiDaiToDai(optionRes[4]),
+                totalSupplyUnlocked: utils.weiDaiToDai(optionRes[5]),
                 hasSellers: await optionContract.hasSellers(),
             }
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;
-            totalInsured += option.totalSupplyLocked / option.strikePrice;
-            insuranceAvailable += option.totalSupplyUnlocked;
-            totalPremium += option.premium;
+            totalInsured = utils.add(totalInsured, utils.calculateInsure(option.totalSupplyLocked, option.strikePrice));
+            insuranceAvailable = utils.add(insuranceAvailable, option.totalSupplyUnlocked);
+            totalPremium = utils.add(totalPremium, option.premium);
             options.push(option);
         }
 
@@ -86,16 +86,6 @@ class OptionList extends Component {
             totalInsured: totalInsured,
             avgPremium: totalPremium / options.length
         })
-        /*
-        let options = this.getDummyOptions();
-        var index;
-        for (index in options) {
-            options[index].spotPrice = this.props.btcPrices.dai;
-            options[index].contract = optionContracts[0];
-            this.state.totalInsured += options[index].insured;
-            this.state.insuranceAvailable += options[index].collateral;
-        }
-        */
 
         return options;
     }
@@ -133,7 +123,7 @@ class OptionList extends Component {
 
                 let percentInsured = 0;
                 if (totalSupply > 0) {
-                    percentInsured = Math.round(10000 * totalSupplyLocked / totalSupply) / 100;
+                    percentInsured = utils.calculatePercentage(totalSupplyLocked, totalSupply);
                 }
                 let currentDate = Math.floor(Date.now() / 1000);
 
@@ -144,10 +134,10 @@ class OptionList extends Component {
                         <b> (Expired)</b>
                         }
                         </td>
-                        <td>{strikePrice} DAI</td>
+                        <td>{strikePrice} DAI/BTC</td>
                         <td>{spotPrice} DAI</td>
                         <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
-                        <td>{premium} DAI/BTC</td>
+                        <td>{premium} DAI/SAT</td>
 
                         <td>
                             <ButtonTool
