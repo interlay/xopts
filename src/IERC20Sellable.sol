@@ -42,4 +42,6 @@ contract IERC20Sellable is IERC20 {
 
     function getDetails() external view returns (uint, uint, uint, uint, uint, uint);
 
+    function totalBalanceOf(address account) external view returns (uint256);
+
 }

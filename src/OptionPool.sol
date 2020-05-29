@@ -113,51 +113,57 @@ contract OptionPool is Context {
 
     function getUserPurchasedOptions(address user) external view
         returns (
-            address[] memory options,
-            uint256[] memory currentOptions
+            address[] memory optionContracts,
+            uint256[] memory purchasedOptions
         )
     {
         IterableAddresses.List storage list = _options;
 
         uint length = list.size();
-        options = new address[](length);
-        currentOptions = new uint256[](length);
+        optionContracts = new address[](length);
+        purchasedOptions = new uint256[](length);
 
         for (uint i = 0; i < length; i++) {
             address key = list.getKeyAtIndex(i);
             IERC20Sellable sell = IERC20Sellable(key);
             IERC20Buyable buy = IERC20Buyable(sell.getBuyable());
-            uint256 current = buy.balanceOf(user);
-            if (current != 0) {
-                options[i] = key;
-                currentOptions[i] = current;
+            uint256 purchased = buy.balanceOf(user);
+            if (purchased != 0) {
+                optionContracts[i] = key;
+                purchasedOptions[i] = purchased;
             }
         }
 
-        return (options, currentOptions);
+        return (optionContracts, purchasedOptions);
     }
 
     function getUserSoldOptions(address user) external view
         returns (
-            address[] memory options,
-            uint256[] memory availableOptions
+            address[] memory optionContracts,
+            uint256[] memory unsoldOptions,
+            uint256[] memory totalOptions
+
         )
     {
         IterableAddresses.List storage list = _options;
 
         uint length = list.size();
-        options = new address[](length);
-        availableOptions = new uint256[](length);
+        optionContracts = new address[](length);
+        unsoldOptions = new uint256[](length);
+        totalOptions = new uint256[](length);
 
         for (uint i = 0; i < length; i++) {
             address key = list.getKeyAtIndex(i);
             IERC20Sellable sell = IERC20Sellable(key);
-            uint256 available = sell.balanceOf(user);
-            if (available != 0) {
-                options[i] = key;
-                availableOptions[i] = available;
+            uint256 unsold = sell.balanceOf(user);
+            uint256 total = sell.totalBalanceOf(user);
+
+            if (unsold != 0 || total != 0) {
+                optionContracts[i] = key;
+                unsoldOptions[i] = unsold;
+                totalOptions[i] = total;
             }
         }
-        return (options, availableOptions);
+        return (optionContracts, unsoldOptions, totalOptions);
     }
 }

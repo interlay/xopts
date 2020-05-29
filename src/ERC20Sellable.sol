@@ -231,6 +231,10 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         return _balancesUnsold.get(account);
     }
 
+    function totalBalanceOf(address account) external view returns (uint256) {
+        return _balancesTotal[account];
+    }
+
     function transfer(address recipient, uint256 amount) external notExpired returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
