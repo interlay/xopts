@@ -5,6 +5,7 @@ import * as utils from '../utils/utils.js';
 import Buy from "./WizardBuy";
 import Sell from "./WizardSell";
 import { ButtonTool } from "./ButtonTool.js";
+import { ToastContainer, toast } from 'react-toastify';
 
 class OptionList extends Component {
 
@@ -179,69 +180,78 @@ class OptionList extends Component {
 
 
     render() {
-        return <Col xl={{ span: 8, offset: 2 }}>
-            <Card border="dark">
-                <Card.Header>
-                    <Card.Title><h2>BTC/DAI Put Option Contracts</h2>
-                        <Row className="text-left">
-                           
-                                <Col md={2}>
-                                    <h3>{this.state.totalInsured}</h3>
-                                    <h6>BTC
-                            Insured</h6>
-                                </Col>
-                      
-                                <Col md={2}>
-                                    <h3>{this.state.insuranceAvailable}</h3>
-                                    <h6>DAI Insurance Available</h6>
-                                </Col>
-                           
-                                <Col md={3}>
-                                    <h3>{this.state.avgPremium}</h3>
-                                    <h6>DAI/BTC
-                            Average Premium</h6>
-                                </Col>
+        return (
+            <Col xl={{ span: 8, offset: 2 }}>
+                <ToastContainer
+                    position="bottom-center"
+                    autoClose={5000}
+                    hideProgressBar={false}
+                    newestOnTop={false}
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                />
+                <Card border="dark">
+                    <Card.Header>
+                        <Card.Title><h2>BTC/DAI Put Option Contracts</h2>
+                            <Row className="text-left">
+                            
+                                    <Col md={2}>
+                                        <h3>{this.state.totalInsured}</h3>
+                                        <h6>BTC Insured</h6>
+                                    </Col>
+                        
+                                    <Col md={2}>
+                                        <h3>{this.state.insuranceAvailable}</h3>
+                                        <h6>DAI Insurance Available</h6>
+                                    </Col>
+                            
+                                    <Col md={3}>
+                                        <h3>{this.state.avgPremium}</h3>
+                                        <h6>DAI/BTC Average Premium</h6>
+                                    </Col>
 
+                            </Row>
+                        </Card.Title>
+                    </Card.Header>
+                    <Card.Body>
+                        <Row>
+                            <Table hover responsive size={"md"}>
+                                <thead>
+                                    <tr>
+                                        <th>Expiry</th>
+                                        <th>Strike Price</th>
+                                        <th>Current Price</th>
+                                        <th>Insurance Issued</th>
+                                        <th>Premium</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {this.renderTableData()}
+                                </tbody>
+                            </Table>
                         </Row>
-                    </Card.Title>
-                </Card.Header>
-                <Card.Body>
-                    <Row>
-                        <Table hover responsive size={"md"}>
-                            <thead>
-                                <tr>
-                                    <th>Expiry</th>
-                                    <th>Strike Price</th>
-                                    <th>Current Price</th>
-                                    <th>Insurance Issued</th>
-                                    <th>Premium</th>
-                                    <th>
-                                        Action
-                                </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {this.renderTableData()}
-                            </tbody>
-                        </Table>
-                    </Row>
-                </Card.Body>
-            </Card>
-            <Modal
-                size="lg"
-                aria-labelledby="contained-modal-title-vcenter"
-                centered
-                show={this.state.showBuy} onHide={() => this.setState({ showBuy: false })}>
-                <Buy contract={this.state.buy} hide={this.hideBuy} {...this.props}></Buy>
-            </Modal>
-            <Modal
-                size="lg"
-                aria-labelledby="contained-modal-title-vcenter"
-                centered
-                show={this.state.showSell} onHide={() => this.setState({ showSell: false })}>
-                <Sell contract={this.state.sell} hide={this.hideSell} {...this.props}></Sell>
-            </Modal>
-        </Col>;
+                    </Card.Body>
+                </Card>
+                <Modal
+                    size="lg"
+                    aria-labelledby="contained-modal-title-vcenter"
+                    centered
+                    show={this.state.showBuy} onHide={() => this.setState({ showBuy: false })}>
+                    <Buy contract={this.state.buy} hide={this.hideBuy} toast={toast} {...this.props}></Buy>
+                </Modal>
+                <Modal
+                    size="lg"
+                    aria-labelledby="contained-modal-title-vcenter"
+                    centered
+                    show={this.state.showSell} onHide={() => this.setState({ showSell: false })}>
+                    <Sell contract={this.state.sell} hide={this.hideSell} toast={toast} {...this.props}></Sell>
+                </Modal>
+            </Col>
+        )
     }
     /*
     getDummyOptions() {
