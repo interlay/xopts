@@ -1,5 +1,4 @@
 import React from "react";
-import { ToastContainer, toast } from 'react-toastify';
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
 import * as utils from '../utils/utils.js'; 
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
@@ -177,11 +176,11 @@ export default class Buy extends React.Component {
       let contracts = this.props.contracts;
       await contracts.checkAllowance();
       await contracts.insureOption(optionContract.address, seller, amount);
-      showSuccessToast(toast, 'Successfully purchased option!', 3000);
+      showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
       this.props.hide();
     } catch(error) {
       console.log(error);
-      showFailureToast(toast, 'Failed to send transaction...', 3000);
+      showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
     }
     this.setState({spinner: false});
   }
@@ -245,18 +244,6 @@ export default class Buy extends React.Component {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-
-          <ToastContainer
-            position="bottom-center"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-          />
           <Form onSubmit={this.handleSubmit}>
             <SelectSeller 
               currentStep={this.state.currentStep} 
