@@ -3,6 +3,7 @@ import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Moda
 import * as utils from '../utils/utils.js'; 
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { SpinButton } from './SpinButton';
+import { withRouter } from 'react-router-dom'
 
 class SelectSeller extends React.Component {
   constructor(props) {
@@ -115,7 +116,7 @@ function calculateOptions(amount, strikePrice) {
   return amount * strikePrice;
 }
 
-export default class Buy extends React.Component {
+class Buy extends React.Component {
 
   constructor(props) {
     super(props)
@@ -179,8 +180,8 @@ export default class Buy extends React.Component {
       let contracts = this.props.contracts;
       await contracts.checkAllowance();
       await contracts.insureOption(optionContract.address, seller, amount);
+      this.props.history.push("/dashboard")
       showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
-      this.props.hide();
     } catch(error) {
       console.log(error);
       showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
@@ -282,3 +283,5 @@ export default class Buy extends React.Component {
     )
   }
 }
+
+export default withRouter(Buy);

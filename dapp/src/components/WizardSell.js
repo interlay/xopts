@@ -3,6 +3,7 @@ import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Moda
 import * as utils from '../utils/utils.js';
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { SpinButton } from './SpinButton';
+import { withRouter } from 'react-router-dom'
 
 class EnterAmount extends React.Component {
   render() {
@@ -57,10 +58,13 @@ class Confirm extends React.Component {
     return(
       <FormGroup>
         <h5>Confirm & Pay</h5>
+        Note: you will <strong>not</strong> be able to withdraw your DAI until the option expires.
         <FormGroup>
           <ListGroup>
-              <ListGroupItem>{this.props.btcAddress}</ListGroupItem>
-              <ListGroupItem>{utils.weiDaiToDai(this.props.amount)} DAI -> {utils.weiDaiToDai(this.props.amount)} XOPT</ListGroupItem>
+              <ListGroupItem>Strike price: <strong>{this.props.strikePrice} DAI</strong></ListGroupItem>
+              <ListGroupItem>Expiry: <strong>{new Date(this.props.expiry*1000).toLocaleString()}</strong></ListGroupItem>
+              <ListGroupItem>Sold amount: <strong>{utils.weiDaiToDai(this.props.amount)} DAI -> {utils.weiDaiToDai(this.props.amount)} XOPT</strong></ListGroupItem>
+              <ListGroupItem>Your BTC address: <strong>{this.props.btcAddress}</strong></ListGroupItem>
           </ListGroup>
         </FormGroup>
         <SpinButton spinner={this.props.spinner}/>
@@ -69,7 +73,7 @@ class Confirm extends React.Component {
   }
 }
 
-export default class Buy extends React.Component {
+class Sell extends React.Component {
 
   constructor(props) {
     super(props)
@@ -81,6 +85,7 @@ export default class Buy extends React.Component {
       address: '',
       optionContract: null,
       spinner: false,
+      expiry: 0
     }
 
     this.handleChange = this.handleChange.bind(this)
@@ -113,12 +118,13 @@ export default class Buy extends React.Component {
   handleSubmit = async (event) => {
     event.preventDefault();
     this.setState({spinner: true});
-    const { amount, btcAddress, optionContract } = this.state;
+    // TODO: get expiry date!
+    const { amount, btcAddress, optionContract, expiry } = this.state;
     try {
       let contracts = this.props.contracts;
       await contracts.checkAllowance(amount);
       await contracts.underwriteOption(optionContract.address, amount, btcAddress);
-      this.props.hide();
+      this.props.history.push("/dashboard")
       showSuccessToast(this.props.toast, 'Successfully sold options!', 3000);
     } catch(error) {
       console.log(error);
@@ -201,6 +207,7 @@ export default class Buy extends React.Component {
               amount={this.state.amount}
               btcAddress={this.state.btcAddress}
               spinner={this.state.spinner}
+              expiry={this.state.expiry}
             />          
           </Form>
         </Modal.Body>
@@ -212,3 +219,6 @@ export default class Buy extends React.Component {
     )
   }
 }
+
+
+export default withRouter(Sell);
