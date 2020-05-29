@@ -3,6 +3,7 @@ artifacts
 cache
 typechain
 /public
+dapp/build
 docs/venv
 docs/build
 *.pyc
