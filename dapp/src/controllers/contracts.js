@@ -8,15 +8,24 @@ const DEFAULT_CONFIRMATIONS = 1;
 
 export class Contracts {
 
-    constructor(signer) {
+    constructor(signer, network) {
         this.signer = signer;
 
-        let optionPoolAddress = "0xf4e77E5Da47AC3125140c470c71cBca77B5c638c";
-        let erc20Address = "0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F";
-
-        // Ropsten:
-        // optionPoolAddress = "0xB972583F9e7887546E0eC287D4869B25f8F8c341";
-        // erc20Address = "0xe0148a2105302251Ced6eB59e4ee60265F8B0109";
+        let optionPoolAddress;
+        let erc20Address;
+        // Ganache
+        if (network.chainId === 2222) {
+            optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
+            erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
+        // Ropsten
+        } else if (network.chainId === 3 && network.name === "ropsten") {
+            optionPoolAddress = "0xB972583F9e7887546E0eC287D4869B25f8F8c341";
+            erc20Address = "0xe0148a2105302251Ced6eB59e4ee60265F8B0109";
+        // Buidlerevm
+        } else if (network.chainId === 31337) {
+            optionPoolAddress = "0xf4e77E5Da47AC3125140c470c71cBca77B5c638c";
+            erc20Address = "0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F";
+        }
 
         this.optionPoolContract = new ethers.Contract(optionPoolAddress, optionPoolArtifact.abi, signer);
         this.erc20Contract = new ethers.Contract(erc20Address, erc20Artifact.abi, signer);
@@ -39,7 +48,7 @@ export class Contracts {
         let allowance = await this.erc20Contract.allowance(address, this.optionPoolContract.address);
         if (allowance < amount) {
             let tx = await this.erc20Contract.approve(this.optionPoolContract.address, ethers.constants.MaxUint256);
-            await tx.wait(1);                
+            await tx.wait(1);
         }
     }
 
@@ -71,7 +80,7 @@ export class Contracts {
 }
 
 export class Option {
-    constructor(signer, address) {  
+    constructor(signer, address) {
         this.address = address;
         this.signer = signer;
         this.sellable = new ethers.Contract(address, optionSellableArtifact.abi, signer);
