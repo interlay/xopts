@@ -39,6 +39,7 @@ build:
 pages:
   stage: deploy
   script:
+    - mkdir public
     - cp -rv dapp/build/* public/
   artifacts:
     paths:
