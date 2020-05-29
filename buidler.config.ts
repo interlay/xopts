@@ -11,7 +11,7 @@ var ganache_config = {
     url: 'http://127.0.0.1:8545',
     deterministic: true,
     mnemonic: 'lion album emotion suffer october belt uphold mind chronic stool february flag',
-    network_id: 3,
+    network_id: 2222,
     timeout: 0,
 };
 
@@ -50,6 +50,9 @@ const config = {
             url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
             accounts: [ROPSTEN_PRIVATE_KEY]
         },
+        localhost: {
+          timeout: 0,
+        }
     },
 };
 

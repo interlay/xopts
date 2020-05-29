@@ -70,7 +70,8 @@ class App extends Component {
     try {
       let signer = await provider.getSigner();
       let address = await signer.getAddress();
-      let contracts = new Contracts(signer);
+      let network = await provider.getNetwork();
+      let contracts = new Contracts(signer, network);
 
       this.setState({
         isLoggedIn: true,
