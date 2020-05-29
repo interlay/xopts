@@ -2,16 +2,44 @@ image: python:3.7-alpine
 
 stages:
   - test
+  - build
   - deploy
 
+# deploy for spec
+# pages:
+#   stage: deploy
+#   script:
+#   - python3 -V
+#   - cd docs
+#   - pip3 install -r requirements.txt
+#   - sphinx-build -b html source build/html
+#   - mv build/html/ ../public/
+#   artifacts:
+#     paths:
+#     - public
+#   only:
+#   - master
+
+# build dapp
+build:
+  stage: build
+  script:
+    - npm install
+    - cd dapp
+    - yarn install
+    - yarn build
+  artifacts:
+    expire_in: 1 day
+    paths:
+    - dapp/build
+  only:
+  - master
+
+# deploy dapp
 pages:
   stage: deploy
   script:
-  - python3 -V
-  - cd docs
-  - pip3 install -r requirements.txt
-  - sphinx-build -b html source build/html
-  - mv build/html/ ../public/
+    - cp -rv dapp/build/* /public/
   artifacts:
     paths:
     - public
