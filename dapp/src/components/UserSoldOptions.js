@@ -19,6 +19,7 @@ export default class UserSoldOptions extends Component {
             percentSold: 0,
             insuranceAvailable: 0,
             totalPremium: 0,
+            totalIncome : 0,
             showRefund: false,
             refundOption: {}
         };
@@ -59,6 +60,7 @@ export default class UserSoldOptions extends Component {
         let totalInsured = 0;
         let totalPremium = 0;
         let totalBtcInsured = 0;
+        let totalIncome = 0;
         for (var i = 0; i < optionContracts[0].length; i++) {
             let addr = optionContracts[0][i];
             let optionContract = this.props.contracts.attachOption(addr);
@@ -83,6 +85,7 @@ export default class UserSoldOptions extends Component {
             totalInsured += option.soldOptions;
             totalBtcInsured += option.btcInsured;
             totalPremium += option.premium * option.btcInsured;
+            totalIncome += option.income;
             options.push(option);
         }
 
@@ -92,7 +95,8 @@ export default class UserSoldOptions extends Component {
             totalPremium: totalPremium,
             totalInsured: totalInsured,
             totalBtcInsured: totalBtcInsured,
-            percentSold: percentSold
+            percentSold: percentSold,
+            totalIncome: totalIncome
         });
         return options;
     }
@@ -143,6 +147,7 @@ export default class UserSoldOptions extends Component {
         });
     }
 
+
     renderTableData() {
         if (this.state.soldLoaded) {
             if (this.state.soldOptions.length > 0) {
@@ -156,11 +161,11 @@ export default class UserSoldOptions extends Component {
                         <tr key={expiry}>
                             <td>{new Date(expiry * 1000).toLocaleString()}</td>
                             <td>{strikePrice} DAI</td>
-                            <td>{spotPrice} DAI</td>
-                            <td><strong className="text-success">{soldOptions}</strong> / {totalSupplyLocked} DAI <br/>({percentSold}%) </td>
+                            <td><span  className={(this.income >= 0 ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
+                            <td><strong>{soldOptions}</strong> / {totalSupplyLocked} DAI <br/>({percentSold}%) </td>
                             <td>{totalSupplyLocked} / {totalSupply} DAI <br/> ({percentInsured}%)</td>
                             <td><strong className={"text-success"}>{premiumEarned}</strong> DAI <br/> ({premium} DAI/BTC)</td>
-                            <td><strong className={(this.income >= 0 ? "text-success": "text-danger")}>{income}</strong> DAI <br/> (<strong className={"text-success"}>{premiumEarned}</strong> {(priceDiff > 0) && '+'} <strong className={(this.income >= 0 ? "text-success": "text-danger")}>{priceDiff} price delta)</strong></td>
+                            <td><strong className={(this.income >= 0 ? "text-success": "text-danger")}>{income}</strong> DAI </td>
 
                             <td>
                                 <ButtonTool
@@ -184,6 +189,7 @@ export default class UserSoldOptions extends Component {
         }
     }
 
+    // Earning details: <br/> (<strong className={"text-success"}>{premiumEarned}</strong> {(priceDiff > 0) && '+'} <strong className={(this.income >= 0 ? "text-success": "text-danger")}>{priceDiff} price delta)</strong>
 
     render() {
 
@@ -215,7 +221,7 @@ export default class UserSoldOptions extends Component {
                                 <Row className="text-center">
                                     <Badge>
                                         <Col md={4}>
-                                            <h3 className={(this.state.totalInsured > 0 ? "text-success": "")}>{this.state.totalInsured} DAI  ({this.state.percentSold}%)</h3>
+                                            <h3>{this.state.totalInsured} DAI  ({this.state.percentSold}%)</h3>
                                             <h6>DAI Insurance Sold</h6>
                                             <h6>({this.state.totalBtcInsured} BTC)</h6>
                                         </Col>
@@ -230,6 +236,12 @@ export default class UserSoldOptions extends Component {
                                         <Col md={4}>
                                             <h3 className={(this.state.totalPremium > 0 ? "text-success": "")}>{this.state.totalPremium}</h3>
                                             <h6>DAI Premium Earned</h6>
+                                        </Col>
+                                    </Badge>
+                                    <Badge>
+                                        <Col md={4}>
+                                            <h3 className={(this.state.totalIncome >= 0 ? "text-success": "text-danger")}>{this.state.totalIncome}</h3>
+                                            <h6>DAI Income</h6>
                                         </Col>
                                     </Badge>
                                 </Row>
