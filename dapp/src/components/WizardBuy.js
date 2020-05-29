@@ -29,11 +29,11 @@ class SelectSeller extends React.Component {
   renderOptions() {
     return this.state.sellers.map((seller, index) => {
       let address = seller.toString();
-      let amount = utils.weiDaiToDai(this.state.options[index].toString());
-      let amountBtc = utils.satToBtc(amount);
+      let amount = utils.weiDaiToDai(parseInt(this.state.options[index]._hex));
+      let amountBtc = amount / this.props.strikePrice;
       let addressShow = address.substr(0,10) + '...';
       return (
-        <option key={address} value={address} onClick={() => this.props.updateSatoshis(amount)}> {amountBtc} BTC (Seller: {addressShow})</option>
+        <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}> {amountBtc} BTC (Seller: {addressShow})</option>
       );
     })
   }
@@ -67,12 +67,12 @@ class EnterAmount extends React.Component {
       <FormGroup>
         <h5>Enter BTC Amount</h5>
         <FormControl
-          id="amountBtc"
-          name="amountBtc"
+          id="amount"
+          name="amount"
           type="number"
           placeholder="Amount"
-          max={utils.satToBtc(this.props.satoshis)}
-          defaultValue={utils.satToBtc(this.props.satoshis)}
+          max={this.props.amount}
+          defaultValue={this.props.amount}
           onChange={this.props.handleChange}
         />
       </FormGroup>
@@ -94,11 +94,11 @@ class Confirm extends React.Component {
         <h5>Confirm & Pay</h5>
         <FormGroup>
           <ListGroup>
-              <ListGroupItem>Strike price: <strong>{this.props.strikePrice} DAI/BTC</strong></ListGroupItem>
+              <ListGroupItem>Strike price: <strong>{this.props.strikePrice} DAI</strong></ListGroupItem>
               <ListGroupItem>Expiry: <strong>{new Date(this.props.expiry*1000).toLocaleString()}</strong></ListGroupItem>
-              <ListGroupItem>Purchase amount: <strong>{this.props.satoshis} SAT ({utils.satToBtc(this.props.satoshis)} BTC)</strong></ListGroupItem>
-              <ListGroupItem>Premium to pay: <strong>{utils.calculatePremium(this.props.satoshis, this.props.premium)} DAI</strong></ListGroupItem>
-              <ListGroupItem>Options received: <strong>{utils.calculateInsure(this.props.satoshis, this.props.strikePrice)} XOPT</strong></ListGroupItem>
+              <ListGroupItem>Purchase amount: <strong>{utils.satToBtc(this.props.amount)} BTC</strong></ListGroupItem>
+              <ListGroupItem>Premium to pay: <strong>{calculatePremium(this.props.amount, this.props.premium)} DAI</strong></ListGroupItem>
+              <ListGroupItem>Options received: <strong>{utils.weiDaiToBtc(calculateOptions(this.props.amount, this.props.strikePrice))} XOPT</strong></ListGroupItem>
               <ListGroupItem>Seller: <strong>{this.props.seller}</strong></ListGroupItem>
           </ListGroup>
         </FormGroup>
@@ -108,7 +108,15 @@ class Confirm extends React.Component {
   }
 }
 
-export class Buy extends React.Component {
+function calculatePremium(amount, premium) {
+  return utils.satToBtc(amount) * premium;
+}
+
+function calculateOptions(amount, strikePrice) {
+  return amount * strikePrice;
+}
+
+class Buy extends React.Component {
 
   constructor(props) {
     super(props)
@@ -117,7 +125,7 @@ export class Buy extends React.Component {
     this.state = {
       currentStep: 1,
       seller: '',
-      satoshis: 0,
+      amount: 0,
       optionContract: null,
       expiry: 0,
       premium: 0,
@@ -126,7 +134,7 @@ export class Buy extends React.Component {
     }
 
     this.handleChange = this.handleChange.bind(this)
-    this.updateSatoshis = this.updateSatoshis.bind(this)
+    this.updateAmount = this.updateAmount.bind(this)
   }
 
   async componentDidMount() {
@@ -140,8 +148,8 @@ export class Buy extends React.Component {
       this.setState({
         optionContract: optionContract,
         expiry: expiry,
-        premium: utils.weiDaiToBtc(premium),
-        strikePrice: utils.weiDaiToBtc(strikePrice),
+        premium: utils.weiDaiToBtc(parseInt(premium._hex)),
+        strikePrice: utils.weiDaiToBtc(parseInt(strikePrice._hex)),
       });
     }
   }
@@ -149,21 +157,17 @@ export class Buy extends React.Component {
   // Use the submitted data to set the state
   handleChange(event) {
     let {name, value} = event.target
-    if(name == "amountBtc") {
+    if(name == "amount"){
       value = utils.btcToSat(value);
-      this.setState({
-        satoshis: utils.round(value),
-      });
-    } else {
-      this.setState({
-        [name]: value
-      });
     }
+    this.setState({
+      [name]: value
+    });
   }
 
-  updateSatoshis(i) {
+  updateAmount(i) {
     this.setState({
-      satoshis: utils.round(i),
+      amount: utils.satToBtc(i),
     });
   }
   
@@ -171,11 +175,11 @@ export class Buy extends React.Component {
   handleSubmit = async (event) => {
     event.preventDefault();
     this.setState({spinner: true});
-    const { seller, satoshis, optionContract } = this.state;
+    const { seller, amount, optionContract } = this.state;
     try {
       let contracts = this.props.contracts;
       await contracts.checkAllowance();
-      await contracts.insureOption(optionContract.address, seller, satoshis);
+      await contracts.insureOption(optionContract.address, seller, amount);
       this.props.history.push("/dashboard")
       showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
     } catch(error) {
@@ -248,22 +252,22 @@ export class Buy extends React.Component {
             <SelectSeller 
               currentStep={this.state.currentStep} 
               handleChange={this.handleChange}
-              updateSatoshis={this.updateSatoshis}
+              updateAmount={this.updateAmount}
               seller={this.state.seller}
-              satoshis={this.state.satoshis}
+              amount={this.state.amount}
               strikePrice={this.state.strikePrice}
               optionContract={this.state.optionContract}
             />
             <EnterAmount 
               currentStep={this.state.currentStep} 
               handleChange={this.handleChange}
-              satoshis={this.state.satoshis}
+              amount={this.state.amount}
             />
             <Confirm
               currentStep={this.state.currentStep} 
               handleChange={this.handleChange}
               seller={this.state.seller}
-              satoshis={this.state.satoshis}
+              amount={this.state.amount}
               premium={this.state.premium}
               strikePrice={this.state.strikePrice}
               expiry={this.state.expiry}
