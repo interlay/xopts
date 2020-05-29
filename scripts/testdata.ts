@@ -42,12 +42,12 @@ async function main() {
 	await call(collateral, CollateralFactory, alice).mint(eveAddress, daiToWeiDai(100_000));
 	await call(collateral, CollateralFactory, alice).mint(daveAddress, daiToWeiDai(100_000));
 
-    console.log("Generating expired option");
-    // get the current time
-    let current_time = Math.round(new Date().getTime()/1000);
-    // generate and underwrite option that expires in 30 secs
-    let expiry = current_time + 30;
-    await pool.createOption(expiry, premiumInDaiForOneBTC(10), strikePriceInDaiForOneBTC(9_200));
+  console.log("Generating expired option");
+  // get the current time
+  let current_time = Math.round(new Date().getTime()/1000);
+  // generate and underwrite option that expires in 60 secs
+  let expiry = current_time + 60;
+  await pool.createOption(expiry, premiumInDaiForOneBTC(10), strikePriceInDaiForOneBTC(9_200));
 	let options = await pool.getOptions();
 
 	let sellableAddress = options[0];
