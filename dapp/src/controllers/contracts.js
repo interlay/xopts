@@ -11,8 +11,8 @@ export class Contracts {
     constructor(signer) {
         this.signer = signer;
 
-        let optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
-        let erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
+        let optionPoolAddress = "0xf4e77E5Da47AC3125140c470c71cBca77B5c638c";
+        let erc20Address = "0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F";
 
         // Ropsten:
         // optionPoolAddress = "0xB972583F9e7887546E0eC287D4869B25f8F8c341";
