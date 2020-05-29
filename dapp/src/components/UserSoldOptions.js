@@ -17,7 +17,6 @@ export default class UserSoldOptions extends Component {
             totalInsured: 0,
             totalBtcInsured: 0,
             percentSold: 0,
-            insuredBTC: 0,
             insuranceAvailable: 0,
             totalPremium: 0,
             totalIncome : 0,
@@ -65,39 +64,32 @@ export default class UserSoldOptions extends Component {
         for (var i = 0; i < optionContracts[0].length; i++) {
             let addr = optionContracts[0][i];
             let optionContract = this.props.contracts.attachOption(addr);
-
-            console.log("!!!!!", (await optionContract.getDetails())[3].toString())
-
             let optionRes = await optionContract.getDetails();
             let option = {
-                expiry: parseInt(optionRes[0].toString()),
-                premium: utils.weiDaiToBtc(optionRes[1]),
-                strikePrice: utils.weiDaiToBtc(optionRes[2]),
-                totalSupply: optionRes[3].toString(),
+                expiry: parseInt(optionRes[0]._hex),
+                premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
+                strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
+                totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
 
                 // User's unsold options & total locked DAI
-                unsoldOptions: utils.weiDaiToDai(optionContracts[1][i].toString()),
-                totalSupplyLocked: utils.weiDaiToDai(optionContracts[2][i].toString())
+                unsoldOptions: utils.weiDaiToDai(parseInt(optionContracts[1][i]._hex)),
+                totalSupplyLocked: utils.weiDaiToDai(parseInt(optionContracts[2][i]._hex))
             }
-            option.unsoldOptions = (await optionContract.unsoldOptionsForSigner()).toString();
-            option.totalOptions = (await optionContract.totalOptionsForSigner()).toString();
-            option.soldOptions = utils.sub(option.totalOptions, option.unsoldOptions);
+            option.soldOptions = option.totalSupplyLocked - option.unsoldOptions;
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = optionContracts[0][i];
             option.percentSold = ((option.totalSupplyLocked <= 0) ? 0 : Math.round(10000*option.soldOptions / option.totalSupplyLocked) / 100)
-            option.btcInsured = utils.div(option.soldOptions, option.strikePrice);
-            option.premiumEarned = utils.mul(option.premium, option.btcInsured);
+            option.btcInsured = option.soldOptions / option.strikePrice;
+            option.premiumEarned = option.premium * option.btcInsured;
             option.income = option.btcInsured * (option.premium + option.strikePrice - option.spotPrice);
 
-            totalPremium = utils.add(totalPremium, option.premium);
-            totalInsured = utils.add(totalInsured, option.totalSupplyLocked);            
             options.push(option);
 
-            totalLocked = utils.add(totalLocked, option.totalSupplyLocked);
-            totalInsured = utils.add(totalInsured, option.soldOptions);
-            totalBtcInsured = utils.add(totalBtcInsured, option.btcInsured);
-            totalPremium = utils.add(totalPremium, utils.mul(option.premium, option.btcInsured));
-            totalIncome = utils.add(totalIncome, option.income);
+            totalLocked += option.totalSupplyLocked;
+            totalInsured += option.soldOptions;
+            totalBtcInsured += option.btcInsured;
+            totalPremium += option.premium * option.btcInsured;
+            totalIncome += option.income;
 
         }
 
@@ -108,7 +100,7 @@ export default class UserSoldOptions extends Component {
             totalInsured: totalInsured,
             totalBtcInsured: totalBtcInsured,
             percentSold: percentSold,
-            totalIncome: totalIncome,
+            totalIncome: totalIncome
         });
         return options;
     }
@@ -164,12 +156,9 @@ export default class UserSoldOptions extends Component {
         if (this.state.soldLoaded) {
             if (this.state.soldOptions.length > 0) {
                 return this.state.soldOptions.map((option, index) => {
-                    const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, totalOptions, soldOptions, percentSold, income, btcInsured, premiumEarned, contract } = option;
+                    const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, soldOptions, percentSold, income, btcInsured, premiumEarned, contract } = option;
 
-                    let percentInsured = 0;
-                    if (totalSupply > 0) {
-                        percentInsured = utils.calculatePercentage(totalSupplyLocked, totalSupply);
-                    }
+                    let percentInsured = ((totalSupply <= 0) ? 0 : Math.round(10000*totalSupplyLocked / totalSupply) / 100);
                     let currentDate = Math.floor(Date.now() / 1000);
                     let priceDiff = strikePrice-spotPrice;
                     return (
@@ -177,7 +166,7 @@ export default class UserSoldOptions extends Component {
                             <td>{new Date(expiry * 1000).toLocaleString()}</td>
                             <td>{strikePrice} DAI</td>
                             <td><span  className={(income >= 0 ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
-                            <td><strong>{soldOptions}</strong> / {totalOptions} DAI <br/>({percentSold}%) </td>
+                            <td><strong>{soldOptions}</strong> / {totalSupplyLocked} DAI <br/>({percentSold}%) </td>
                             <td>{totalSupplyLocked} / {totalSupply} DAI <br/> ({percentInsured}%)</td>
                             <td><strong className={"text-success"}>{premiumEarned}</strong> DAI <br/> ({premium} DAI/BTC)</td>
                             <td><strong className={(income >= 0 ? "text-success": "text-danger")}>{income}</strong> DAI </td>

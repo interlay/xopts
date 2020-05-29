@@ -113,14 +113,4 @@ export class Option {
     async hasSellers() {
         return (await this.sellable.totalSupplyUnsold()) > 0;
     }
-
-    async unsoldOptionsForSigner() {
-        let account = await this.signer.getAddress();
-        return this.sellable.balanceOf(account);
-    }
-
-    async totalOptionsForSigner() {
-        let account = await this.signer.getAddress();
-        return this.sellable.totalBalanceOf(account);
-    }
 }

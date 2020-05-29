@@ -17,7 +17,7 @@ class EnterAmount extends React.Component {
           id="amount"
           name="amount"
           type="number"
-          value={this.props.amount}
+          defaultValue="0"
           onChange={this.props.handleChange}
         />
       </FormGroup>
@@ -39,7 +39,6 @@ class EnterAddress extends React.Component {
           name="btcAddress"
           type="text"
           placeholder="BTC Address"
-          value={this.props.btcAddress}
           onChange={this.props.handleChange}
         />
       </FormGroup>
@@ -62,11 +61,10 @@ class Confirm extends React.Component {
         Note: you will <strong>not</strong> be able to withdraw your DAI until the option expires.
         <FormGroup>
           <ListGroup>
-              <ListGroupItem>Strike price: <strong>{utils.weiDaiToBtc(this.props.strikePrice)} DAI/BTC</strong></ListGroupItem>
+              <ListGroupItem>Strike price: <strong>{this.props.strikePrice} DAI</strong></ListGroupItem>
               <ListGroupItem>Expiry: <strong>{new Date(this.props.expiry*1000).toLocaleString()}</strong></ListGroupItem>
-              <ListGroupItem>Sold amount: <strong>{this.props.amount} DAI -> {this.props.amount} XOPT</strong></ListGroupItem>
+              <ListGroupItem>Sold amount: <strong>{utils.weiDaiToDai(this.props.amount)} DAI -> {utils.weiDaiToDai(this.props.amount)} XOPT</strong></ListGroupItem>
               <ListGroupItem>Your BTC address: <strong>{this.props.btcAddress}</strong></ListGroupItem>
-              <ListGroupItem>Covers: <strong>{utils.satToBtc(utils.calculateExercise(this.props.amount, utils.weiDaiToDai(this.props.strikePrice)))} BTC</strong></ListGroupItem>
           </ListGroup>
         </FormGroup>
         <SpinButton spinner={this.props.spinner}/>
@@ -86,7 +84,6 @@ class Sell extends React.Component {
       amount: 0,
       address: '',
       optionContract: null,
-      strikePrice: 0,
       spinner: false,
       expiry: 0
     }
@@ -101,20 +98,18 @@ class Sell extends React.Component {
       let contracts = this.props.contracts;
       let optionContract = contracts.attachOption(contract);
 
-      let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getDetails();
-
       this.setState({
         optionContract: optionContract,
-        strikePrice: strikePrice.toString(),
       });
     }
   }
 
   handleChange(event) {
     let {name, value} = event.target
-    // if(name == "amount"){
-    //   value = utils.daiToWeiDai(value);
-    // }
+    if(name == "amount"){
+      value = utils.daiToWeiDai(value);
+    }
+    console.log(value);
     this.setState({
       [name]: value
     });
@@ -199,13 +194,11 @@ class Sell extends React.Component {
         <Modal.Body>
           <Form onSubmit={this.handleSubmit}>
             <EnterAmount
-              currentStep={this.state.currentStep}
-              amount={this.state.amount}
+              currentStep={this.state.currentStep} 
               handleChange={this.handleChange}
             />
             <EnterAddress
-              currentStep={this.state.currentStep}
-              btcAddress={this.state.btcAddress}
+              currentStep={this.state.currentStep} 
               handleChange={this.handleChange}
             />
             <Confirm
@@ -213,7 +206,6 @@ class Sell extends React.Component {
               handleChange={this.handleChange}
               amount={this.state.amount}
               btcAddress={this.state.btcAddress}
-              strikePrice={this.state.strikePrice}
               spinner={this.state.spinner}
               expiry={this.state.expiry}
             />          

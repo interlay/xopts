@@ -31,8 +31,9 @@ class SelectSeller extends React.Component {
     renderOptions() {
         return this.state.sellers.map((seller, index) => {
             let address = seller.toString();
-            let amount = utils.weiDaiToBtc(this.state.options[index]);
+            let amount = utils.weiDaiToBtc(parseInt(this.state.options[index]._hex));
             let addressShow = address.substr(0, 10) + '...';
+
             return (
                 <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{amount} BTC (Seller:{addressShow})</option>
             );
@@ -227,7 +228,6 @@ export default class UserPurchasedOptions extends Component {
         let totalBtcInsured = 0;
         let paidPremium = 0;
         let totalIncome = 0;
-        let insuredBTC = 0;
         try {
             for (var i = 0; i < optionContracts[0].length; i++) {
                 let addr = optionContracts[0][i];
@@ -235,20 +235,17 @@ export default class UserPurchasedOptions extends Component {
                 let optionRes = await optionContract.getDetails();
                 let option = {
                     expiry: parseInt(optionRes[0]._hex),
-                    premium: utils.weiDaiToBtc(optionRes[1]),
-                    strikePrice: utils.weiDaiToBtc(optionRes[2]).toString(),
-                    totalSupply: utils.weiDaiToDai(optionRes[3]),
-                    totalSupplyLocked: utils.weiDaiToDai(optionContracts[1][i]),
+                    premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
+                    strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
+                    totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
+                    // User's purchased options
+                    totalSupplyLocked: utils.weiDaiToDai(parseInt(optionContracts[1][i]._hex)),
                 }
                 option.spotPrice = this.props.btcPrices.dai;
                 option.contract = optionContracts[0][i];
                 option.btcInsured = option.totalSupplyLocked / option.strikePrice;
                 option.premiumPaid = option.premium * option.btcInsured;
                 option.income = option.btcInsured * (option.spotPrice - option.strikePrice - option.premium);
-
-                insuredBTC = utils.add(insuredBTC, utils.calculateInsure(option.totalSupplyLocked, option.strikePrice));
-
-                paidPremium += option.premium;
                 options.push(option);
 
                 paidPremium += option.premiumPaid;
