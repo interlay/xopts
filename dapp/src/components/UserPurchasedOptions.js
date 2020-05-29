@@ -102,7 +102,7 @@ class SubmitProof extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            progress : 0
+            progress: 0
         }
     }
 
@@ -111,12 +111,12 @@ class SubmitProof extends React.Component {
             this.setState({
                 progress: this.state.progress + 10
             })
-            if ( this.state.progress >= 100) clearInterval(proofCountdown);
+            if (this.state.progress >= 100) clearInterval(proofCountdown);
         }, 1000);
     }
 
-    componentDidUpdate(){
-        if(this.state.progress >= 100){
+    componentDidUpdate() {
+        if (this.state.progress >= 100) {
 
         }
     }
@@ -166,7 +166,8 @@ export default class UserPurchasedOptions extends Component {
             purchasedOptions: [],
             totalInsured: 0,
             insuranceAvailable: 0,
-            totalPremium: 0,
+            paidPremium: 0,
+            totalIncome: 0,
             showExercise: false,
             exerciseOption: {},
             currentStep: 1,
@@ -187,9 +188,6 @@ export default class UserPurchasedOptions extends Component {
             if (!this.state.purchasedLoaded) {
                 this.getAvailableOptions();
             }
-            if (!this.state.soldLoaded) {
-                this.getCurrentOptions();
-            }
         }
     }
 
@@ -204,17 +202,6 @@ export default class UserPurchasedOptions extends Component {
         }
     }
 
-    async getCurrentOptions() {
-        if (this.props.contracts && this.props.address) {
-            let optionContracts = await this.props.contracts.getUserPurchasedOptions(this.props.address);
-            let purchasedOptions = await this.getOptions(optionContracts)
-            this.setState({
-                purchasedOptions: purchasedOptions,
-                soldLoaded: true
-            });
-        }
-    }
-
     async getOptions(optionContracts) {
         // Remove 0-value contracts
         for (var i = optionContracts[1].length - 1; i >= 0; i--) {
@@ -225,8 +212,9 @@ export default class UserPurchasedOptions extends Component {
         }
 
         let options = [];
-        let insuredBTC = 0;
+        let totalBtcInsured = 0;
         let paidPremium = 0;
+        let totalIncome = 0;
         try {
             for (var i = 0; i < optionContracts[0].length; i++) {
                 let addr = optionContracts[0][i];
@@ -237,19 +225,25 @@ export default class UserPurchasedOptions extends Component {
                     premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
                     strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
                     totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
+                    // User's purchased options
                     totalSupplyLocked: utils.weiDaiToDai(parseInt(optionContracts[1][i]._hex)),
                 }
                 option.spotPrice = this.props.btcPrices.dai;
                 option.contract = optionContracts[0][i];
-
-                insuredBTC += option.totalSupplyLocked / option.strikePrice;
-                paidPremium += option.premium;
+                option.btcInsured = option.totalSupplyLocked / option.strikePrice;
+                option.premiumPaid = option.premium * option.btcInsured;
+                option.income = option.btcInsured * (option.spotPrice - option.strikePrice - option.premium);
                 options.push(option);
-            }
 
+                paidPremium += option.premiumPaid;
+                totalBtcInsured += option.btcInsured;
+                totalIncome += option.income;
+            }
             this.setState({
-                totalPremium: 100,
-                totalInsured: insuredBTC
+                paidPremium: paidPremium,
+                totalInsured: totalBtcInsured,
+                totalIncome: totalIncome,
+                totalBtcInsured: totalBtcInsured
             });
         } catch (error) {
             console.log(error);
@@ -258,37 +252,34 @@ export default class UserPurchasedOptions extends Component {
     }
 
     renderTableData() {
-        if (this.state.purchasedLoaded) {
-            if (this.state.purchasedOptions.length > 0) {
-                return this.state.purchasedOptions.map((option, index) => {
-                    const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked, contract } = option;
+        if (this.state.purchasedOptions.length > 0) {
+            return this.state.purchasedOptions.map((option, index) => {
+                const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, income, btcInsured, premiumPaid, totalSupplyUnlocked, contract } = option;
+                
 
-                    let percentInsured = 0;
-                    if (totalSupply > 0) {
-                        percentInsured = Math.round(10000 * totalSupplyLocked / totalSupply) / 100;
-                    }
-                    return (
-                        <tr key={strikePrice}>
-                            <td>{new Date(expiry * 1000).toLocaleString()}</td>
-                            <td>{strikePrice} DAI</td>
-                            <td>{spotPrice} DAI</td>
-                            <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
-                            <td>{premium} DAI/BTC</td>
+                let percentInsured = ((totalSupply <= 0) ? 0 : Math.round(10000*totalSupplyLocked / totalSupply) / 100);
+                console.log(income);
+                return (
+                    <tr key={strikePrice}>
+                        <td>{new Date(expiry * 1000).toLocaleString()}</td>
+                        <td>{strikePrice} DAI</td>
+                        <td><span className={(income >= 0.0 ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
+                        <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
+                        <td>{premiumPaid} DAI <br/> ({premium} DAI/BTC)</td>
+                        <td><strong className={(income >= 0.0 ? "text-success": "text-danger")}>{income}</strong> DAI </td>
 
-                            <td>
-                                <Button variant="outline-success" onClick={() => { this.handleExercise(index) }}>
-                                    Exercise
+                        <td>
+                            <Button variant="outline-success" onClick={() => { this.handleExercise(index) }}>
+                                Exercise
                                 </Button>
-                            </td>
-                        </tr>
-                    )
-                })
-            } else {
-                return <tr><td colSpan="7">No options purchased yet</td></tr>
-            }
+                        </td>
+                    </tr>
+                )
+            })
         } else {
-            return <tr><td colSpan="7" className="text-center"><Spinner animation="border" /></td></tr>
+            return <tr><td colSpan="7">No options purchased yet</td></tr>
         }
+
     }
 
     handleExercise(index) {
@@ -424,42 +415,59 @@ export default class UserPurchasedOptions extends Component {
                 <Card border="dark">
                     <Card.Header>
                         <Card.Title><h2>Purchased BTC/DAI Put Option Contracts</h2>
-                            <Row className="text-center">
-                                <Badge>
-                                    <Col md={4}>
-                                        <h3>{this.state.totalInsured}</h3>
-                                        <h6>BTC</h6>
+                            {!this.state.purchasedLoaded &&
+                                <Row>
+                                    <Col className="text-center">
+                                        <Spinner animation="border" />
                                     </Col>
-                                </Badge>
-                                <Badge>
-                                    <Col md={4}>
-                                        <h3>{this.state.totalPremium}</h3>
-                                        <h6>DAI Premium Paid</h6>
-                                    </Col>
-                                </Badge>
-                            </Row>
+                                </Row>
+                            }
+                            {this.state.purchasedLoaded &&
+                                <Row className="text-center">
+                                    <Badge>
+                                        <Col md={4}>
+                                            <h3>{this.state.totalInsured}</h3>
+                                            <h6>BTC Insured</h6>
+                                        </Col>
+                                    </Badge>
+                                    <Badge>
+                                        <Col md={4}>
+                                            <h3>{this.state.paidPremium}</h3>
+                                            <h6>DAI Premium Paid</h6>
+                                        </Col>
+                                    </Badge>
+                                    <Badge>
+                                        <Col md={4}>
+                                            <h3 className={(this.state.totalIncome > 0 ? "text-success": (this.state.totalIncome < 0 ? "text-danger" : ""))}>{this.state.totalIncome}</h3>
+                                            <h6>DAI (Potential) Income</h6>
+                                        </Col>
+                                    </Badge>
+                                </Row>
+                            }
                         </Card.Title>
                     </Card.Header>
-                    <Card.Body>
-                        <Row>
-                            <Table hover responsive>
-                                <thead>
-                                    <tr>
-                                        <th>Expiry</th>
-                                        <th>Strike Price</th>
-                                        <th>Current Price</th>
-                                        <th>Insurance Issued</th>
-                                        <th>Premium</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {this.renderTableData()}
-                                </tbody>
-                            </Table>
-                        </Row>
-
-                    </Card.Body>
+                    {this.state.purchasedLoaded &&
+                        <Card.Body>
+                            <Row>
+                                <Table hover responsive>
+                                    <thead>
+                                        <tr>
+                                            <th>Expiry</th>
+                                            <th>Strike Price</th>
+                                            <th>Current Price</th>
+                                            <th>Insurance Issued</th>
+                                            <th>Premium Paid</th>
+                                            <th>Earnings</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {this.renderTableData()}
+                                    </tbody>
+                                </Table>
+                            </Row>
+                        </Card.Body>
+                    }
                 </Card>
 
                 <Modal

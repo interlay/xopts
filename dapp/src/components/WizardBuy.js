@@ -3,6 +3,7 @@ import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Moda
 import * as utils from '../utils/utils.js'; 
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { SpinButton } from './SpinButton';
+import { withRouter } from 'react-router-dom'
 
 class SelectSeller extends React.Component {
   constructor(props) {
@@ -30,8 +31,9 @@ class SelectSeller extends React.Component {
       let address = seller.toString();
       let amount = utils.weiDaiToDai(parseInt(this.state.options[index]._hex));
       let amountBtc = amount / this.props.strikePrice;
+      let addressShow = address.substr(0,10) + '...';
       return (
-        <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amountBtc} BTC</option>
+        <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}> {amountBtc} BTC (Seller: {addressShow})</option>
       );
     })
   }
@@ -92,10 +94,12 @@ class Confirm extends React.Component {
         <h5>Confirm & Pay</h5>
         <FormGroup>
           <ListGroup>
-              <ListGroupItem>{this.props.seller}</ListGroupItem>
-              <ListGroupItem>{this.props.amount} SAT ({utils.satToBtc(this.props.amount)} BTC)</ListGroupItem>
-              <ListGroupItem>{calculatePremium(this.props.amount, this.props.premium)} DAI</ListGroupItem>
-              <ListGroupItem>{utils.weiDaiToBtc(calculateOptions(this.props.amount, this.props.strikePrice))} XOPT</ListGroupItem>
+              <ListGroupItem>Strike price: <strong>{this.props.strikePrice} DAI</strong></ListGroupItem>
+              <ListGroupItem>Expiry: <strong>{new Date(this.props.expiry*1000).toLocaleString()}</strong></ListGroupItem>
+              <ListGroupItem>Purchase amount: <strong>{utils.satToBtc(this.props.amount)} BTC</strong></ListGroupItem>
+              <ListGroupItem>Premium to pay: <strong>{calculatePremium(this.props.amount, this.props.premium)} DAI</strong></ListGroupItem>
+              <ListGroupItem>Options received: <strong>{utils.weiDaiToBtc(calculateOptions(this.props.amount, this.props.strikePrice))} XOPT</strong></ListGroupItem>
+              <ListGroupItem>Seller: <strong>{this.props.seller}</strong></ListGroupItem>
           </ListGroup>
         </FormGroup>
         <SpinButton spinner={this.props.spinner}/>
@@ -112,7 +116,7 @@ function calculateOptions(amount, strikePrice) {
   return amount * strikePrice;
 }
 
-export default class Buy extends React.Component {
+class Buy extends React.Component {
 
   constructor(props) {
     super(props)
@@ -176,8 +180,8 @@ export default class Buy extends React.Component {
       let contracts = this.props.contracts;
       await contracts.checkAllowance();
       await contracts.insureOption(optionContract.address, seller, amount);
+      this.props.history.push("/dashboard")
       showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
-      this.props.hide();
     } catch(error) {
       console.log(error);
       showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
@@ -266,6 +270,7 @@ export default class Buy extends React.Component {
               amount={this.state.amount}
               premium={this.state.premium}
               strikePrice={this.state.strikePrice}
+              expiry={this.state.expiry}
               spinner={this.state.spinner}
             />
           </Form>
@@ -278,3 +283,5 @@ export default class Buy extends React.Component {
     )
   }
 }
+
+export default withRouter(Buy);
