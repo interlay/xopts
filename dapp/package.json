@@ -2,6 +2,7 @@
   "name": "xflash-ui",
   "version": "0.1.0",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "bootstrap": "^4.4.1",
     "bootswatch": "^4.5.0",
