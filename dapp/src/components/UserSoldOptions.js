@@ -71,6 +71,7 @@ export default class UserSoldOptions extends Component {
                 strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
                 totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
 
+                // User's unsold options & total locked DAI
                 unsoldOptions: utils.weiDaiToDai(parseInt(optionContracts[1][i]._hex)),
                 totalSupplyLocked: utils.weiDaiToDai(parseInt(optionContracts[2][i]._hex))
             }
@@ -80,13 +81,16 @@ export default class UserSoldOptions extends Component {
             option.percentSold = ((option.totalSupplyLocked <= 0) ? 0 : Math.round(10000*option.soldOptions / option.totalSupplyLocked) / 100)
             option.btcInsured = option.soldOptions / option.strikePrice;
             option.premiumEarned = option.premium * option.btcInsured;
-            option.income = option.premium + (option.strikePrice - option.spotPrice);
+            option.income = option.btcInsured * (option.premium + option.strikePrice - option.spotPrice);
+
+            options.push(option);
+
             totalLocked += option.totalSupplyLocked;
             totalInsured += option.soldOptions;
             totalBtcInsured += option.btcInsured;
             totalPremium += option.premium * option.btcInsured;
             totalIncome += option.income;
-            options.push(option);
+
         }
 
         let percentSold = ((totalLocked <= 0) ? 0 : Math.round(10000*totalInsured / totalLocked) / 100)
@@ -161,11 +165,11 @@ export default class UserSoldOptions extends Component {
                         <tr key={expiry}>
                             <td>{new Date(expiry * 1000).toLocaleString()}</td>
                             <td>{strikePrice} DAI</td>
-                            <td><span  className={(this.income >= 0 ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
+                            <td><span  className={(income >= 0 ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
                             <td><strong>{soldOptions}</strong> / {totalSupplyLocked} DAI <br/>({percentSold}%) </td>
                             <td>{totalSupplyLocked} / {totalSupply} DAI <br/> ({percentInsured}%)</td>
                             <td><strong className={"text-success"}>{premiumEarned}</strong> DAI <br/> ({premium} DAI/BTC)</td>
-                            <td><strong className={(this.income >= 0 ? "text-success": "text-danger")}>{income}</strong> DAI </td>
+                            <td><strong className={(income >= 0 ? "text-success": "text-danger")}>{income}</strong> DAI </td>
 
                             <td>
                                 <ButtonTool
@@ -234,13 +238,13 @@ export default class UserSoldOptions extends Component {
                                     </Badge>
                                     <Badge>
                                         <Col md={4}>
-                                            <h3 className={(this.state.totalPremium > 0 ? "text-success": "")}>{this.state.totalPremium}</h3>
+                                            <h3 className={(this.state.totalPremium > 0 ? "text-success": (this.state.totalPremium < 0 ? "text-danger" : ""))}>{this.state.totalPremium}</h3>
                                             <h6>DAI Premium Earned</h6>
                                         </Col>
                                     </Badge>
                                     <Badge>
                                         <Col md={4}>
-                                            <h3 className={(this.state.totalIncome >= 0 ? "text-success": "text-danger")}>{this.state.totalIncome}</h3>
+                                            <h3 className={(this.state.totalIncome > 0 ? "text-success": (this.state.totalIncome < 0 ? "text-danger" : ""))}>{this.state.totalIncome}</h3>
                                             <h6>DAI Income</h6>
                                         </Col>
                                     </Badge>
