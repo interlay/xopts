@@ -27,7 +27,7 @@ build:
     - npm install
     - cd dapp
     - yarn install
-    - yarn build
+    - CI=false yarn build
   artifacts:
     expire_in: 1 day
     paths:
@@ -55,3 +55,5 @@ contracts:
   - npm install
   - npm run build
   - npm run test
+  only:
+  - merge_requests
