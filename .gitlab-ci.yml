@@ -21,7 +21,7 @@ stages:
 #   - master
 
 # build dapp
-dapp:
+build:
   stage: build
   script:
     - npm install
@@ -31,8 +31,9 @@ dapp:
   artifacts:
     expire_in: 1 day
     paths:
-      - dapp/build
-  only: master
+    - dapp/build
+  only:
+  - master
 
 # deploy dapp
 pages:
@@ -41,8 +42,9 @@ pages:
     - cp -rv dapp/build/* /public/
   artifacts:
     paths:
-      - public
-  only: master
+    - public
+  only:
+  - master
 
 contracts:
   stage: test
