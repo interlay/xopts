@@ -52,6 +52,12 @@ export class Contracts {
         }
     }
 
+    async balanceOf() {
+        let address = await this.signer.getAddress();
+        let balance = await this.erc20Contract.balanceOf(address);
+        return balance;
+    }
+
     attachOption(address) {
         return new Option(this.signer, address);
     }
