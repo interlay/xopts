@@ -19,6 +19,7 @@ class SelectSeller extends React.Component {
         if (this.props.contract && this.props.contracts && !this.state.loaded) {
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             let [sellers, options] = await optionContract.getOptionOwnersFor(this.props.address);
+            console.log(options);
             this.setState({
                 loaded: true,
                 sellers: sellers,
@@ -30,9 +31,11 @@ class SelectSeller extends React.Component {
     renderOptions() {
         return this.state.sellers.map((seller, index) => {
             let address = seller.toString();
-            let amount = utils.weiDaiToBtc(this.state.options[index].toNumber());
+            let amount = utils.weiDaiToBtc(parseInt(this.state.options[index]._hex));
+            let addressShow = address.substr(0, 10) + '...';
+
             return (
-                <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{address} - {amount} BTC</option>
+                <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{amount} BTC (Seller:{addressShow})</option>
             );
         })
     }
@@ -71,7 +74,8 @@ class ScanBTC extends React.Component {
         if (this.props.contract && this.props.contracts && !this.state.loaded) {
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
-            let btcAddress = ethers.utils.hexlify(btcAddressRaw).toString();
+            let btcAddress = ethers.utils.toUtf8String(ethers.utils.hexlify(btcAddressRaw));
+
             let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amount;
 
             this.setState({
@@ -126,9 +130,21 @@ class SubmitProof extends React.Component {
         }
         return (
             <div>
-                <h4>Watching for Bitcoin payment...</h4>
-                <ProgressBar striped variant="success" now={this.state.progress} />
-                <FormGroup>
+                <h4>Please enter the TXID of your Bitcoin payment.</h4>
+                <p>We will track it for you and tell you when it is ready!</p>
+                <Form.Group>
+                    <Form.Label>Transaction ID</Form.Label>
+                    <Form.Control required name="txid" type="text" onChange={this.props.handleChange} />
+                </Form.Group>
+                <button type="submit" className="btn btn-success btn-block">Exercise</button>
+            </div>
+        )
+    }
+}
+
+
+/*
+<FormGroup>
                     <h5>Alternatively, you can submit the proof yourself:</h5>
                     <Form.Group>
                         <Form.Label>BlockHeight</Form.Label>
@@ -152,10 +168,7 @@ class SubmitProof extends React.Component {
                     </Form.Group>
                     <button disabled={this.state.progress < 100} className="btn btn-success btn-block">Exercise</button>
                 </FormGroup>
-            </div>
-        )
-    }
-}
+*/
 
 export default class UserPurchasedOptions extends Component {
 
@@ -255,18 +268,18 @@ export default class UserPurchasedOptions extends Component {
         if (this.state.purchasedOptions.length > 0) {
             return this.state.purchasedOptions.map((option, index) => {
                 const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, income, btcInsured, premiumPaid, totalSupplyUnlocked, contract } = option;
-                
 
-                let percentInsured = ((totalSupply <= 0) ? 0 : Math.round(10000*totalSupplyLocked / totalSupply) / 100);
+
+                let percentInsured = ((totalSupply <= 0) ? 0 : Math.round(10000 * totalSupplyLocked / totalSupply) / 100);
                 console.log(income);
                 return (
                     <tr key={strikePrice}>
                         <td>{new Date(expiry * 1000).toLocaleString()}</td>
                         <td>{strikePrice} DAI</td>
-                        <td><span className={(income >= 0.0 ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
+                        <td><span className={(income >= 0.0 ? "text-success" : "text-danger")}>{spotPrice}</span> DAI</td>
                         <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
-                        <td>{premiumPaid} DAI <br/> ({premium} DAI/BTC)</td>
-                        <td><strong className={(income >= 0.0 ? "text-success": "text-danger")}>{income}</strong> DAI </td>
+                        <td>{premiumPaid} DAI <br /> ({premium} DAI/BTC)</td>
+                        <td><strong className={(income >= 0.0 ? "text-success" : "text-danger")}>{income}</strong> DAI </td>
 
                         <td>
                             <Button variant="outline-success" onClick={() => { this.handleExercise(index) }}>
@@ -290,7 +303,6 @@ export default class UserPurchasedOptions extends Component {
     }
 
     handleChange(event) {
-        console.log(event.target);
         const { name, value } = event.target;
         this.setState({
             [name]: value
@@ -438,7 +450,7 @@ export default class UserPurchasedOptions extends Component {
                                     </Badge>
                                     <Badge>
                                         <Col md={4}>
-                                            <h3 className={(this.state.totalIncome > 0 ? "text-success": (this.state.totalIncome < 0 ? "text-danger" : ""))}>{this.state.totalIncome}</h3>
+                                            <h3 className={(this.state.totalIncome > 0 ? "text-success" : (this.state.totalIncome < 0 ? "text-danger" : ""))}>{this.state.totalIncome}</h3>
                                             <h6>DAI (Potential) Income</h6>
                                         </Col>
                                     </Badge>
