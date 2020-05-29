@@ -1,4 +1,5 @@
-// export async blockstream api calls here
+import { ethers } from 'ethers';
+
 
 export class BitcoinQuery {
 
@@ -37,17 +38,19 @@ export class BitcoinQuery {
     }
 
     console.log(txStatus);
+
     return txStatus;
   }
 
 
-  // Comptabile with BTC core getrawtransaction
+  // Compatible with BTC core getrawtransaction
   // https://developer.bitcoin.org/reference/rpc/getrawtransaction.html
   // returns a hex encoded rawtx
   async getRawTransaction(txid) {
     let query = this.rootUrl.concat("tx/", txid.toString(), "/raw");
 
-    let rawtx = await queryToText(query);
+    let rawtx = await queryToArrayBuffer(query);
+
     console.log(rawtx);
 
     return rawtx;
@@ -74,26 +77,12 @@ export class BitcoinQuery {
   }
 }
 
-
-// status transaction
-// if a tx is included
-
-
-
-// proof
-// needs to have index/pos
-//
-// raw tx
-//
-//
-async function queryToText(url) {
+async function query(url) {
   try {
     let response = await fetch(url);
 
     if (response.ok) {
-      let text = await response.text();
-      console.log(typeof(text));
-      return text;
+      return response;
     } else {
       console.log(response.status);
     }
@@ -103,18 +92,21 @@ async function queryToText(url) {
   }
 }
 
-async function queryToJSON(url) {
-  try {
-    let response = await fetch(url);
+async function queryToText(url) {
+  let response = await query(url);
+  let text = await response.text();
+  return text;
+}
 
-    if (response.ok) {
-      let json= response.json();
-      return json;
-    } else {
-      console.log(response.status);
-    }
-  } catch (error) {
-    console.log("Query error");
-    console.log(error);
-  }
+async function queryToJSON(url) {
+  let response = await query(url);
+  let json = await response.json();
+  return json;
+}
+
+async function queryToArrayBuffer(url) {
+  let response = await query(url)
+  let arrayBuffer = await response.arrayBuffer();
+  let buffer = Buffer.from(arrayBuffer);
+  return buffer;
 }
