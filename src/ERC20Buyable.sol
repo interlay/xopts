@@ -82,6 +82,7 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
         uint balance = map.get(seller);
         map.remove(seller);
         _totalSupply = _totalSupply.sub(balance);
+        _balancesTotal[owner] = _balancesTotal[owner].sub(balance);
 
         emit Transfer(owner, address(0), balance);
         return balance;
