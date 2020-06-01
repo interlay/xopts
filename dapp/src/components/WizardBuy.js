@@ -3,7 +3,7 @@ import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Moda
 import * as utils from '../utils/utils.js'; 
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { SpinButton } from './SpinButton';
-import { withRouter } from 'react-router-dom'
+import { withRouter } from 'react-router-dom';
 
 class SelectSeller extends React.Component {
   constructor(props) {
@@ -111,7 +111,7 @@ class Confirm extends React.Component {
   }
 }
 
-class Buy extends React.Component {
+class BuyWizard extends React.Component {
 
   constructor(props) {
     super(props)
@@ -283,4 +283,4 @@ class Buy extends React.Component {
   }
 }
 
-export default withRouter(Buy);
+export default withRouter(BuyWizard);

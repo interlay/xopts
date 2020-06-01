@@ -7,7 +7,6 @@ import UserSoldOptions from "../components/UserSoldOptions.js";
 
 export default class Dashboard extends Component {
 
-
   componentDidMount(){
     this.forceUpdate();
   }
@@ -21,13 +20,15 @@ export default class Dashboard extends Component {
             <p className="lead text-muted">Account: {this.props.address} </p>
           </div>
         </section>
-        <section >
-          <UserPurchasedOptions {...this.props} />
-        </section>
-        <section className="mt-5">
-          <UserSoldOptions {...this.props} />
-        </section>
-
+        <Container fluid>
+          <section>
+            <UserPurchasedOptions {...this.props} />
+          </section>
+          <section className="mt-5">
+            <UserSoldOptions {...this.props} />
+          </section>
+          <br></br>
+        </Container>
       </div>
     );
   }
