@@ -1,10 +1,6 @@
 import React, { Component } from "react";
 import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, Toast } from "react-bootstrap";
-import { Redirect } from "react-router-dom";
-import { ethers } from 'ethers';
 import { ToastContainer, toast } from 'react-toastify';
-import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
-import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
 import * as utils from '../utils/utils.js';
 import { ButtonTool } from "./ButtonTool";
 
@@ -14,12 +10,12 @@ export default class UserSoldOptions extends Component {
         this.state = {
             soldLoaded: false,
             soldOptions: [],
-            totalInsured: 0,
-            totalBtcInsured: 0,
-            percentSold: 0,
-            insuranceAvailable: 0,
-            totalPremium: 0,
-            totalIncome : 0,
+            totalInsured: utils.newBig(0),
+            totalBtcInsured: utils.newBig(0),
+            percentSold: utils.newBig(0),
+            insuranceAvailable: utils.newBig(0),
+            totalPremium: utils.newBig(0),
+            totalIncome : utils.newBig(0),
             showRefund: false,
             refundOption: {}
         };
@@ -56,44 +52,43 @@ export default class UserSoldOptions extends Component {
         }
 
         let options = [];
-        let totalLocked = 0;
-        let totalInsured = 0;
-        let totalPremium = 0;
-        let totalBtcInsured = 0;
-        let totalIncome = 0;
+        let totalLocked = utils.newBig(0);
+        let totalInsured = utils.newBig(0);
+        let totalPremium = utils.newBig(0);
+        let totalBtcInsured = utils.newBig(0);
+        let totalIncome = utils.newBig(0);
         for (var i = 0; i < optionContracts[0].length; i++) {
             let addr = optionContracts[0][i];
             let optionContract = this.props.contracts.attachOption(addr);
             let optionRes = await optionContract.getDetails();
             let option = {
-                expiry: parseInt(optionRes[0]._hex),
-                premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
-                strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
-                totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
+                expiry: parseInt(optionRes[0].toString()),
+                premium: utils.weiDaiToBtc(utils.newBig(optionRes[1].toString())),
+                strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes[2].toString())),
+                totalSupply: utils.weiDaiToDai(utils.newBig(optionRes[3].toString())),
 
                 // User's unsold options & total locked DAI
-                unsoldOptions: utils.weiDaiToDai(parseInt(optionContracts[1][i]._hex)),
-                totalSupplyLocked: utils.weiDaiToDai(parseInt(optionContracts[2][i]._hex))
+                unsoldOptions: utils.weiDaiToDai(utils.newBig(optionContracts[1][i].toString())),
+                totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionContracts[2][i].toString()))
             }
-            option.soldOptions = option.totalSupplyLocked - option.unsoldOptions;
+            option.soldOptions = option.totalSupplyLocked.sub(option.unsoldOptions);
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = optionContracts[0][i];
-            option.percentSold = ((option.totalSupplyLocked <= 0) ? 0 : Math.round(10000*option.soldOptions / option.totalSupplyLocked) / 100)
-            option.btcInsured = option.soldOptions / option.strikePrice;
-            option.premiumEarned = option.premium * option.btcInsured;
-            option.income = option.btcInsured * (option.premium + option.strikePrice - option.spotPrice);
+            option.percentSold = ((option.totalSupplyLocked.lte(0)) ? 0 : (option.soldOptions.div(option.totalSupplyLocked)).mul(100));
+            option.btcInsured = option.soldOptions.div(option.strikePrice);
+            option.premiumEarned = option.premium.mul(option.btcInsured);
+            option.income = option.btcInsured.mul((option.premium.add(option.strikePrice)).sub(option.spotPrice));
 
             options.push(option);
 
-            totalLocked += option.totalSupplyLocked;
-            totalInsured += option.soldOptions;
-            totalBtcInsured += option.btcInsured;
-            totalPremium += option.premium * option.btcInsured;
-            totalIncome += option.income;
-
+            totalLocked = totalLocked.add(option.totalSupplyLocked);
+            totalInsured = totalInsured.add(option.soldOptions);
+            totalBtcInsured = totalBtcInsured.add(option.btcInsured);
+            totalPremium = totalPremium.add(option.premium.mul(option.btcInsured));
+            totalIncome = totalIncome.add(option.income);
         }
 
-        let percentSold = ((totalLocked <= 0) ? 0 : Math.round(10000*totalInsured / totalLocked) / 100)
+        let percentSold = ((totalLocked.lte(0)) ? 0 : (totalInsured.div(totalLocked)).mul(100));
         this.setState({
             totalLocked: totalLocked,
             totalPremium: totalPremium,
@@ -158,18 +153,18 @@ export default class UserSoldOptions extends Component {
                 return this.state.soldOptions.map((option, index) => {
                     const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, soldOptions, percentSold, income, btcInsured, premiumEarned, contract } = option;
 
-                    let percentInsured = ((totalSupply <= 0) ? 0 : Math.round(10000*totalSupplyLocked / totalSupply) / 100);
+                    let percentInsured = ((totalSupply.lte(0)) ? 0 : (totalSupplyLocked.div(totalSupply)).mul(100));
                     let currentDate = Math.floor(Date.now() / 1000);
                     let priceDiff = strikePrice-spotPrice;
                     return (
                         <tr key={expiry}>
                             <td>{new Date(expiry * 1000).toLocaleString()}</td>
-                            <td>{strikePrice} DAI</td>
-                            <td><span  className={(income >= 0 ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
-                            <td><strong>{soldOptions}</strong> / {totalSupplyLocked} DAI <br/>({percentSold}%) </td>
-                            <td>{totalSupplyLocked} / {totalSupply} DAI <br/> ({percentInsured}%)</td>
-                            <td><strong className={"text-success"}>{premiumEarned}</strong> DAI <br/> ({premium} DAI/BTC)</td>
-                            <td><strong className={(income >= 0 ? "text-success": "text-danger")}>{income}</strong> DAI </td>
+                            <td>{strikePrice.toString()} DAI</td>
+                            <td><span  className={(income.gte(0) ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
+                            <td><strong>{soldOptions.round(2, 0).toString()}</strong> / {totalSupplyLocked.round(2, 0).toString()} DAI <br/>({percentSold.toFixed(0)}%) </td>
+                            <td>{totalSupplyLocked.round(2, 0).toString()} / {totalSupply.round(2, 0).toString()} DAI <br/> ({percentInsured.toFixed(0)}%)</td>
+                            <td><strong className={"text-success"}>{premiumEarned.round(2, 0).toString()}</strong> DAI <br/> ({premium.round(2, 0).toString()} DAI/BTC)</td>
+                            <td><strong className={(income.gte(0) ? "text-success": "text-danger")}>{income.round(2, 0).toString()}</strong> DAI </td>
 
                             <td>
                                 <ButtonTool
@@ -213,7 +208,8 @@ export default class UserSoldOptions extends Component {
             <Col xl={{ span: 8, offset: 2 }}>
                 <Card border="dark">
                     <Card.Header>
-                        <Card.Title><h2>Sold BTC/DAI Put Option Contracts</h2>
+                        <Card.Title>
+                            <h2 className="text-center">Sold BTC/DAI Put Option Contracts</h2>
                             {!this.state.soldLoaded &&
                                 <Row>
                                     <Col className="text-center">
@@ -222,32 +218,24 @@ export default class UserSoldOptions extends Component {
                                 </Row>
                             }
                             {this.state.soldLoaded &&
-                                <Row className="text-center">
-                                    <Badge>
-                                        <Col md={4}>
-                                            <h3>{this.state.totalInsured} DAI  ({this.state.percentSold}%)</h3>
-                                            <h6>DAI Insurance Sold</h6>
-                                            <h6>({this.state.totalBtcInsured} BTC)</h6>
-                                        </Col>
-                                    </Badge>
-                                    <Badge>
-                                        <Col md={4}>
-                                            <h3>{this.state.totalLocked}</h3>
-                                            <h6>DAI Locked</h6>
-                                        </Col>
-                                    </Badge>
-                                    <Badge>
-                                        <Col md={4}>
-                                            <h3 className={(this.state.totalPremium > 0 ? "text-success": (this.state.totalPremium < 0 ? "text-danger" : ""))}>{this.state.totalPremium}</h3>
-                                            <h6>DAI Premium Earned</h6>
-                                        </Col>
-                                    </Badge>
-                                    <Badge>
-                                        <Col md={4}>
-                                            <h3 className={(this.state.totalIncome > 0 ? "text-success": (this.state.totalIncome < 0 ? "text-danger" : ""))}>{this.state.totalIncome}</h3>
-                                            <h6>DAI Income</h6>
-                                        </Col>
-                                    </Badge>
+                                <Row className="text-left">
+                                    <Col>
+                                        <h3>{this.state.totalInsured.round(2, 0).toString()} DAI ({this.state.percentSold.round(2, 0).toString()}%)</h3>
+                                        <h6>Insurance Sold</h6>
+                                        <h6>({this.state.totalBtcInsured.round(2, 0).toString()} BTC)</h6>
+                                    </Col>
+                                    <Col>
+                                        <h3>{this.state.totalLocked.round(2, 0).toString()} DAI</h3>
+                                        <h6>Locked</h6>
+                                    </Col>
+                                    <Col>
+                                        <h3 className={(this.state.totalPremium.gt(0) ? "text-success": (this.state.totalPremium.lt(0) ? "text-danger" : ""))}>{this.state.totalPremium.toString()} DAI</h3>
+                                        <h6>Premium Earned</h6>
+                                    </Col>
+                                    <Col>
+                                        <h3 className={(this.state.totalIncome.gt(0) ? "text-success": (this.state.totalIncome.lt(0) ? "text-danger" : ""))}>{this.state.totalIncome.toString()} DAI</h3>
+                                        <h6>Income</h6>
+                                    </Col>
                                 </Row>
                             }
                         </Card.Title>
@@ -300,45 +288,4 @@ export default class UserSoldOptions extends Component {
             </Col>
         </div>;
     }
-
-
-    /*
-    getDummyOptions() {
-        return [
-            {
-                expiry: 1591012800,
-                premium: 10,
-                strikePrice: 9250,
-                totalSupplyLocked: 450,
-                totalSupply: 5000,
-                premium: 100,
-
-            },
-            {
-                expiry: 1590795000,
-                premium: 15,
-                strikePrice: 9000,
-                totalSupplyLocked: 4532,
-                premium: 150,
-                totalSupply: 7850
-            },
-            {
-                expiry: 1590148800,
-                premium: 5,
-                strikePrice: 10000,
-                totalSupplyLocked: 120,
-                premium: 500,
-                totalSupply: 540
-            },
-            {
-                expiry: 1590018300,
-                premium: 11,
-                strikePrice: 8909,
-                totalSupplyLocked: 6543,
-                premium: 7700,
-                totalSupply: 9700
-            }
-        ]
-    }
-    */
 }

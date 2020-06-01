@@ -3,6 +3,7 @@ import erc20Artifact from "../artifacts/IERC20.json"
 import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
 import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
 import { ethers } from 'ethers';
+import * as xutils from '../utils/utils';
 
 const DEFAULT_CONFIRMATIONS = 1;
 
@@ -46,7 +47,7 @@ export class Contracts {
     async checkAllowance(amount) {
         let address = await this.signer.getAddress();
         let allowance = await this.erc20Contract.allowance(address, this.optionPoolContract.address);
-        if (allowance < amount) {
+        if (xutils.newBig(allowance.toString()).lt(amount)) {
             let tx = await this.erc20Contract.approve(this.optionPoolContract.address, ethers.constants.MaxUint256);
             await tx.wait(1);
         }

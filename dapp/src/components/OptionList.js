@@ -14,9 +14,9 @@ class OptionList extends Component {
         this.state = {
             loaded: false,
             options: [],
-            totalInsured: 0,
-            insuranceAvailable: 0,
-            avgPremium: 0,
+            totalInsured: utils.newBig(0),
+            insuranceAvailable: utils.newBig(0),
+            avgPremium: utils.newBig(0),
             showBuy: false,
             showSell: false,
             buy: null,
@@ -57,45 +57,37 @@ class OptionList extends Component {
 
         let options = [];
         var index;
-        let insuranceAvailable = 0;
-        let totalInsured = 0;
-        let totalPremium = 0;
+        let insuranceAvailable = utils.newBig(0);
+        let totalInsured = utils.newBig(0);
+        let totalPremium = utils.newBig(0);
         for (index in optionContracts) {
             let addr = optionContracts[index];
             let optionContract = this.props.contracts.attachOption(addr);
             let optionRes = await optionContract.getDetails();
             let option = {
-                expiry: parseInt(optionRes[0]._hex),
-                premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
-                strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
-                totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
-                totalSupplyLocked: utils.weiDaiToDai(parseInt(optionRes[4]._hex)),
-                totalSupplyUnlocked: utils.weiDaiToDai(parseInt(optionRes[5]._hex)),
+                expiry: parseInt(optionRes[0].toString()),
+                premium: utils.weiDaiToBtc(utils.newBig(optionRes[1].toString())),
+                strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes[2].toString())),
+                totalSupply: utils.weiDaiToDai(utils.newBig(optionRes[3].toString())),
+                totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionRes[4].toString())),
+                totalSupplyUnlocked: utils.weiDaiToDai(utils.newBig(optionRes[5].toString())),
                 hasSellers: await optionContract.hasSellers(),
             }
+            console.log(utils.weiDaiToDai(utils.newBig(optionRes[1].toString())).toString())
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;
-            totalInsured += option.totalSupplyLocked / option.strikePrice;
-            insuranceAvailable += option.totalSupplyUnlocked;
-            totalPremium += option.premium;
+            if (!option.strikePrice.eq(0))
+                totalInsured = totalInsured.add(option.totalSupplyLocked.div(option.strikePrice));
+            insuranceAvailable = insuranceAvailable.add(option.totalSupplyUnlocked);
+            totalPremium = totalPremium.add(option.premium);
             options.push(option);
         }
 
         this.setState({
             insuranceAvailable: insuranceAvailable,
             totalInsured: totalInsured,
-            avgPremium: totalPremium / options.length
+            avgPremium: totalPremium.div(options.length)
         })
-        /*
-        let options = this.getDummyOptions();
-        var index;
-        for (index in options) {
-            options[index].spotPrice = this.props.btcPrices.dai;
-            options[index].contract = optionContracts[0];
-            this.state.totalInsured += options[index].insured;
-            this.state.insuranceAvailable += options[index].collateral;
-        }
-        */
 
         return options;
     }
@@ -131,9 +123,9 @@ class OptionList extends Component {
             return this.state.options.map((option, index) => {
                 const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked, contract } = option;
 
-                let percentInsured = 0;
+                let percentInsured = utils.newBig(0);
                 if (totalSupply > 0) {
-                    percentInsured = Math.round(10000 * totalSupplyLocked / totalSupply) / 100;
+                    percentInsured = (totalSupplyLocked.div(totalSupply)).mul(100);
                 }
                 let currentDate = Math.floor(Date.now() / 1000);
 
@@ -144,10 +136,10 @@ class OptionList extends Component {
                         <b> (Expired)</b>
                         }
                         </td>
-                        <td>{strikePrice} DAI</td>
+                        <td>{strikePrice.toString()} DAI/BTC</td>
                         <td>{spotPrice} DAI</td>
-                        <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
-                        <td>{premium} DAI/BTC</td>
+                        <td>{totalSupplyLocked.round(0, 0).toString()} / {totalSupply.round(0, 0).toString()} DAI ({percentInsured.toFixed(0)} %)</td>
+                        <td>{premium.toString()} DAI/BTC</td>
 
                         <td>
                             <ButtonTool
@@ -199,18 +191,18 @@ class OptionList extends Component {
                             <Row className="text-left">
                             
                                     <Col md={2}>
-                                        <h3>{this.state.totalInsured}</h3>
-                                        <h6>BTC Insured</h6>
+                                        <h3>{this.state.totalInsured.round(2, 0).toString()} BTC</h3>
+                                        <h6>Insured</h6>
                                     </Col>
                         
                                     <Col md={2}>
-                                        <h3>{this.state.insuranceAvailable}</h3>
-                                        <h6>DAI Insurance Available</h6>
+                                        <h3>{this.state.insuranceAvailable.round(2, 0).toString()} DAI</h3>
+                                        <h6>Insurance Available</h6>
                                     </Col>
                             
                                     <Col md={3}>
-                                        <h3>{this.state.avgPremium}</h3>
-                                        <h6>DAI/BTC Average Premium</h6>
+                                        <h3>{this.state.avgPremium.round(2, 0).toString()} DAI/BTC</h3>
+                                        <h6>Average Premium</h6>
                                     </Col>
 
                             </Row>

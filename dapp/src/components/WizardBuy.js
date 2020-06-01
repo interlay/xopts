@@ -29,11 +29,13 @@ class SelectSeller extends React.Component {
   renderOptions() {
     return this.state.sellers.map((seller, index) => {
       let address = seller.toString();
-      let amount = utils.weiDaiToDai(parseInt(this.state.options[index]._hex));
-      let amountBtc = amount / this.props.strikePrice;
+      // one option == one dai wei
+      let amount = utils.weiDaiToDai(utils.newBig(this.state.options[index].toString()));
+      let amountBtc = amount.div(this.props.strikePrice);
       let addressShow = address.substr(0,10) + '...';
+      console.log(this.state.options[index].toString());
       return (
-        <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}> {amountBtc} BTC (Seller: {addressShow})</option>
+        <option key={address} value={address} onClick={() => this.props.updateAmountOptions(amount)}> {amountBtc.toString()} BTC (Seller: {addressShow})</option>
       );
     })
   }
@@ -63,16 +65,17 @@ class EnterAmount extends React.Component {
     if (this.props.currentStep !== 2) {
       return null
     }
+    let amount = utils.calculateAvailableBTC(this.props.amountOptions, this.props.strikePrice).toString();
     return(
       <FormGroup>
         <h5>Enter BTC Amount</h5>
         <FormControl
-          id="amount"
-          name="amount"
+          id="amountBTC"
+          name="amountBTC"
           type="number"
           placeholder="Amount"
-          max={this.props.amount}
-          defaultValue={this.props.amount}
+          max={amount}
+          defaultValue={amount}
           onChange={this.props.handleChange}
         />
       </FormGroup>
@@ -94,11 +97,11 @@ class Confirm extends React.Component {
         <h5>Confirm & Pay</h5>
         <FormGroup>
           <ListGroup>
-              <ListGroupItem>Strike price: <strong>{this.props.strikePrice} DAI</strong></ListGroupItem>
+              <ListGroupItem>Strike Price: <strong>{this.props.strikePrice.toString()} DAI</strong></ListGroupItem>
               <ListGroupItem>Expiry: <strong>{new Date(this.props.expiry*1000).toLocaleString()}</strong></ListGroupItem>
-              <ListGroupItem>Purchase amount: <strong>{utils.satToBtc(this.props.amount)} BTC</strong></ListGroupItem>
-              <ListGroupItem>Premium to pay: <strong>{calculatePremium(this.props.amount, this.props.premium)} DAI</strong></ListGroupItem>
-              <ListGroupItem>Options received: <strong>{utils.weiDaiToBtc(calculateOptions(this.props.amount, this.props.strikePrice))} XOPT</strong></ListGroupItem>
+              <ListGroupItem>Purchase Amount: <strong>{utils.calculateAvailableBTC(this.props.amountOptions, this.props.strikePrice).toString()} BTC</strong></ListGroupItem>
+              <ListGroupItem>Premium: <strong>{utils.calculatePremium(utils.calculateAvailableBTC(this.props.amountOptions, this.props.strikePrice), this.props.premium).toString()} DAI</strong></ListGroupItem>
+              <ListGroupItem>Options Received: <strong>{this.props.amountOptions.toString()} XOPT</strong></ListGroupItem>
               <ListGroupItem>Seller: <strong>{this.props.seller}</strong></ListGroupItem>
           </ListGroup>
         </FormGroup>
@@ -106,14 +109,6 @@ class Confirm extends React.Component {
       </FormGroup>
     )
   }
-}
-
-function calculatePremium(amount, premium) {
-  return utils.satToBtc(amount) * premium;
-}
-
-function calculateOptions(amount, strikePrice) {
-  return amount * strikePrice;
 }
 
 class Buy extends React.Component {
@@ -125,16 +120,16 @@ class Buy extends React.Component {
     this.state = {
       currentStep: 1,
       seller: '',
-      amount: 0,
+      amountOptions: utils.newBig(0),
       optionContract: null,
       expiry: 0,
-      premium: 0,
-      strikePrice: 0,
+      premium: utils.newBig(0),
+      strikePrice: utils.newBig(0),
       spinner: false,
     }
 
     this.handleChange = this.handleChange.bind(this)
-    this.updateAmount = this.updateAmount.bind(this)
+    this.updateAmountOptions = this.updateAmountOptions.bind(this)
   }
 
   async componentDidMount() {
@@ -148,8 +143,8 @@ class Buy extends React.Component {
       this.setState({
         optionContract: optionContract,
         expiry: expiry,
-        premium: utils.weiDaiToBtc(parseInt(premium._hex)),
-        strikePrice: utils.weiDaiToBtc(parseInt(strikePrice._hex)),
+        premium: utils.weiDaiToBtc(utils.newBig(premium.toString())),
+        strikePrice: utils.weiDaiToBtc(utils.newBig(strikePrice.toString())),
       });
     }
   }
@@ -157,17 +152,20 @@ class Buy extends React.Component {
   // Use the submitted data to set the state
   handleChange(event) {
     let {name, value} = event.target
-    if(name == "amount"){
-      value = utils.btcToSat(value);
+    if(name == "amountBTC"){
+      this.setState({
+        amountOptions: utils.newBig(value).mul(this.state.strikePrice)
+      });
+    } else {
+      this.setState({
+        [name]: value
+      });
     }
-    this.setState({
-      [name]: value
-    });
   }
 
-  updateAmount(i) {
+  updateAmountOptions(i) {
     this.setState({
-      amount: utils.satToBtc(i),
+      amountOptions: i,
     });
   }
   
@@ -175,11 +173,12 @@ class Buy extends React.Component {
   handleSubmit = async (event) => {
     event.preventDefault();
     this.setState({spinner: true});
-    const { seller, amount, optionContract } = this.state;
+    const { seller, amountOptions, optionContract, strikePrice } = this.state;
     try {
       let contracts = this.props.contracts;
-      await contracts.checkAllowance();
-      await contracts.insureOption(optionContract.address, seller, amount);
+      let satoshis = utils.btcToSat(utils.calculateAvailableBTC(amountOptions, strikePrice)).round(0, 0);
+      await contracts.checkAllowance(satoshis);
+      await contracts.insureOption(optionContract.address, seller, satoshis.toString());
       this.props.history.push("/dashboard")
       showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
     } catch(error) {
@@ -252,22 +251,22 @@ class Buy extends React.Component {
             <SelectSeller 
               currentStep={this.state.currentStep} 
               handleChange={this.handleChange}
-              updateAmount={this.updateAmount}
+              updateAmountOptions={this.updateAmountOptions}
               seller={this.state.seller}
-              amount={this.state.amount}
               strikePrice={this.state.strikePrice}
               optionContract={this.state.optionContract}
             />
             <EnterAmount 
               currentStep={this.state.currentStep} 
               handleChange={this.handleChange}
-              amount={this.state.amount}
+              amountOptions={this.state.amountOptions}
+              strikePrice={this.state.strikePrice}
             />
             <Confirm
               currentStep={this.state.currentStep} 
               handleChange={this.handleChange}
               seller={this.state.seller}
-              amount={this.state.amount}
+              amountOptions={this.state.amountOptions}
               premium={this.state.premium}
               strikePrice={this.state.strikePrice}
               expiry={this.state.expiry}
