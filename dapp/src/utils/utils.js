@@ -1,19 +1,26 @@
+import * as Big from 'big.js';
 
+Big.DP = 30
+Big.RM = 1
+Big.PE = 30
 
-
-export function btcToSat(sat){
-    return sat * Math.pow(10,8);
+export function newBig(i) {
+	return new Big(i);
 }
 
-export function satToBtc(btc){
-	return btc / Math.pow(10,8);
+export function btcToSat(btc){
+    return btc.mul(newBig(10).pow(8));
+}
+
+export function satToBtc(sat){
+	return sat.div(newBig(10).pow(8));
 }
 export function weiDaiToDai(weiDai) {
-    return weiDai / Math.pow(10,18);
+    return weiDai.div(newBig(10).pow(18));
 }
 
 export function daiToWeiDai(dai) {
-	return dai * Math.pow(10,18);
+	return dai.mul(newBig(10).pow(18));
 }
 
 export function weiDaiToBtc(weiDai){
@@ -26,4 +33,12 @@ export function bin2string(array){
 		result+= (String.fromCharCode(array[i]));
 	}
 	return result;
+}
+
+export function calculateAvailableBTC(amount, strikePrice) {
+	return newBig(amount).div(strikePrice);
+}
+
+export function calculatePremium(amount, premium) {
+	return newBig(amount).mul(premium);
 }

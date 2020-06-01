@@ -105,7 +105,7 @@ async function main() {
 	await call(collateral, CollateralFactory, dave).approve(pool.address, daiToWeiDai(2*17));
 	await call(pool, OptionPoolFactory, dave).insureOption(sellableAddress, eveAddress, mbtcToSatoshi(1270));
 
-    details = await attachSellableOption(alice, sellableAddress).getDetails();
+	details = await attachSellableOption(alice, sellableAddress).getDetails();
     console.log("Option details: ", details.toString());
 }
 

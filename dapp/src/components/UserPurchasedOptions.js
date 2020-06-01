@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { ToastContainer, toast } from 'react-toastify';
 import QRCode from "react-qr-code";
 import * as utils from '../utils/utils.js';
+import Big from 'big.js';
 
 class SelectSeller extends React.Component {
     constructor(props) {
@@ -31,11 +32,11 @@ class SelectSeller extends React.Component {
     renderOptions() {
         return this.state.sellers.map((seller, index) => {
             let address = seller.toString();
-            let amount = utils.weiDaiToBtc(parseInt(this.state.options[index]._hex));
+            let amount = utils.weiDaiToBtc(utils.newBig(this.state.options[index].toString()));
             let addressShow = address.substr(0, 10) + '...';
 
             return (
-                <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{amount} BTC (Seller:{addressShow})</option>
+                <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{amount.toString()} BTC (Seller:{addressShow})</option>
             );
         })
     }
@@ -66,7 +67,7 @@ class ScanBTC extends React.Component {
         super(props);
         this.state = {
             loaded: false,
-            paymentUri: null
+            paymentUri: ''
         };
     }
 
@@ -180,7 +181,7 @@ export default class UserPurchasedOptions extends Component {
             totalInsured: 0,
             insuranceAvailable: 0,
             paidPremium: 0,
-            totalIncome: 0,
+            totalIncome: utils.newBig(0),
             showExercise: false,
             exerciseOption: {},
             currentStep: 1,
@@ -225,32 +226,34 @@ export default class UserPurchasedOptions extends Component {
         }
 
         let options = [];
-        let totalBtcInsured = 0;
-        let paidPremium = 0;
-        let totalIncome = 0;
+        let totalBtcInsured = utils.newBig(0);
+        let paidPremium = utils.newBig(0);
+        let totalIncome = utils.newBig(0);
         try {
             for (var i = 0; i < optionContracts[0].length; i++) {
                 let addr = optionContracts[0][i];
                 let optionContract = this.props.contracts.attachOption(addr);
                 let optionRes = await optionContract.getDetails();
                 let option = {
-                    expiry: parseInt(optionRes[0]._hex),
-                    premium: utils.weiDaiToBtc(parseInt(optionRes[1]._hex)),
-                    strikePrice: utils.weiDaiToBtc(parseInt(optionRes[2]._hex)),
-                    totalSupply: utils.weiDaiToDai(parseInt(optionRes[3]._hex)),
+                    expiry: parseInt(optionRes[0].toString()),
+                    premium: utils.weiDaiToBtc(utils.newBig(optionRes[1].toString())),
+                    strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes[2].toString())),
+                    totalSupply: utils.weiDaiToDai(utils.newBig(optionRes[3].toString())),
                     // User's purchased options
-                    totalSupplyLocked: utils.weiDaiToDai(parseInt(optionContracts[1][i]._hex)),
+                    totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionContracts[1][i].toString())),
                 }
-                option.spotPrice = this.props.btcPrices.dai;
+                option.spotPrice = utils.newBig(this.props.btcPrices.dai);
                 option.contract = optionContracts[0][i];
-                option.btcInsured = option.totalSupplyLocked / option.strikePrice;
-                option.premiumPaid = option.premium * option.btcInsured;
-                option.income = option.btcInsured * (option.spotPrice - option.strikePrice - option.premium);
+                option.btcInsured = option.totalSupplyLocked.div(option.strikePrice);
+                option.premiumPaid = option.premium.mul(option.btcInsured);
+
+                let income = new Big(option.btcInsured).mul(option.spotPrice.sub(option.strikePrice).sub(option.premium));
+                option.income = income;
                 options.push(option);
 
-                paidPremium += option.premiumPaid;
-                totalBtcInsured += option.btcInsured;
-                totalIncome += option.income;
+                paidPremium = paidPremium.add(option.premiumPaid);
+                totalBtcInsured = totalBtcInsured.add(option.btcInsured);
+                totalIncome = totalIncome.add(option.income);
             }
             this.setState({
                 paidPremium: paidPremium,
@@ -269,22 +272,21 @@ export default class UserPurchasedOptions extends Component {
             return this.state.purchasedOptions.map((option, index) => {
                 const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, income, btcInsured, premiumPaid, totalSupplyUnlocked, contract } = option;
 
-
-                let percentInsured = ((totalSupply <= 0) ? 0 : Math.round(10000 * totalSupplyLocked / totalSupply) / 100);
+                let percentInsured = ((totalSupply.lte(0)) ? 0 : (totalSupplyLocked.div(totalSupply)).mul(100));
                 console.log(income);
                 return (
-                    <tr key={strikePrice}>
+                    <tr key={strikePrice.toString()}>
                         <td>{new Date(expiry * 1000).toLocaleString()}</td>
-                        <td>{strikePrice} DAI</td>
-                        <td><span className={(income >= 0.0 ? "text-success" : "text-danger")}>{spotPrice}</span> DAI</td>
-                        <td>{totalSupplyLocked} / {totalSupply} DAI ({percentInsured} %)</td>
-                        <td>{premiumPaid} DAI <br /> ({premium} DAI/BTC)</td>
-                        <td><strong className={(income >= 0.0 ? "text-success" : "text-danger")}>{income}</strong> DAI </td>
+                        <td>{strikePrice.toString()} DAI</td>
+                        <td><span className={(income >= 0.0 ? "text-success" : "text-danger")}>{spotPrice.toString()}</span> DAI</td>
+                        <td>{totalSupplyLocked.round(2, 0).toString()} / {totalSupply.round(2, 0).toString()} DAI ({percentInsured.toFixed(0)} %)</td>
+                        <td>{premiumPaid.round(2, 0).toString()} DAI <br /> ({premium.round(2, 0).toString()} DAI/BTC)</td>
+                        <td><strong className={(income.gte(0) ? "text-success" : "text-danger")}>{income.round(2, 0).toString()}</strong> DAI </td>
 
                         <td>
                             <Button variant="outline-success" onClick={() => { this.handleExercise(index) }}>
                                 Exercise
-                                </Button>
+                            </Button>
                         </td>
                     </tr>
                 )
@@ -426,7 +428,7 @@ export default class UserPurchasedOptions extends Component {
             <Col xl={{ span: 8, offset: 2 }}>
                 <Card border="dark">
                     <Card.Header>
-                        <Card.Title><h2>Purchased BTC/DAI Put Option Contracts</h2>
+                        <Card.Title><h2 className="text-center">Purchased BTC/DAI Put Option Contracts</h2>
                             {!this.state.purchasedLoaded &&
                                 <Row>
                                     <Col className="text-center">
@@ -435,25 +437,19 @@ export default class UserPurchasedOptions extends Component {
                                 </Row>
                             }
                             {this.state.purchasedLoaded &&
-                                <Row className="text-center">
-                                    <Badge>
-                                        <Col md={4}>
-                                            <h3>{this.state.totalInsured}</h3>
-                                            <h6>BTC Insured</h6>
-                                        </Col>
-                                    </Badge>
-                                    <Badge>
-                                        <Col md={4}>
-                                            <h3>{this.state.paidPremium}</h3>
-                                            <h6>DAI Premium Paid</h6>
-                                        </Col>
-                                    </Badge>
-                                    <Badge>
-                                        <Col md={4}>
-                                            <h3 className={(this.state.totalIncome > 0 ? "text-success" : (this.state.totalIncome < 0 ? "text-danger" : ""))}>{this.state.totalIncome}</h3>
-                                            <h6>DAI (Potential) Income</h6>
-                                        </Col>
-                                    </Badge>
+                                <Row className="text-left">
+                                    <Col>
+                                        <h3>{this.state.totalInsured.round(2, 0).toString()} BTC</h3>
+                                        <h6>Insured</h6>
+                                    </Col>
+                                    <Col>
+                                        <h3>{this.state.paidPremium.round(2, 0).toString()} DAI</h3>
+                                        <h6>Premium Paid</h6>
+                                    </Col>
+                                    <Col>
+                                        <h3 className={(this.state.totalIncome.gt(0) ? "text-success" : (this.state.totalIncome.toLocaleString(0) ? "text-danger" : ""))}>{this.state.totalIncome.round(2, 0).toString()} DAI</h3>
+                                        <h6>(Potential) Income</h6>
+                                    </Col>
                                 </Row>
                             }
                         </Card.Title>
@@ -534,45 +530,4 @@ export default class UserPurchasedOptions extends Component {
             </Col>
         </div>;
     }
-
-    /*
-    getDummyOptions() {
-        return [
-            {
-                expiry: 1591012800,
-                premium: 10,
-                strikePrice: 9250,
-                totalSupplyLocked: 450,
-                totalSupply: 5000,
-                premium: 100,
-
-            },
-            {
-                expiry: 1590795000,
-                premium: 15,
-                strikePrice: 9000,
-                totalSupplyLocked: 4532,
-                premium: 150,
-                totalSupply: 7850
-            },
-            {
-                expiry: 1590148800,
-                premium: 5,
-                strikePrice: 10000,
-                totalSupplyLocked: 120,
-                premium: 500,
-                totalSupply: 540
-            },
-            {
-                expiry: 1590018300,
-                premium: 11,
-                strikePrice: 8909,
-                totalSupplyLocked: 6543,
-                premium: 7700,
-                totalSupply: 9700
-            }
-        ]
-    }
-    */
-
 }
