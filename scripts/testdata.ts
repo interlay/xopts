@@ -62,11 +62,13 @@ async function main() {
 
     console.log("Generating options with testdata");
     // generate the other options
+    let inAWeek = current_time + (60 * 60 * 24 * 7);
+    let inTwoWeeks = current_time + (60 * 60 * 24 * 14);
     // until May 31, 2020
-	await pool.createOption(1590883200, premiumInDaiForOneBTC(11), strikePriceInDaiForOneBTC(9000));
+	await pool.createOption(inAWeek, premiumInDaiForOneBTC(11), strikePriceInDaiForOneBTC(9000));
     // until June 7, 2020
-	await pool.createOption(1591488000, premiumInDaiForOneBTC(15), strikePriceInDaiForOneBTC(9050));
-	await pool.createOption(1591488000, premiumInDaiForOneBTC(17), strikePriceInDaiForOneBTC(8950));
+	await pool.createOption(inTwoWeeks, premiumInDaiForOneBTC(15), strikePriceInDaiForOneBTC(9050));
+	await pool.createOption(inTwoWeeks, premiumInDaiForOneBTC(17), strikePriceInDaiForOneBTC(8950));
 
 	options = await pool.getOptions();
 
