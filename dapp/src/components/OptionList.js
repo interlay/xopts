@@ -1,9 +1,9 @@
 import React, { Component } from "react";
 import { withRouter } from 'react-router-dom'
-import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl, OverlayTrigger, Tooltip } from "react-bootstrap";
+import { Col, Row, Table, Card, Spinner, Modal } from "react-bootstrap";
 import * as utils from '../utils/utils.js'; 
-import Buy from "./WizardBuy";
-import Sell from "./WizardSell";
+import BuyWizard from "./WizardBuy";
+import SellWizard from "./WizardSell";
 import { ButtonTool } from "./ButtonTool.js";
 import { ToastContainer, toast } from 'react-toastify';
 
@@ -73,7 +73,6 @@ class OptionList extends Component {
                 totalSupplyUnlocked: utils.weiDaiToDai(utils.newBig(optionRes[5].toString())),
                 hasSellers: await optionContract.hasSellers(),
             }
-            console.log(utils.weiDaiToDai(utils.newBig(optionRes[1].toString())).toString())
             option.spotPrice = this.props.btcPrices.dai;
             option.contract = addr;
             if (!option.strikePrice.eq(0))
@@ -187,24 +186,22 @@ class OptionList extends Component {
                 />
                 <Card border="dark">
                     <Card.Header>
-                        <Card.Title><h2>BTC/DAI Put Option Contracts</h2>
-                            <Row className="text-left">
-                            
-                                    <Col md={2}>
-                                        <h3>{this.state.totalInsured.round(2, 0).toString()} BTC</h3>
-                                        <h6>Insured</h6>
-                                    </Col>
+                        <Card.Title><h2 className="text-center">BTC/DAI Put Option Contracts</h2>
+                            <Row className="text-center">
+                                <Col>
+                                    <h3>{this.state.totalInsured.round(2, 0).toString()} BTC</h3>
+                                    <h6>Insured</h6>
+                                </Col>
+                    
+                                <Col>
+                                    <h3>{this.state.insuranceAvailable.round(2, 0).toString()} DAI</h3>
+                                    <h6>Insurance Available</h6>
+                                </Col>
                         
-                                    <Col md={2}>
-                                        <h3>{this.state.insuranceAvailable.round(2, 0).toString()} DAI</h3>
-                                        <h6>Insurance Available</h6>
-                                    </Col>
-                            
-                                    <Col md={3}>
-                                        <h3>{this.state.avgPremium.round(2, 0).toString()} DAI/BTC</h3>
-                                        <h6>Average Premium</h6>
-                                    </Col>
-
+                                <Col>
+                                    <h3>{this.state.avgPremium.round(2, 0).toString()} DAI/BTC</h3>
+                                    <h6>Average Premium</h6>
+                                </Col>
                             </Row>
                         </Card.Title>
                     </Card.Header>
@@ -233,68 +230,18 @@ class OptionList extends Component {
                     aria-labelledby="contained-modal-title-vcenter"
                     centered
                     show={this.state.showBuy} onHide={() => this.setState({ showBuy: false })}>
-                    <Buy contract={this.state.buy} hide={this.hideBuy} toast={toast} {...this.props}></Buy>
+                    <BuyWizard contract={this.state.buy} hide={this.hideBuy} toast={toast} {...this.props}></BuyWizard>
                 </Modal>
                 <Modal
                     size="lg"
                     aria-labelledby="contained-modal-title-vcenter"
                     centered
                     show={this.state.showSell} onHide={() => this.setState({ showSell: false })}>
-                    <Sell contract={this.state.sell} hide={this.hideSell} toast={toast} {...this.props}></Sell>
+                    <SellWizard contract={this.state.sell} hide={this.hideSell} toast={toast} {...this.props}></SellWizard>
                 </Modal>
             </Col>
         )
     }
-    /*
-    getDummyOptions() {
-        return [
-            {
-                expiry: 1591012800,
-                premium: 10,
-                strikePrice: 9250,
-                btcAddresses: {
-                    "0x1CF8f0A193eeA288014c7513eA6Aa65e6997D8bE": "0xtb1qtypzfss4558ml9j5v3fu90jtd6xlxmq4ltmvp9"
-                },
-                insured: 0.006,
-                premiumEarned: 100,
-                collateral: 5000
-            },
-            {
-                expiry: 1590795000,
-                premium: 15,
-                strikePrice: 9000,
-                btcAddress: {
-                    "0x1CF8f0A193eeA288014c7513eA6Aa65e6997D8bE": "0xtb1qtypzfss4558ml9j5v3fu90jtd6xlxmq4ltmvp9"
-                },
-                insured: 0.01,
-                premiumEarned: 150,
-                collateral: 7850
-            },
-            {
-                expiry: 1590148800,
-                premium: 5,
-                strikePrice: 10000,
-                btcAddress: {
-                    "0x1CF8f0A193eeA288014c7513eA6Aa65e6997D8bE": "0xtb1qtypzfss4558ml9j5v3fu90jtd6xlxmq4ltmvp9"
-                },
-                insured: 1.2,
-                premiumEarned: 500,
-                collateral: 540
-            },
-            {
-                expiry: 1590018300,
-                premium: 11,
-                strikePrice: 8909,
-                btcAddress: {
-                    "0x1CF8f0A193eeA288014c7513eA6Aa65e6997D8bE": "0xtb1qtypzfss4558ml9j5v3fu90jtd6xlxmq4ltmvp9"
-                },
-                insured: 4.975123,
-                premiumEarned: 7700,
-                collateral: 9700
-            }
-        ]
-    }
-    */
 }
 
 export default withRouter(OptionList);

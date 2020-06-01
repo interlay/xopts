@@ -88,7 +88,7 @@ export default class UserSoldOptions extends Component {
             totalIncome = totalIncome.add(option.income);
         }
 
-        let percentSold = ((totalLocked.lte(0)) ? 0 : (totalInsured.div(totalLocked)).mul(100));
+        let percentSold = ((totalLocked.lte(0)) ? utils.newBig(0) : (totalInsured.div(totalLocked)).mul(100));
         this.setState({
             totalLocked: totalLocked,
             totalPremium: totalPremium,

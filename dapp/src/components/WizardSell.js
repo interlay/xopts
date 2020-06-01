@@ -75,7 +75,7 @@ class Confirm extends React.Component {
   }
 }
 
-class Sell extends React.Component {
+class SellWizard extends React.Component {
 
   constructor(props) {
     super(props)
@@ -226,5 +226,4 @@ class Sell extends React.Component {
   }
 }
 
-
-export default withRouter(Sell);
+export default withRouter(SellWizard);
