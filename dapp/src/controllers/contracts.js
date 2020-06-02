@@ -1,5 +1,5 @@
 import optionPoolArtifact from "../artifacts/OptionPool.json"
-import erc20Artifact from "../artifacts/IERC20.json"
+import erc20Artifact from "../artifacts/ICollateral.json"
 import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
 import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
 import { ethers } from 'ethers';
@@ -57,6 +57,11 @@ export class Contracts {
         let address = await this.signer.getAddress();
         let balance = await this.erc20Contract.balanceOf(address);
         return balance;
+    }
+
+    async mint() {
+        let address = await this.signer.getAddress();
+        return this.erc20Contract.mint(address, xutils.daiToWeiDai(xutils.newBig(10_000)).toString());
     }
 
     attachOption(address) {

@@ -1,5 +1,10 @@
 import React, { Component } from "react";
+<<<<<<< HEAD
 import { Image} from "react-bootstrap";
+=======
+import { Col, Container, Row, Table, Button } from "react-bootstrap";
+import { fetchJson } from "ethers/utils";
+>>>>>>> master
 import OptionList from "../components/OptionList.js"
 import { withRouter } from 'react-router-dom'
 import bitcoinImg from "../assets/img/icons/32/btc.png";
@@ -22,7 +27,13 @@ class Home extends Component {
             
           </div>
         </section>
-        <OptionList {...this.props} />
+        
+        <Container fluid>
+          <section className="mb-5">
+            <OptionList {...this.props} />
+          </section>
+        </Container>
+
       </div>
     );
   }

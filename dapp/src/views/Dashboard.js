@@ -28,10 +28,9 @@ export default class Dashboard extends Component {
           <section>
             <UserPurchasedOptions {...this.props} />
           </section>
-          <section className="mt-5">
+          <section className="mt-5 mb-5">
             <UserSoldOptions {...this.props} />
           </section>
-          <br></br>
         </Container>
       </div>
     );
