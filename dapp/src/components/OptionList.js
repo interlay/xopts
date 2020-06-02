@@ -6,6 +6,7 @@ import BuyWizard from "./WizardBuy";
 import SellWizard from "./WizardSell";
 import { ButtonTool } from "./ButtonTool.js";
 import { ToastContainer, toast } from 'react-toastify';
+import Balance from "./Balance.js";
 
 class OptionList extends Component {
 
@@ -224,6 +225,9 @@ class OptionList extends Component {
                             </Table>
                         </Row>
                     </Card.Body>
+                    <Card.Footer>
+                        <Balance {...this.props}/>
+                    </Card.Footer>
                 </Card>
                 <Modal
                     size="lg"
