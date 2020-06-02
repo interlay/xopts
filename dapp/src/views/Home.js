@@ -1,8 +1,9 @@
 import React, { Component } from "react";
-import { Col, Container, Row, Table } from "react-bootstrap";
-import { fetchJson } from "ethers/utils";
+import { Image} from "react-bootstrap";
 import OptionList from "../components/OptionList.js"
 import { withRouter } from 'react-router-dom'
+import bitcoinImg from "../assets/img/icons/32/btc.png";
+import daiImg from "../assets/img/icons/32/dai.png";
 
 class Home extends Component {
   
@@ -17,6 +18,7 @@ class Home extends Component {
           <div className="container">
             <h2>Buy and Sell Put Options</h2>
             <p className="lead text-muted">Available Markets:</p>
+            <h4> BTC <Image src={bitcoinImg}/> - DAI <Image src={daiImg} /></h4>
             
           </div>
         </section>

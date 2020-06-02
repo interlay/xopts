@@ -11,6 +11,7 @@ import "./App.scss";
 //import 'bootstrap/dist/css/bootstrap.min.css';
 import './assets/css/custom-bootstrap.css';
 import 'react-toastify/dist/ReactToastify.css';
+import './assets/css/custom.css';
 
 import Dashboard from "./views/Dashboard";
 import Home from "./views/Home";

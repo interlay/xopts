@@ -1,7 +1,8 @@
-import { Navbar, Nav, Badge } from "react-bootstrap";
+import { Navbar, Nav, Badge, Image } from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
+import xoptsLogo from "../assets/img/xopts.png";
 
 
 
@@ -54,7 +55,7 @@ class TopBar extends Component {
   render() {
     return (
       <Navbar bg="light" expand="lg" className="border-bottom shadow-sm">
-        <Navbar.Brand><Link to="/" className="text-decoration-none">XOpts</Link></Navbar.Brand>
+        <Navbar.Brand> <Image src={xoptsLogo} width="30" className="d-inline-block align-top" height="30" fluid/><Link to="/" className="text-decoration-none"> XOpts</Link></Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">

@@ -1,19 +1,21 @@
 import React, { Component } from "react";
-import { Col, Container, Row, Table } from "react-bootstrap";
+import { Image } from "react-bootstrap";
 import { fetchJson } from "ethers/utils";
 import OptionList from "../components/OptionList.js"
-import { withRouter } from 'react-router-dom'
+import { withRouter, NavLink } from 'react-router-dom'
+import xoptsLogo from "../assets/img/xopts-logo.svg";
 
 class LandingPage extends Component {
   
   render() {
     return (
       <div>
-        <section className="jumbotron text-center border-bottom shadow-sm">
+        <section className="jumbotron text-center white-background">
           <div className="container">
-            <h1>Trustless Bitcoin-Native Options</h1>
-            <p className="lead text-muted">Buy and Sell Insurance against Bitcoin Price Fluctuations. </p>
-
+            <h1>Non-Custodial Bitcoin Options</h1>
+            <h3 className="lead text-muted">Buy and Sell Insurance against Bitcoin Price Fluctuations. </h3>
+            <h3 className="lead text-muted">Keep Control Over You Coins.</h3>
+            <NavLink to="/market">Market</NavLink>
           </div>
         </section>
       </div>
