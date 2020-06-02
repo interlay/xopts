@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 export class BitcoinQuery {
 
   constructor() {
-    this.rootUrl = "https://blockstream.info/api/"
+    this.rootUrl = "https://blockstream.info/testnet/api/"
   }
 
 
@@ -56,7 +56,7 @@ export class BitcoinQuery {
     return rawtx;
   }
 
-  // Gets the Merkle proof including a PoS
+  // Gets the Merkle proof including the position of the transaction
   // NOT compatible with bitcoin-core
   // Follows: https://electrumx.readthedocs.io/en/latest/protocol-methods.html#blockchain-transaction-get-merkle
   //
@@ -73,6 +73,21 @@ export class BitcoinQuery {
 
     console.log(proof);
 
+    return proof;
+  }
+
+  // Continually checks if a transaction is included in the blockchain
+  // and returns the merkle proof if included
+  async getMerkleProofFromIncludedTransaction(txid, confirmations) {
+    let proof;
+    // query every 60 seconds if the txid is included
+    setInterval(async function(txid, confirmations) {
+      let txStatus = await this.getStatusTransaction(txid);
+      if (txStatus.confirmations === confirmations) {
+        proof = await this.getMerkleProof(txid);
+        clearInterval();
+      }
+    }, 30000);
     return proof;
   }
 }

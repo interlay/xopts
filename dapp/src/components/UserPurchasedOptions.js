@@ -80,7 +80,7 @@ export default class UserPurchasedOptions extends Component {
                 option.btcInsured = option.totalSupplyLocked.div(option.strikePrice);
                 option.premiumPaid = option.premium.mul(option.btcInsured);
 
-                let income = option.btcInsured.mul(option.spotPrice.sub(option.strikePrice).sub(option.premium));
+                let income = option.btcInsured.mul(option.strikePrice.sub(option.spotPrice).sub(option.premium));
                 option.income = income;
                 options.push(option);
 
@@ -113,7 +113,10 @@ export default class UserPurchasedOptions extends Component {
                         <td><span className={(income >= 0.0 ? "text-success" : "text-danger")}>{spotPrice.toString()}</span> DAI</td>
                         <td>{totalSupplyLocked.round(2, 0).toString()} / {totalSupply.round(2, 0).toString()} DAI ({percentInsured.toFixed(0)} %)</td>
                         <td>{premiumPaid.round(2, 0).toString()} DAI <br /> ({premium.round(2, 0).toString()} DAI/BTC)</td>
-                        <td><strong className={(income.gte(0) ? "text-success" : "text-danger")}>{income.round(2, 0).toString()}</strong> DAI </td>
+                        <td>
+                          <strong className={(income >= 0.0 ? "text-success" : "text-danger")}>
+                            {( income.round(2,0).toString() )}
+                          </strong> DAI </td>
 
                         <td>
                             <Button variant="outline-success" onClick={() => { this.showExerciseModel(option.contract) }}>
@@ -208,7 +211,7 @@ export default class UserPurchasedOptions extends Component {
                                             <th>Current Price</th>
                                             <th>Insurance Issued</th>
                                             <th>Premium Paid</th>
-                                            <th>Earnings</th>
+                                            <th>Earnings / Losses</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>

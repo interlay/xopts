@@ -108,16 +108,6 @@ class App extends Component {
 
   async getBitcoinProvider() {
     this.btcProvider = new BitcoinQuery();
-
-    // get raw tx
-    await this.btcProvider.getRawTransaction("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-    // confirmed
-    await this.btcProvider.getStatusTransaction("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-    // unconfirmed
-    await this.btcProvider.getStatusTransaction("baf4f3fbad8510f722884df12e27cf9e800aebd5a28f3e6e641606608111a737");
-    // get proof
-    await this.btcProvider.getMerkleProof("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-
   }
 
 

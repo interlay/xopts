@@ -18,7 +18,9 @@ class SelectSeller extends React.Component {
 
     async componentDidMount() {
         if (this.props.contract && this.props.contracts && !this.state.loaded) {
+            // load the option contract
             let optionContract = this.props.contracts.attachOption(this.props.contract);
+            // get the seller and options denoted in a amount of satoshi
             let [sellers, options] = await optionContract.getOptionOwnersFor(this.props.address);
             console.log(options);
             this.setState({
@@ -32,11 +34,12 @@ class SelectSeller extends React.Component {
     renderOptions() {
         return this.state.sellers.map((seller, index) => {
             let address = seller.toString();
-            let amount = utils.weiDaiToBtc(utils.newBig(this.state.options[index].toString()));
+            // convert the satoshi amount into a BTC amount
+            let amountBtc = utils.satToBtc(utils.newBig(this.state.options[index].toString()));
             let addressShow = address.substr(0, 10) + '...';
 
             return (
-                <option key={address} value={address} onClick={() => this.props.updateAmount(amount)}>{amount.toString()} BTC (Seller: {addressShow})</option>
+                <option key={address} value={address} onClick={() => this.props.updateAmount(amountBtc)}>{amountBtc.toString()} BTC (Seller: {addressShow})</option>
             );
         })
     }
@@ -96,6 +99,9 @@ class ScanBTC extends React.Component {
                     <Col md="auto" className="text-center">
                         <p>To exercise the option, please make the following Bitcoin payment</p>
                         <QRCode value={this.state.paymentUri} />
+                    <p>
+                      Show detail: how much dai in return, BTC address, BTC amount etc.
+                    </p>
                     </Col>
                 </Row>
             </FormGroup>
@@ -132,7 +138,7 @@ class SubmitProof extends React.Component {
         }
         return (
             <div>
-                <h4>Please enter the TXID of your Bitcoin payment.</h4>
+                <h4>Please enter the transaction id of your Bitcoin payment.</h4>
                 <p>We will track it for you and tell you when it is ready!</p>
                 <Form.Group>
                     <Form.Label>Transaction ID</Form.Label>
@@ -204,6 +210,8 @@ class ExerciseWizard extends Component {
         });
     }
 
+    store
+
     updateAmount(i) {
         this.setState({
             amount: i
@@ -225,7 +233,8 @@ class ExerciseWizard extends Component {
             this.setState({currentStep: currentStep + 1});
             return;
         }
-
+        // store txid to local storage
+        // store a mapping of the option to the txid
         const { seller, height, index, txid, proof, rawtx } = this.state;
         try {
             // This is mocked. BTC-Relay connection works, but querying proof in backend is still WIP.

@@ -4,6 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
+    "bitcoinjs-lib": "^5.1.10",
     "bootstrap": "^4.4.1",
     "bootswatch": "^4.5.0",
     "cryptocurrency-icons": "^0.16.1",
