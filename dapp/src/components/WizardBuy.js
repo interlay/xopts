@@ -47,7 +47,7 @@ class SelectSeller extends React.Component {
     return(
       <FormGroup>
         <h5>Select Seller</h5>
-        <Form.Control as="select" name="seller" defaultValue="default" onChange={this.props.handleChange}>
+        <Form.Control as="select" name="seller" defaultValue="default" onChange={this.props.handleChange} required>
           <option disabled value="default"> -- Select -- </option>
           {this.renderOptions()}
         </Form.Control>
@@ -168,10 +168,27 @@ class BuyWizard extends React.Component {
       amountOptions: i,
     });
   }
+
+  isValid(step) {
+    const { seller, amountOptions } = this.state;
+    let valid = [
+      seller != "",
+      amountOptions.gt(0),
+      true,
+    ];
+    return valid[step];
+  }
   
   // Trigger an alert on form submission
   handleSubmit = async (event) => {
     event.preventDefault();
+    let currentStep = this.state.currentStep;
+    if (currentStep <= 2) {
+      if (!this.isValid(currentStep-1)) return;
+      this.setState({currentStep: currentStep + 1});
+      return;
+    }
+
     this.setState({spinner: true});
     const { seller, amountOptions, optionContract, strikePrice } = this.state;
     try {
@@ -189,7 +206,8 @@ class BuyWizard extends React.Component {
   }
 
   _next() {
-    let currentStep = this.state.currentStep
+    let currentStep = this.state.currentStep;
+    if (!this.isValid(currentStep-1)) return;
     // If the current step is 1 or 2, then add one on "next" button click
     currentStep = currentStep >= 2? 3: currentStep + 1
     this.setState({

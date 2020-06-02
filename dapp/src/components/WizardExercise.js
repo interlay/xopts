@@ -187,6 +187,7 @@ class ExerciseWizard extends Component {
             amount: 0,
             height: 0,
             index: 0,
+            seller: "",
             txid: null,
             proof: null,
             rawtx: null,
@@ -209,10 +210,23 @@ class ExerciseWizard extends Component {
         });
     }
 
+    isValid(step) {
+        if (step == 0 && this.state.seller == "") {
+            return false;
+        }
+        return true;
+    }
+
     handleSubmit = async (event) => {
         event.preventDefault();
-        const { seller, height, index, txid, proof, rawtx } = this.state;
+        let currentStep = this.state.currentStep;
+        if (currentStep <= 2) {
+            if (!this.isValid(currentStep-1)) return;
+            this.setState({currentStep: currentStep + 1});
+            return;
+        }
 
+        const { seller, height, index, txid, proof, rawtx } = this.state;
         try {
             // This is mocked. BTC-Relay connection works, but querying proof in backend is still WIP.
             await this.props.contracts.exerciseOption(this.props.contract, seller, 1000, 1, "0xe91669bf43109bbd3ed730d8a5ebdc691b5d7482d2cf034c7a0db12023db8e5f", "0x00", "0x00");
@@ -235,6 +249,7 @@ class ExerciseWizard extends Component {
 
     _next() {
         let currentStep = this.state.currentStep;
+        if (!this.isValid(currentStep-1)) return;
         // If the current step is 1 or 2, then add one on "next" button click
         currentStep = currentStep >= 2 ? 3 : currentStep + 1;
         this.setState({
