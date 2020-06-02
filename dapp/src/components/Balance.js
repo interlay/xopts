@@ -24,7 +24,7 @@ class Balance extends Component {
     }
 
     async componentDidUpdate() {
-        if (!this.state.loaded && this.props.contracts) {
+        if (this.props.isLoggedIn && !this.state.loaded && this.props.contracts) {
             await this.updateBalance();
         }
     }
@@ -43,6 +43,7 @@ class Balance extends Component {
     }
 
     render() {
+        if(this.props.isLoggedIn && this.props.address){
         return (
             <React.Fragment>
                 <Row className="text-center">
@@ -51,12 +52,13 @@ class Balance extends Component {
                     </Col>
                     <Col>
                         <Form onSubmit={this.handleSubmit}>
-                            <SpinButton text="Mint" spinner={this.state.spinner}/>
+                            <SpinButton text="Get Testnet DAI" spinner={this.state.spinner}/>
                         </Form>
                     </Col>
                 </Row>
             </React.Fragment>
         )
+        } else return "";
     }
 }
 

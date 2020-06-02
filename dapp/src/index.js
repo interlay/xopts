@@ -20,6 +20,7 @@ import Topbar from "./components/Topbar";
 
 import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
+import { Storage } from './controllers/storage.js';
 
 const INFURA_API_TOKEN = "cffc5fafb168418abcd50a3309eed8be";
 
@@ -35,6 +36,7 @@ class App extends Component {
       provider: null,
       btcProvider: null,
       contracts: null,
+      storage: null,
       btcPrices: {
         dai: null,
         usd: null,
@@ -52,6 +54,7 @@ class App extends Component {
     this.getWeb3();
     this.getPriceData();
     this.getBitcoinProvider();
+    this.getStorageProvider();
   }
 
 
@@ -65,9 +68,7 @@ class App extends Component {
     // Check if user is already logged in
     await this.tryLogIn(false);
     
-    console.log(this.state.isLoggedIn);
     if (!this.state.isLoggedIn) {
-      console.log("infura")
       // Connect to infura
       let provider = await new ethers.providers.InfuraProvider('ropsten', INFURA_API_TOKEN);
       this.setState({
@@ -105,8 +106,15 @@ class App extends Component {
       signer = await provider.getSigner();
       address = await signer.getAddress();
       contracts = new Contracts(signer, network);
+      let storage = new Storage(address);
+      let btcProvider = new BitcoinQuery();
       this.setState({
         isLoggedIn: true,
+        signer: signer,
+        address: address,
+        contracts: contracts,
+        storage: storage,
+        btcProvider: btcProvider,
       });
     } catch (error) {
       // Otherwise, fetch contracts in read-only mode
@@ -127,15 +135,11 @@ class App extends Component {
           await window.ethereum.enable();
         }
         let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
-        let network = await provider.getNetwork();
-        let signer = await provider.getSigner();
-        let address = await signer.getAddress();
-        let contracts = new Contracts(signer, network);
+        //  Check if we indeed have a signer + address => if yes, user is logged in.
+        let _signer = await provider.getSigner();
+        let _address = await _signer.getAddress();
         this.setState({
-          isLoggedIn: true,
-          signer: signer,
-          address: address,
-          provider: provider
+          isLoggedIn: true
         });
         this.getBlockchainData(provider);
       } catch (error) {
@@ -163,18 +167,12 @@ class App extends Component {
       )
   }
 
-  async getBitcoinProvider() {
+  getBitcoinProvider() {
     this.btcProvider = new BitcoinQuery();
+  }
 
-    // get raw tx
-    await this.btcProvider.getRawTransaction("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-    // confirmed
-    await this.btcProvider.getStatusTransaction("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-    // unconfirmed
-    await this.btcProvider.getStatusTransaction("baf4f3fbad8510f722884df12e27cf9e800aebd5a28f3e6e641606608111a737");
-    // get proof
-    await this.btcProvider.getMerkleProof("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-
+  async getStorageProvider(address) {
+    this.storage = new Storage(address);
   }
 
 
