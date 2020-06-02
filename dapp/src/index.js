@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { ethers } from 'ethers';
 import { withRouter } from 'react-router-dom'
+import { toast } from 'react-toastify';
 
 // Importing Sass with Bootstrap CSS
 import "./App.scss";
@@ -17,6 +18,8 @@ import Topbar from "./components/Topbar";
 
 import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
+
+const INFURA_API_TOKEN = "cffc5fafb168418abcd50a3309eed8be";
 
 class App extends Component {
 
@@ -44,46 +47,98 @@ class App extends Component {
   }
 
   componentDidMount() {
-    this.getBlockchainData();
+    this.getWeb3();
     this.getPriceData();
     this.getBitcoinProvider();
   }
 
-  async getBlockchainData() {
+
+  async getWeb3() {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
-      try {
-        // get Ethereum smart contract details
-        let provider = new ethers.providers.Web3Provider(web3.currentProvider);
+      this.setState({
+        isWeb3: true
+      })
+    }
+    // Check if user is already logged in
+    await this.tryLogIn(false);
+    
+    console.log(this.state.isLoggedIn);
+    if (!this.state.isLoggedIn) {
+      console.log("infura")
+      // Connect to infura
+      let provider = await new ethers.providers.InfuraProvider('ropsten', INFURA_API_TOKEN);
+      this.setState({
+        provider: provider
+      });
 
-        this.setState({
-          isWeb3: true,
-          provider: provider,
-        });
-
+      if (provider) {
+        this.getBlockchainData(provider);
         // Get user account data, if already logged in
-        this.tryLogIn(provider);
-      } catch (error) {
-        console.log(error);
+      } else {
+        console.log("Could not find Web3 provider.");
+        toast.info('Could not fetch blockchain data. Please connect to a wallet (e.g. Metamask), or try again later.', {
+          position: "top-center",
+          autoClose: 10000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
       }
+
     }
   }
 
-  async tryLogIn(provider) {
-    try {
-      let signer = await provider.getSigner();
-      let address = await signer.getAddress();
-      let network = await provider.getNetwork();
-      let contracts = new Contracts(signer, network);
+  async getBlockchainData(provider) {
+    let network = await provider.getNetwork();
 
+    let contracts = null;
+    let address = null;
+    let signer = null;
+
+    try {
+      // Try to get signer (needed to send transactions)
+      signer = await provider.getSigner();
+      address = await signer.getAddress();
+      contracts = new Contracts(signer, network);
       this.setState({
         isLoggedIn: true,
-        signer: signer,
-        address: address,
-        contracts: contracts,
       });
     } catch (error) {
-      console.log("Not logged in.")
+      // Otherwise, fetch contracts in read-only mode
+      contracts = new Contracts(provider, network);
+    }
+    this.setState({
+      isWeb3: true,
+      contracts: contracts,
+    });
+
+  }
+
+  tryLogIn = async (activeLogin) => {
+    let web3 = window.web3;
+    if (typeof web3 !== 'undefined') {
+      try {
+        if (activeLogin) {
+          await window.ethereum.enable();
+        }
+        let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
+        let network = await provider.getNetwork();
+        let signer = await provider.getSigner();
+        let address = await signer.getAddress();
+        let contracts = new Contracts(signer, network);
+        this.setState({
+          isLoggedIn: true,
+          signer: signer,
+          address: address,
+          provider: provider
+        });
+        this.getBlockchainData(provider);
+      } catch (error) {
+        console.log("Not logged in.")
+      }
     }
   }
 
@@ -124,18 +179,17 @@ class App extends Component {
   render() {
     return (
       <Router>
-        <div>
-          <Topbar {...this.state} />
-          <Switch>
-            <Route path="/dashboard">
-              <Dashboard {...this.state}/>
-            </Route>
+        <Topbar {...this.state} tryLogIn={this.tryLogIn} />
+        <Switch>
+          <Route exact path="/">
+          </Route>
 
-            <Route path="/">
-              <Home {...this.state} />
-            </Route>
-          </Switch>
-        </div>
+          <Route path="/dashboard">
+            <Dashboard {...this.state} />
+          </Route>
+
+          <Route path="/market" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
+        </Switch>
       </Router>
     )
   }

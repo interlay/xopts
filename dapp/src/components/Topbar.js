@@ -12,7 +12,7 @@ class Web3LogIn extends Component {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
       try {
-        let ethereum = await window.ethereum.enable();
+        await window.ethereum.enable();
         let signer = await this.props.provider.getSigner();
         let address = await signer.getAddress();
         this.setState({
@@ -28,7 +28,7 @@ class Web3LogIn extends Component {
   }
 
   handleLogIn() {
-    this.logIn();
+    this.props.tryLogIn(true);
   }
 
   render() {
@@ -38,7 +38,7 @@ class Web3LogIn extends Component {
           <Badge pill variant="success"> {this.props.address}</Badge>
         </Link>)
     } else if (this.props.isWeb3) {
-      return <Link className="nav-link" to=""><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Link>
+      return <Link className="nav-link" to="#"><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Link>
     } else {
       return <a className="nav-link" href="https://metamask.io/download.html" target="__blank"><Badge pill variant="primary"> Get MetaMask</Badge></a>
     }
@@ -49,6 +49,7 @@ const Web3LogInWithRouter = withRouter (Web3LogIn);
 
 
 class TopBar extends Component {
+  
 
   render() {
     return (
@@ -57,7 +58,7 @@ class TopBar extends Component {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
-            <Link className="nav-link" to="/">
+            <Link className="nav-link" to="/market">
                 Market
             </Link>
             {this.props.isLoggedIn &&

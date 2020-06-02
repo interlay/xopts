@@ -5,9 +5,6 @@ import OptionList from "../components/OptionList.js"
 import { withRouter } from 'react-router-dom'
 
 class Home extends Component {
-  componentDidMount(){
-    this.forceUpdate();
-  }
   
   render() {
     return (

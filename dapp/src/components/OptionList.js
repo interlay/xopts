@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { withRouter } from 'react-router-dom'
 import { Col, Row, Table, Card, Spinner, Modal } from "react-bootstrap";
-import * as utils from '../utils/utils.js'; 
+import * as utils from '../utils/utils.js';
 import BuyWizard from "./WizardBuy";
 import SellWizard from "./WizardSell";
 import { ButtonTool } from "./ButtonTool.js";
@@ -91,7 +91,10 @@ class OptionList extends Component {
         return options;
     }
 
-    showBuy(contract) {
+    async showBuy(contract) {
+        if (!this.props.isLoggedIn) {
+            await this.props.tryLogIn(true);
+        }
         this.setState({
             buy: contract,
             showBuy: true,
@@ -104,7 +107,10 @@ class OptionList extends Component {
         })
     }
 
-    showSell(contract) {
+    async showSell(contract) {
+        if (!this.props.isLoggedIn) {
+            await this.props.tryLogIn(true);
+        }
         this.setState({
             sell: contract,
             showSell: true,
@@ -130,10 +136,10 @@ class OptionList extends Component {
 
                 return (
                     <tr key={strikePrice} disabled={expiry < currentDate}>
-                        <td>{new Date(expiry*1000).toLocaleString()}
-                        {(expiry < currentDate) &&
-                        <b> (Expired)</b>
-                        }
+                        <td>{new Date(expiry * 1000).toLocaleString()}
+                            {(expiry < currentDate) &&
+                                <b> (Expired)</b>
+                            }
                         </td>
                         <td>{strikePrice.toString()} DAI/BTC</td>
                         <td>{spotPrice} DAI</td>
@@ -192,12 +198,12 @@ class OptionList extends Component {
                                     <h3>{this.state.totalInsured.round(2, 0).toString()} BTC</h3>
                                     <h6>Insured</h6>
                                 </Col>
-                    
+
                                 <Col>
                                     <h3>{this.state.insuranceAvailable.round(2, 0).toString()} DAI</h3>
                                     <h6>Insurance Available</h6>
                                 </Col>
-                        
+
                                 <Col>
                                     <h3>{this.state.avgPremium.round(2, 0).toString()} DAI/BTC</h3>
                                     <h6>Average Premium</h6>

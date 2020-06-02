@@ -4,6 +4,7 @@ import { fetchJson } from "ethers/utils";
 import OptionList from "../components/OptionList.js"
 import UserPurchasedOptions from "../components/UserPurchasedOptions.js";
 import UserSoldOptions from "../components/UserSoldOptions.js";
+import { Redirect } from "react-router-dom";
 
 export default class Dashboard extends Component {
 
@@ -12,6 +13,9 @@ export default class Dashboard extends Component {
   }
   
   render() {
+    if(!this.props.isLoggedIn){
+      return <Redirect to="/market" />
+    }
     return (
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
