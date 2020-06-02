@@ -17,7 +17,7 @@ export class SpinButton extends React.Component {
               size="sm"
               role="status"
               aria-hidden="true"
-            /> : "Confirm"}
+            /> : this.props.text || "Confirm"}
           </button>
         </FormGroup>
       )
