@@ -1,10 +1,5 @@
 import React, { Component } from "react";
-<<<<<<< HEAD
-import { Image} from "react-bootstrap";
-=======
-import { Col, Container, Row, Table, Button } from "react-bootstrap";
-import { fetchJson } from "ethers/utils";
->>>>>>> master
+import { Image, Container} from "react-bootstrap";
 import OptionList from "../components/OptionList.js"
 import { withRouter } from 'react-router-dom'
 import bitcoinImg from "../assets/img/icons/32/btc.png";
@@ -20,12 +15,12 @@ class Home extends Component {
     return (
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
-          <div className="container">
+        <Container fluid>
             <h2>Buy and Sell Put Options</h2>
             <p className="lead text-muted">Available Markets:</p>
             <h4> BTC <Image src={bitcoinImg}/> - DAI <Image src={daiImg} /></h4>
             
-          </div>
+          </Container>
         </section>
         
         <Container fluid>
