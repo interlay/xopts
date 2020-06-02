@@ -1,21 +1,25 @@
 import React, { Component } from "react";
-import { Col, Container, Row, Table, Button } from "react-bootstrap";
-import { fetchJson } from "ethers/utils";
+import { Image, Container} from "react-bootstrap";
 import OptionList from "../components/OptionList.js"
 import { withRouter } from 'react-router-dom'
+import bitcoinImg from "../assets/img/icons/32/btc.png";
+import daiImg from "../assets/img/icons/32/dai.png";
 
 class Home extends Component {
+  
   componentDidMount(){
     this.forceUpdate();
   }
-  
+
   render() {
     return (
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
-          <Container>
-            <h1>Trustless Bitcoin-Native Options</h1>
-            <p className="lead text-muted">Buy and Sell Insurance against Bitcoin Price Fluctuations. </p>
+        <Container fluid>
+            <h2>Buy and Sell Put Options</h2>
+            <p className="lead text-muted">Available Markets:</p>
+            <h4> BTC <Image src={bitcoinImg}/> - DAI <Image src={daiImg} /></h4>
+            
           </Container>
         </section>
         

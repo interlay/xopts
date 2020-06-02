@@ -1,7 +1,8 @@
-import { Navbar, Nav, Badge } from "react-bootstrap";
+import { Navbar, Nav, Badge, Image } from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
+import xoptsLogo from "../assets/img/xopts.png";
 
 
 
@@ -12,7 +13,7 @@ class Web3LogIn extends Component {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
       try {
-        let ethereum = await window.ethereum.enable();
+        await window.ethereum.enable();
         let signer = await this.props.provider.getSigner();
         let address = await signer.getAddress();
         this.setState({
@@ -28,7 +29,7 @@ class Web3LogIn extends Component {
   }
 
   handleLogIn() {
-    this.logIn();
+    this.props.tryLogIn(true);
   }
 
   render() {
@@ -38,7 +39,7 @@ class Web3LogIn extends Component {
           <Badge pill variant="success"> {this.props.address}</Badge>
         </Link>)
     } else if (this.props.isWeb3) {
-      return <Link className="nav-link" to=""><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Link>
+      return <Link className="nav-link" to="#"><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Link>
     } else {
       return <a className="nav-link" href="https://metamask.io/download.html" target="__blank"><Badge pill variant="primary"> Get MetaMask</Badge></a>
     }
@@ -49,15 +50,16 @@ const Web3LogInWithRouter = withRouter (Web3LogIn);
 
 
 class TopBar extends Component {
+  
 
   render() {
     return (
       <Navbar bg="light" expand="lg" className="border-bottom shadow-sm">
-        <Navbar.Brand><Link to="/" className="text-decoration-none">XOpts</Link></Navbar.Brand>
+        <Navbar.Brand> <Image src={xoptsLogo} width="30" className="d-inline-block align-top" height="30" fluid/><Link to="/" className="text-decoration-none"> XOpts</Link></Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
-            <Link className="nav-link" to="/">
+            <Link className="nav-link" to="/market">
                 Market
             </Link>
             {this.props.isLoggedIn &&
