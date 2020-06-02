@@ -182,21 +182,10 @@ class ExerciseWizard extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            purchasedLoaded: false,
-            purchasedOptions: [],
-            totalInsured: 0,
-            insuranceAvailable: 0,
-            paidPremium: 0,
-            totalIncome: utils.newBig(0),
-            showExercise: false,
             currentStep: 1,
             amount: 0,
-            height: 0,
-            index: 0,
             seller: "",
-            txid: null,
-            proof: null,
-            rawtx: null,
+            txid: "",
         };
 
         this.handleChange = this.handleChange.bind(this)
@@ -209,8 +198,6 @@ class ExerciseWizard extends Component {
             [name]: value
         });
     }
-
-    store
 
     updateAmount(i) {
         this.setState({
@@ -235,25 +222,17 @@ class ExerciseWizard extends Component {
         }
         // store txid to local storage
         // store a mapping of the option to the txid
-        const { seller, height, index, txid, proof, rawtx } = this.state;
+        const { seller, amount, txid } = this.state;
         try {
-            // This is mocked. BTC-Relay connection works, but querying proof in backend is still WIP.
-            await this.props.contracts.exerciseOption(this.props.contract, seller, 1000, 1, "0xe91669bf43109bbd3ed730d8a5ebdc691b5d7482d2cf034c7a0db12023db8e5f", "0x00", "0x00");
-            showSuccessToast(this.props.toast, 'Exercise successful!', 3000);
+            this.props.storage.setPendingOptions(amount, seller, this.props.contract, txid, 0);
+            showSuccessToast(this.props.toast, 'Awaiting verification!', 3000);
             this.props.hide();
             this.forceUpdate();
+            this.props.reloadPurchased();
         } catch (error) {
             console.log(error);
             showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
         }
-    }
-
-    cancelExercise() {
-        this.setState({
-            currentStep: 1,
-            exerciseOption: {},
-            showExercise: false
-        });
     }
 
     _next() {

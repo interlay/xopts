@@ -35,7 +35,7 @@ class SelectSeller extends React.Component {
       let addressShow = address.substr(0,10) + '...';
       console.log(this.state.options[index].toString());
       return (
-        <option key={address} value={address} onClick={() => this.props.updateAmountOptions(amount)}> {amountBtc.toString()} BTC (Seller: {addressShow})</option>
+        <option key={address} value={address} onClick={() => this.props.updateAmountOptions(amount)}> {amountBtc.round(5, 0).toString()} BTC (Seller: {addressShow})</option>
       );
     })
   }
@@ -65,7 +65,7 @@ class EnterAmount extends React.Component {
     if (this.props.currentStep !== 2) {
       return null
     }
-    let amount = utils.calculateAvailableBTC(this.props.amountOptions, this.props.strikePrice).toString();
+    let amount = utils.calculateAvailableBTC(this.props.amountOptions, this.props.strikePrice).round(5, 0).toString();
     return(
       <FormGroup>
         <h5>Enter BTC Amount</h5>
@@ -154,7 +154,7 @@ class BuyWizard extends React.Component {
     let {name, value} = event.target
     if(name == "amountBTC"){
       this.setState({
-        amountOptions: utils.newBig(value).mul(this.state.strikePrice)
+        amountOptions: utils.newBig(value || 0).mul(this.state.strikePrice)
       });
     } else {
       this.setState({

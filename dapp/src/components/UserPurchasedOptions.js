@@ -1,8 +1,9 @@
 import React, { Component } from "react";
-import { Col, Badge, Row, Table, Form, Button, Card, Spinner, Modal, ListGroup, ListGroupItem, FormGroup, FormControl, ProgressBar } from "react-bootstrap";
+import { Col, Badge, Row, Table, Form, Button, Card, Spinner, Modal, DropdownButton, Dropdown, ButtonGroup } from "react-bootstrap";
 import { ToastContainer, toast } from 'react-toastify';
 import * as utils from '../utils/utils.js';
 import ExerciseWizard from './WizardExercise';
+import UserPending from "./UserPending.js";
 
 export default class UserPurchasedOptions extends Component {
 
@@ -11,6 +12,7 @@ export default class UserPurchasedOptions extends Component {
         this.state = {
             purchasedLoaded: false,
             purchasedOptions: [],
+            pendingOptions: [],
             totalInsured: utils.newBig(0),
             insuranceAvailable: utils.newBig(0),
             paidPremium: utils.newBig(0),
@@ -24,10 +26,9 @@ export default class UserPurchasedOptions extends Component {
             rawtx: null,
         };
 
-        this.handleChange = this.handleChange.bind(this)
-        this.updateAmount = this.updateAmount.bind(this)
-
-        this.hideExerciseModel = this.hideExerciseModel.bind(this)
+        this.handleChange = this.handleChange.bind(this);
+        this.hideExerciseModel = this.hideExerciseModel.bind(this);
+        this.reloadPurchased = this.reloadPurchased.bind(this);
     }
 
     componentDidUpdate() {
@@ -41,9 +42,10 @@ export default class UserPurchasedOptions extends Component {
     async getAvailableOptions() {
         if (this.props.contracts && this.props.address) {
             let optionContracts = await this.props.contracts.getUserPurchasedOptions(this.props.address);
-            let purchasedOptions = await this.getOptions(optionContracts)
+            let purchasedOptions = await this.getOptions(optionContracts);
             this.setState({
                 purchasedOptions: purchasedOptions,
+                pendingOptions: this.props.storage.getPendingOptions(),
                 purchasedLoaded: true
             });
         }
@@ -138,12 +140,6 @@ export default class UserPurchasedOptions extends Component {
         });
     }
 
-    updateAmount(i) {
-        this.setState({
-            amount: i
-        });
-    }
-
     showExerciseModel(contract) {
         this.setState({
             contractAddress: contract,
@@ -156,6 +152,10 @@ export default class UserPurchasedOptions extends Component {
             currentStep: 1,
             showExerciseModal: false,
         })
+    }
+
+    reloadPurchased() {
+        this.getAvailableOptions();
     }
 
     render() {
@@ -222,6 +222,11 @@ export default class UserPurchasedOptions extends Component {
                             </Row>
                         </Card.Body>
                     }
+                    {this.state.pendingOptions.length > 0 &&
+                        <Card.Footer>
+                            <UserPending toast={toast} reloadPurchased={this.reloadPurchased} {...this.props}/>
+                        </Card.Footer>
+                    }
                 </Card>
 
                 <Modal
@@ -229,7 +234,13 @@ export default class UserPurchasedOptions extends Component {
                     aria-labelledby="contained-modal-title-vcenter"
                     centered
                     show={this.state.showExerciseModal} onHide={() => this.setState({ showExerciseModal: false })}>
-                    <ExerciseWizard contract={this.state.contractAddress} hide={this.hideExerciseModel} toast={toast} {...this.props}></ExerciseWizard>
+                    <ExerciseWizard 
+                        contract={this.state.contractAddress}
+                        hide={this.hideExerciseModel}
+                        toast={toast}
+                        reloadPurchased={this.reloadPurchased}
+                        {...this.props}>
+                    </ExerciseWizard>
                 </Modal>
             </Col>
         </div>;

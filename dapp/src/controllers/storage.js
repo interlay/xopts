@@ -5,6 +5,10 @@ export class Storage {
     this.pendingOptions = this.getPendingOptions();
   }
 
+  clearPendingOptions() {
+    localStorage.clear()
+  }
+
   // loads an array of pending options
   // a pending option is an object
   // pendingOption = {
@@ -20,13 +24,13 @@ export class Storage {
       let pendingOptions = JSON.parse(pendingOptionsArray);
       return pendingOptions;
     }
-    return '';
+    return [];
   }
 
   // stores an array of pending options
-  setPendingOptions(amounBtc, recipient, option, txid, confirmations) {
+  setPendingOptions(amountBtc, recipient, option, txid, confirmations) {
     let pendingOption = {
-      amountBtc: amounBtc,
+      amountBtc: amountBtc,
       recipient: recipient,
       option: option,
       txid: txid,
@@ -36,6 +40,7 @@ export class Storage {
     let pendingOptionsArray = JSON.stringify(this.pendingOptions);
     localStorage.setItem(this.userAddress, pendingOptionsArray);
   }
+
   // updates a pending option
   modifyPendingOption(index, key, value) {
     let pendingOption = this.pendingOptions[index];
@@ -49,5 +54,11 @@ export class Storage {
         return;
       }
     }
+  }
+
+  removePendingOption(index) {
+    this.pendingOptions.splice(index, 1);
+    let pendingOptionsArray = JSON.stringify(this.pendingOptions);
+    localStorage.setItem(this.userAddress, pendingOptionsArray);
   }
 }

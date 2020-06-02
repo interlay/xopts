@@ -1,12 +1,8 @@
-import { ethers } from 'ethers';
-
-
 export class BitcoinQuery {
 
   constructor() {
     this.rootUrl = "https://blockstream.info/testnet/api/"
   }
-
 
   // Returns a status object with
   // status = {
@@ -20,24 +16,16 @@ export class BitcoinQuery {
     }
 
     let statusQuery = this.rootUrl.concat("tx/", txid.toString(), "/status");
-
     let statusResult = await queryToJSON(statusQuery);
-
-    console.log(statusResult);
 
     txStatus.confirmed = statusResult.confirmed;
 
     let currentChainTipQuery = this.rootUrl.concat("blocks/tip/height");
-
     let currentChainTip = await queryToText(currentChainTipQuery);
-
-    console.log(currentChainTip);
 
     if (statusResult.hasOwnProperty('block_height')) {
       txStatus.confirmations = currentChainTip - statusResult.block_height;
     }
-
-    console.log(txStatus);
 
     return txStatus;
   }
@@ -48,11 +36,7 @@ export class BitcoinQuery {
   // returns a hex encoded rawtx
   async getRawTransaction(txid) {
     let query = this.rootUrl.concat("tx/", txid.toString(), "/raw");
-
     let rawtx = await queryToArrayBuffer(query);
-
-    console.log(rawtx);
-
     return rawtx;
   }
 
@@ -68,11 +52,7 @@ export class BitcoinQuery {
   // }
   async getMerkleProof(txid) {
     let query = this.rootUrl.concat("tx/", txid.toString(), "/merkle-proof");
-
     let proof = await queryToJSON(query);
-
-    console.log(proof);
-
     return proof;
   }
 

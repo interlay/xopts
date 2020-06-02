@@ -49,6 +49,7 @@ class App extends Component {
     this.getBlockchainData();
     this.getPriceData();
     this.getBitcoinProvider();
+    this.getStorageProvider();
   }
 
   async getBlockchainData() {
@@ -78,6 +79,7 @@ class App extends Component {
       let network = await provider.getNetwork();
       let contracts = new Contracts(signer, network);
       let storage = new Storage(address);
+      let btcProvider = new BitcoinQuery();
 
       this.setState({
         isLoggedIn: true,
@@ -85,6 +87,7 @@ class App extends Component {
         address: address,
         contracts: contracts,
         storage: storage,
+        btcProvider: btcProvider,
       });
     } catch (error) {
       console.log("Not logged in.")
@@ -110,7 +113,7 @@ class App extends Component {
       )
   }
 
-  async getBitcoinProvider() {
+  getBitcoinProvider() {
     this.btcProvider = new BitcoinQuery();
   }
 
