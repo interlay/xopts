@@ -30,12 +30,6 @@ class OptionList extends Component {
         this.hideSell = this.hideSell.bind(this)
     }
 
-    componentDid() {
-        if (this.state.loaded == false) {
-            this.getOptions();
-        }
-    }
-
     componentDidUpdate() {
         if (this.state.loaded == false) {
             this.getOptions();

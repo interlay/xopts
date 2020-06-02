@@ -4,26 +4,21 @@ import { fetchJson } from "ethers/utils";
 import OptionList from "../components/OptionList.js"
 import { withRouter } from 'react-router-dom'
 
-class Home extends Component {
+class LandingPage extends Component {
   
-  componentDidMount(){
-    this.forceUpdate();
-  }
-
   render() {
     return (
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
           <div className="container">
-            <h2>Buy and Sell Put Options</h2>
-            <p className="lead text-muted">Available Markets:</p>
-            
+            <h1>Trustless Bitcoin-Native Options</h1>
+            <p className="lead text-muted">Buy and Sell Insurance against Bitcoin Price Fluctuations. </p>
+
           </div>
         </section>
-        <OptionList {...this.props} />
       </div>
     );
   }
 }
 
-export default withRouter(Home);
+export default withRouter(LandingPage);

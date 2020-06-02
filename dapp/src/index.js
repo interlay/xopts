@@ -14,6 +14,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import Dashboard from "./views/Dashboard";
 import Home from "./views/Home";
+import LandingPage from "./views/LandingPage";
 import Topbar from "./components/Topbar";
 
 import { Contracts } from './controllers/contracts';
@@ -182,6 +183,7 @@ class App extends Component {
         <Topbar {...this.state} tryLogIn={this.tryLogIn} />
         <Switch>
           <Route exact path="/">
+            <LandingPage />
           </Route>
 
           <Route path="/dashboard">
