@@ -6,6 +6,23 @@ import { SpinButton } from './SpinButton';
 import { withRouter } from 'react-router-dom'
 
 class EnterAmount extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      amountDai: this.props.amountDai.toString(),
+    }
+
+    this.handleChange = this.handleChange.bind(this);
+  }
+
+  handleChange(event) {
+    let {name, value} = event.target
+    this.setState({
+      [name]: value
+    });
+    this.props.handleChange(event);
+  }
+
   render() {
     if (this.props.currentStep !== 1) {
       return null
@@ -17,8 +34,9 @@ class EnterAmount extends React.Component {
           id="amountDai"
           name="amountDai"
           type="number"
-          value={this.props.amountDai || 0}
-          onChange={this.props.handleChange}
+          value={this.props.amountDai.toString()}
+          isInvalid={this.state.amountDai <= 0}
+          onChange={this.handleChange}
         />
       </FormGroup>
     )
@@ -41,6 +59,7 @@ class EnterAddress extends React.Component {
           placeholder="BTC Address"
           value={this.props.btcAddress || ''}
           onChange={this.props.handleChange}
+          required
         />
       </FormGroup>
     )
@@ -64,7 +83,7 @@ class Confirm extends React.Component {
           <ListGroup>
               <ListGroupItem>Strike Price: <strong>{this.props.strikePrice.toString()} DAI</strong></ListGroupItem>
               <ListGroupItem>Expiry: <strong>{new Date(this.props.expiry*1000).toLocaleString()}</strong></ListGroupItem>
-              <ListGroupItem>Amount: <strong>{this.props.amountDai} DAI -> {utils.daiToWeiDai(utils.newBig(this.props.amountDai)).toString()} XOPT</strong></ListGroupItem>
+              <ListGroupItem>Amount: <strong>{this.props.amountDai.toString()} DAI -> {utils.daiToWeiDai(this.props.amountDai).toString()} XOPT</strong></ListGroupItem>
               <ListGroupItem>Underwrites: <strong>{utils.calculateAvailableBTC(this.props.amountDai, this.props.strikePrice).toString()} BTC</strong></ListGroupItem>
               <ListGroupItem>BTC Address: <strong>{this.props.btcAddress}</strong></ListGroupItem>
           </ListGroup>
@@ -83,8 +102,8 @@ class SellWizard extends React.Component {
     this._prev = this._prev.bind(this)
     this.state = {
       currentStep: 1,
-      amountDai: 0,
-      address: '',
+      amountDai: utils.newBig(1),
+      btcAddress: '',
       optionContract: null,
       spinner: false,
       expiry: 0,
@@ -112,19 +131,42 @@ class SellWizard extends React.Component {
 
   handleChange(event) {
     let {name, value} = event.target
-    this.setState({
-      [name]: value
-    });
+    if (name === "amountDai") {
+      this.setState({
+        amountDai: utils.newBig(value || 0)
+      });
+    } else {
+      this.setState({
+        [name]: value
+      });
+    }
+  }
+
+  isValid(step) {
+    const { amountDai, btcAddress } = this.state;
+    let valid = [
+      amountDai.gt(0),
+      btcAddress != "",
+      true,
+    ];
+    return valid[step];
   }
   
   handleSubmit = async (event) => {
     event.preventDefault();
+    
+    let currentStep = this.state.currentStep;
+    if (currentStep <= 2) {
+      if (!this.isValid(currentStep-1)) return;
+      this.setState({currentStep: currentStep + 1});
+      return;
+    }
+    
+    const { amountDai, btcAddress, optionContract } = this.state;
     this.setState({spinner: true});
-    // TODO: get expiry date!
-    const { amountDai, btcAddress, optionContract, expiry } = this.state;
     try {
       let contracts = this.props.contracts;
-      let weiDai = utils.daiToWeiDai(utils.newBig(amountDai));
+      let weiDai = utils.daiToWeiDai(amountDai);
       await contracts.checkAllowance(weiDai);
       await contracts.underwriteOption(optionContract.address, weiDai, btcAddress);
       this.props.history.push("/dashboard")
@@ -137,12 +179,13 @@ class SellWizard extends React.Component {
   }
 
   _next() {
-    let currentStep = this.state.currentStep
+    let currentStep = this.state.currentStep;
+    if (!this.isValid(currentStep-1)) return;
     // If the current step is 1 or 2, then add one on "next" button click
-    currentStep = currentStep >= 2? 3: currentStep + 1
+    currentStep = currentStep >= 2? 3: currentStep + 1;
     this.setState({
       currentStep: currentStep
-    })
+    });
   }
     
   _prev() {
