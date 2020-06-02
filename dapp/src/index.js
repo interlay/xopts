@@ -17,6 +17,7 @@ import Topbar from "./components/Topbar";
 
 import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
+import { Storage } from './controllers/storage.js';
 
 class App extends Component {
 
@@ -30,6 +31,7 @@ class App extends Component {
       provider: null,
       btcProvider: null,
       contracts: null,
+      storage: null,
       btcPrices: {
         dai: null,
         usd: null,
@@ -75,12 +77,14 @@ class App extends Component {
       let address = await signer.getAddress();
       let network = await provider.getNetwork();
       let contracts = new Contracts(signer, network);
+      let storage = new Storage(address);
 
       this.setState({
         isLoggedIn: true,
         signer: signer,
         address: address,
         contracts: contracts,
+        storage: storage,
       });
     } catch (error) {
       console.log("Not logged in.")
@@ -108,6 +112,10 @@ class App extends Component {
 
   async getBitcoinProvider() {
     this.btcProvider = new BitcoinQuery();
+  }
+
+  async getStorageProvider(address) {
+    this.storage = new Storage(address);
   }
 
 
