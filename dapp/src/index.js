@@ -17,6 +17,7 @@ import Topbar from "./components/Topbar";
 
 import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
+import { Storage } from './controllers/storage.js';
 
 class App extends Component {
 
@@ -30,6 +31,7 @@ class App extends Component {
       provider: null,
       btcProvider: null,
       contracts: null,
+      storage: null,
       btcPrices: {
         dai: null,
         usd: null,
@@ -47,6 +49,7 @@ class App extends Component {
     this.getBlockchainData();
     this.getPriceData();
     this.getBitcoinProvider();
+    this.getStorageProvider();
   }
 
   async getBlockchainData() {
@@ -75,12 +78,16 @@ class App extends Component {
       let address = await signer.getAddress();
       let network = await provider.getNetwork();
       let contracts = new Contracts(signer, network);
+      let storage = new Storage(address);
+      let btcProvider = new BitcoinQuery();
 
       this.setState({
         isLoggedIn: true,
         signer: signer,
         address: address,
         contracts: contracts,
+        storage: storage,
+        btcProvider: btcProvider,
       });
     } catch (error) {
       console.log("Not logged in.")
@@ -106,18 +113,12 @@ class App extends Component {
       )
   }
 
-  async getBitcoinProvider() {
+  getBitcoinProvider() {
     this.btcProvider = new BitcoinQuery();
+  }
 
-    // get raw tx
-    await this.btcProvider.getRawTransaction("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-    // confirmed
-    await this.btcProvider.getStatusTransaction("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-    // unconfirmed
-    await this.btcProvider.getStatusTransaction("baf4f3fbad8510f722884df12e27cf9e800aebd5a28f3e6e641606608111a737");
-    // get proof
-    await this.btcProvider.getMerkleProof("7bf855c8e0d0878b54ff26eca5f8d63a527631e04224d8822960df4076984829");
-
+  async getStorageProvider(address) {
+    this.storage = new Storage(address);
   }
 
 

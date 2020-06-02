@@ -15,6 +15,7 @@ export function btcToSat(btc){
 export function satToBtc(sat){
 	return sat.div(newBig(10).pow(8));
 }
+
 export function weiDaiToDai(weiDai) {
     return weiDai.div(newBig(10).pow(18));
 }
