@@ -48,7 +48,7 @@ class Balance extends Component {
             <React.Fragment>
                 <Row className="text-center">
                     <Col>
-                        <h3>{this.state.balance.round(2, 0).toString()} DAI</h3>
+                        <h5>{this.state.balance.round(2, 0).toString()} DAI</h5>
                     </Col>
                     <Col>
                         <Form onSubmit={this.handleSubmit}>

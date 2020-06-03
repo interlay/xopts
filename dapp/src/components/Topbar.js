@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
 import xoptsLogo from "../assets/img/xopts.png";
 import { FaBell, FaGavel, FaUser } from 'react-icons/fa';
+import BalanceTopbar from './BalanceTopbar.js';
 
 class Web3LogIn extends Component {
 
@@ -31,10 +32,10 @@ class Web3LogIn extends Component {
   }
 
   render() {
-    if (this.props.isLoggedIn) {
+    if (this.props.isLoggedIn && this.props.address) {
       return (
         <Link className="nav-link" to="/dashboard">
-          <Badge pill variant="success"> {this.props.address}</Badge>
+          <Badge pill variant="success"> {this.props.address.substring(0, 6)}...{this.props.address.substring(38)}</Badge>
         </Link>)
     } else if (this.props.isWeb3) {
       return <Link className="nav-link" to="#"><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Link>
@@ -44,7 +45,7 @@ class Web3LogIn extends Component {
   }
 }
 
-const Web3LogInWithRouter = withRouter (Web3LogIn);
+const Web3LogInWithRouter = withRouter(Web3LogIn);
 
 const NavigationOverlay = ({ tip, link, children }) => (
   <OverlayTrigger
@@ -61,30 +62,33 @@ const NavigationOverlay = ({ tip, link, children }) => (
 )
 
 class TopBar extends Component {
-  
+
 
   render() {
     return (
       <Navbar bg="light" expand="lg" className="border-bottom shadow-sm">
-        <Navbar.Brand> <Image src={xoptsLogo} width="30" className="d-inline-block align-top" height="30" fluid/><Link to="/" className="text-decoration-none"> XOpts</Link></Navbar.Brand>
+        <Navbar.Brand> <Image src={xoptsLogo} width="30" className="d-inline-block align-top" height="30" fluid /><Link to="/" className="text-decoration-none"> XOpts</Link></Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
             <Link className="nav-link" to="/market">
-              Market <FaGavel/>
+              Market <FaGavel />
             </Link>
 
             {this.props.isLoggedIn &&
               <Link className="nav-link" to="/dashboard">
-                Options <FaUser/>
+                Options <FaUser />
               </Link>
             }
 
             {this.props.isLoggedIn && this.props.hasPendingOptions() &&
               <Link className="nav-link" to="/pending">
-                Pending <FaBell/>
+                Pending <FaBell />
               </Link>
             }
+          </Nav>
+          <Nav>
+            <BalanceTopbar {...this.props} />
           </Nav>
           <Nav>
             <Web3LogInWithRouter {...this.props} />
@@ -95,4 +99,4 @@ class TopBar extends Component {
   }
 }
 
-export default withRouter (TopBar);
+export default withRouter(TopBar);
