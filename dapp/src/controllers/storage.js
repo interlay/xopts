@@ -17,6 +17,7 @@ export class Storage {
   //   option: string, // the deployed address of the option contract
   //   txid: string, // the id of the btc transaction
   //   confirmations: number, // current number of confirmations
+  //   pending: bool, // has this option been exercised
   // }
   getPendingOptions() {
     let pendingOptionsArray = localStorage.getItem(this.userAddress);
@@ -27,6 +28,42 @@ export class Storage {
     return [];
   }
 
+  getPendingOptionsWithoutTxId() {
+    let pendingOptions = this.getPendingOptions();
+    let pendingOptionsWithoutTxId = [];
+    for (var option of pendingOptions) {
+      if (option.txid) {
+        pendingOptionsWithoutTxId.push(option);
+      }
+    }
+    return pendingOptionsWithoutTxId;
+  }
+
+  getPendingOptionsWithTxId() {
+    let pendingOptions = this.getPendingOptions();
+    let pendingOptionsWithTxId = [];
+    for (var option of pendingOptions) {
+      if (option.txid) {
+        pendingOptionsWithTxId.push(option);
+      }
+    }
+    return pendingOptionsWithTxId;
+  }
+
+  getMatchingTxId(amountBtc, recipient, optionAddress) {
+    let pendingOptionsWithTxId = this.getPendingOptionsWithTxId();
+    for (var option of pendingOptionsWithTxId) {
+      if (
+        option.amountBtc == amountBtc
+        && option.option == optionAddress
+        && option.recipient == recipient
+      ) {
+        return option.txid;
+      }
+    }
+    return "";
+  }
+
   // stores an array of pending options
   setPendingOptions(amountBtc, recipient, option, txid, confirmations) {
     let pendingOption = {
@@ -34,7 +71,8 @@ export class Storage {
       recipient: recipient,
       option: option,
       txid: txid,
-      confirmations: confirmations
+      confirmations: confirmations,
+      pending: true,
     };
     this.pendingOptions.push(pendingOption);
     let pendingOptionsArray = JSON.stringify(this.pendingOptions);

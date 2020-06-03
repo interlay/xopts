@@ -67,7 +67,7 @@ class App extends Component {
     }
     // Check if user is already logged in
     await this.tryLogIn(false);
-    
+
     if (!this.state.isLoggedIn) {
       // Connect to infura
       let provider = await new ethers.providers.InfuraProvider('ropsten', INFURA_API_TOKEN);
@@ -173,6 +173,7 @@ class App extends Component {
 
   async getStorageProvider(address) {
     this.storage = new Storage(address);
+    this.storage.clearPendingOptions();
   }
 
 

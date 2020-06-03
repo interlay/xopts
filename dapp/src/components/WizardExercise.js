@@ -70,12 +70,13 @@ class ScanBTC extends React.Component {
         super(props);
         this.state = {
             loaded: false,
-            paymentUri: ''
+            paymentUri: '',
+            selectionHasTxId: false
         };
     }
 
     async componentDidUpdate() {
-        if (this.props.contract && this.props.contracts && this.props.seller && !this.state.loaded) {
+        if (this.props.contract && this.props.contracts && this.props.seller && this.props.storage && !this.state.loaded) {
             // get all the info from the selected contract to store this into storage
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
@@ -91,6 +92,18 @@ class ScanBTC extends React.Component {
 
             let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amountBtc;
 
+
+            // check if there is already a matching tx
+            let txid = this.props.storage.getMatchingTxId(this.props.amountBtc, btcAddress, this.props.contract);
+
+            if (txid) {
+              this.setState({
+                selectionHasTxId: true,
+                txid: txid,
+              })
+            }
+
+            // set the local state
             this.setState({
                 loaded: true,
                 paymentUri: paymentUri,
@@ -100,8 +113,23 @@ class ScanBTC extends React.Component {
                 premium: premium,
                 strikePrice: strikePrice,
                 amountOptions: amountOptions,
-                amountDai: amountDai
+                amountDai: amountDai,
             });
+            // set the wizard state
+            this.props.updateRecipient(btcAddress);
+            this.props.updateOption(this.props.contract);
+            this.props.updateTxId(txid);
+            this.props.updateConfirmations(0);
+
+            console.log("Updating state from Scan QR");
+            // store the current exercise request in storage
+            this.props.storage.setPendingOptions(
+              this.props.amountBtc,
+              this.props.recipient,
+              this.props.option,
+              this.props.txid,
+              this.props.confirmations,
+            );
         }
     }
 
@@ -149,6 +177,7 @@ class SubmitProof extends React.Component {
     }
 
     componentDidUpdate() {
+        console.log(this.props.storage.getPendingOptions());
         if (this.state.progress >= 100) {
 
         }
@@ -206,7 +235,8 @@ class ExerciseWizard extends Component {
         this.state = {
             currentStep: 1,
             seller: "",
-            amountBtc: 0,
+            amountOptions: 0,
+            amountDai: 0,
             recipient: "",
             option: "",
             expiry: 0,
@@ -214,12 +244,14 @@ class ExerciseWizard extends Component {
             strikePrice: 0,
             txid: "",
             confirmations: 0,
-            amountOptions: 0,
-            amountDai: 0,
         };
 
         this.handleChange = this.handleChange.bind(this)
         this.updateAmount = this.updateAmount.bind(this)
+        this.updateRecipient = this.updateRecipient.bind(this)
+        this.updateOption = this.updateOption.bind(this)
+        this.updateTxId = this.updateTxId.bind(this)
+        this.updateConfirmations = this.updateConfirmations.bind(this)
     }
 
     handleChange(event) {
@@ -233,6 +265,30 @@ class ExerciseWizard extends Component {
         this.setState({
             amountBtc: i
         });
+    }
+
+    updateRecipient(r) {
+      this.setState({
+        recipient: r
+      });
+    }
+
+    updateOption(o) {
+      this.setState({
+        option: o
+      });
+    }
+
+    updateTxId(t) {
+      this.setState({
+        txid: t
+      });
+    }
+
+    updateConfirmations(c) {
+      this.setState({
+        confirmations: c
+      });
     }
 
     isValid(step) {
@@ -330,6 +386,7 @@ class ExerciseWizard extends Component {
                             updateAmount={this.updateAmount}
                             contract={this.props.contract}
                             contracts={this.props.contracts}
+                            storage={this.props.storage}
                             signer={this.props.signer}
                             address={this.props.address}
                         />
@@ -337,16 +394,32 @@ class ExerciseWizard extends Component {
                             currentStep={this.state.currentStep}
                             handleChange={this.handleChange}
                             updateAmount={this.updateAmount}
+                            updateRecipient = {this.updateRecipient}
+                            updateOption = {this.updateOption}
+                            updateTxId = {this.updateTxId}
+                            updateConfirmations = {this.updateConfirmations}
                             contract={this.props.contract}
                             contracts={this.props.contracts}
+                            storage={this.props.storage}
                             signer={this.props.signer}
                             seller={this.state.seller}
                             amountBtc={this.state.amountBtc}
+                            recipient = {this.state.recipient}
+                            option = { this.state.option }
+                            txid = { this.state.txid }
+                            confirmations = { this.state.confirmations }
                         />
                         <SubmitProof
                             currentStep={this.state.currentStep}
                             handleChange={this.handleChange}
+                            updateTxId = {this.updateTxId}
                             seller={this.state.seller}
+                            storage={this.props.storage}
+                            amountBtc={this.state.amountBtc}
+                            recipient = {this.state.recipient}
+                            option = { this.state.option }
+                            txid = { this.state.txid }
+                            confirmations = { this.state.confirmations }
                         />
                     </Form>
                 </Modal.Body>

@@ -89,11 +89,13 @@ export default class UserPending extends Component {
         let status;
         let proof;
         let rawtx;
-        
+
         try {
             status = await this.props.btcProvider.getStatusTransaction(txid);
-            proof = await this.props.btcProvider.getMerkleProof(txid);
-            rawtx = await this.props.btcProvider.getRawTransaction(txid);
+            if (status.confirmed) {
+              proof = await this.props.btcProvider.getMerkleProof(txid);
+              rawtx = await this.props.btcProvider.getRawTransaction(txid);
+            }
         } catch(error) {
             console.log(error);
             showFailureToast(this.props.toast, 'Error fetching transaction...', 3000);
@@ -127,13 +129,13 @@ export default class UserPending extends Component {
         })
     }
 
-    loadPending() {     
+    loadPending() {
         if (this.state.loaded) {
             let options = this.props.storage.getPendingOptions();
             return options.map((pendingOption, index) => {
                 if (!pendingOption) return null;
                 const { amountBtc, recipient, option, txid, confirmations } = pendingOption;
-                
+
                 return <Dropdown.Item key={txid} onClick={() => this.showModal({amountBtc, recipient, option, txid, confirmations}, index)}>{amountBtc} BTC - {recipient}</Dropdown.Item>
             });
         }
@@ -145,7 +147,7 @@ export default class UserPending extends Component {
                 <DropdownButton title="Pending">
                     {this.loadPending()}
                 </DropdownButton>
-                <ExerciseModal 
+                <ExerciseModal
                     {...this.props}
                     hide={this.hideModel}
                     reloadPurchased={this.props.reloadPurchased}
