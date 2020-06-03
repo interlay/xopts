@@ -129,9 +129,10 @@ class OptionList extends Component {
                     percentInsured = (totalSupplyLocked.div(totalSupply)).mul(100);
                 }
                 let currentDate = Math.floor(Date.now() / 1000);
-
+                
                 return (
-                    <tr key={contract} disabled={expiry < currentDate}>
+                    // Hide expired options
+                    <tr key={contract} hidden={expiry < currentDate}>
 
                         <td>{id}</td>
                         <td>{new Date(expiry * 1000).toLocaleString()}
@@ -229,9 +230,6 @@ class OptionList extends Component {
                             </Table>
                         </Row>
                     </Card.Body>
-                    <Card.Footer>
-                        <Balance {...this.props}/>
-                    </Card.Footer>
                 </Card>
                 <Modal
                     size="lg"
@@ -253,3 +251,10 @@ class OptionList extends Component {
 }
 
 export default withRouter(OptionList);
+
+
+/*
+                    <Card.Footer>
+                        <Balance {...this.props}/>
+                    </Card.Footer>
+                    */

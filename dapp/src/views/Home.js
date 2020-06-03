@@ -19,7 +19,11 @@ class Home extends Component {
             <h2>Buy and Sell Put Options</h2>
             <p className="lead text-muted">Available Markets:</p>
             <h4> BTC <Image src={bitcoinImg}/> - DAI <Image src={daiImg} /></h4>
-            
+            <a className="nav-link" href="https://www.cryptocompare.com/" target="__blank"> 
+            {this.props.btcPrices.dai} BTC/DAI  &nbsp; - &nbsp;
+            {this.props.btcPrices.usd} BTC/USD &nbsp; - &nbsp;
+            {this.props.daiPrices.usd} DAI/USD
+            </a>
           </Container>
         </section>
         

@@ -1,11 +1,10 @@
 import React, { Component } from "react";
-import { Col, Container, Row, Table } from "react-bootstrap";
-import { fetchJson } from "ethers/utils";
-import OptionList from "../components/OptionList.js"
+import { Container, Image } from "react-bootstrap";
 import UserPurchasedOptions from "../components/UserPurchasedOptions.js";
 import UserSoldOptions from "../components/UserSoldOptions.js";
 import { Redirect } from "react-router-dom";
-
+import bitcoinImg from "../assets/img/icons/32/btc.png";
+import daiImg from "../assets/img/icons/32/dai.png";
 export default class Dashboard extends Component {
 
   componentDidMount(){
@@ -22,6 +21,12 @@ export default class Dashboard extends Component {
           <div className="container">
             <h2>Your Options</h2>
             <p className="lead text-muted">Account: {this.props.address} </p>
+            <h4> BTC <Image src={bitcoinImg}/> - DAI <Image src={daiImg} /></h4>
+            <a className="nav-link" href="https://www.cryptocompare.com/" target="__blank"> 
+            {this.props.btcPrices.dai} BTC/DAI  &nbsp; - &nbsp;
+            {this.props.btcPrices.usd} BTC/USD &nbsp; - &nbsp;
+            {this.props.daiPrices.usd} DAI/USD
+            </a>
           </div>
         </section>
         <Container fluid>
