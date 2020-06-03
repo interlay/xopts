@@ -15,6 +15,7 @@ export class Storage {
   //   amountBtc: number,
   //   recipient: string, // btc address of the recipient/seller
   //   option: string, // the deployed address of the option contract
+  //   optionId: string, // the ticker id of the option contract
   //   txid: string, // the id of the btc transaction
   //   confirmations: number, // current number of confirmations
   //   pending: bool, // has this option been exercised
@@ -26,6 +27,19 @@ export class Storage {
       return pendingOptions;
     }
     return [];
+  }
+
+  getPendingOptionsAsMap() {
+    return this.pendingOptions.reduce(function(map, obj) {
+      map[obj.recipient] = obj;
+      return map;
+    }, {});
+  }
+
+  getPendingOptionsForOption(option) {
+    return this.pendingOptions.filter((opt) => {
+      return opt.option == option;
+    });
   }
 
   getPendingOptionsWithoutTxId() {
@@ -65,11 +79,12 @@ export class Storage {
   }
 
   // stores an array of pending options
-  setPendingOptions(amountBtc, recipient, option, txid, confirmations) {
+  setPendingOptions(amountBtc, recipient, option, optionId, txid, confirmations) {
     let pendingOption = {
       amountBtc: amountBtc,
       recipient: recipient,
       option: option,
+      optionId: optionId,
       txid: txid,
       confirmations: confirmations,
       pending: true,

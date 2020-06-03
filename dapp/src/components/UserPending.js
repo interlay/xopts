@@ -1,11 +1,10 @@
 import React, { Component } from "react";
-import { Dropdown, DropdownButton, Modal, Button, ListGroup, ListGroupItem, FormGroup, Form } from "react-bootstrap";
+import { Modal, ListGroup, ListGroupItem, FormGroup, Form } from "react-bootstrap";
 import { SpinButton } from "./SpinButton";
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { ethers } from "ethers";
 import { FaTrash, FaCheck } from "react-icons/fa";
-
-const REQUIRED_CONFIRMATIONS = 6;
+import { STABLE_CONFIRMATIONS } from '../controllers/bitcoin-data';
 
 class ExerciseModal extends Component {
     constructor(props) {
@@ -129,6 +128,7 @@ export default class UserPending extends Component {
         this.setState({
             showModal: false,
         })
+        this.props.reloadPending();
     }
 
     removePendingOption(index) {
@@ -142,38 +142,48 @@ export default class UserPending extends Component {
             let options = this.props.storage.getPendingOptions();
             return options.map((pendingOption, index) => {
                 if (!pendingOption) return null;
-                const { amountBtc, recipient, option, txid, confirmations } = pendingOption;
+                const { amountBtc, recipient, option, optionId, txid, confirmations } = pendingOption;
 
                 return (
                     <ListGroup key={txid + recipient} horizontal className="my-2">
                         <ListGroup.Item 
                             action
                             disabled
-                            active={confirmations >= REQUIRED_CONFIRMATIONS}
+                            className="text-center"
+                            active={confirmations >= STABLE_CONFIRMATIONS}
                         >
-                            {amountBtc} BTC
+                            {optionId}
                         </ListGroup.Item>
                         <ListGroup.Item 
                             action
                             disabled
-                            active={confirmations >= REQUIRED_CONFIRMATIONS}
+                            className="text-center"
+                            active={confirmations >= STABLE_CONFIRMATIONS}
                         >
                             {recipient}
                         </ListGroup.Item>
+                        <ListGroup.Item 
+                            action
+                            disabled
+                            className="text-center"
+                            active={confirmations >= STABLE_CONFIRMATIONS}
+                        >
+                            {amountBtc} BTC
+                        </ListGroup.Item>
                         <ListGroup.Item
                             action
-                            disabled={confirmations < REQUIRED_CONFIRMATIONS}
+                            disabled={confirmations < STABLE_CONFIRMATIONS}
                             className="w-25 text-center"
                             onClick={() => this.showModal({amountBtc, recipient, option, txid, confirmations}, index)}
                         >
-                            <FaCheck/>
+                            Exercise <FaCheck/>
                         </ListGroup.Item>
                         <ListGroup.Item
                             action
                             className="w-25 text-center"
                             onClick={() => this.removePendingOption(index)}
                         >
-                            <FaTrash/>
+                            Remove <FaTrash/>
                         </ListGroup.Item>
                     </ListGroup>
                   );

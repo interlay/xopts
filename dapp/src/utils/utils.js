@@ -43,3 +43,11 @@ export function calculateAvailableBTC(amount, strikePrice) {
 export function calculatePremium(amount, premium) {
 	return newBig(amount).mul(premium);
 }
+
+export function btcPutOptionId(unixTimestamp, strikePrice) {
+    var date = new Date(unixTimestamp * 1000);
+    const day = date.getDate();
+    const month = date.toLocaleString('default', { month: 'short' });
+    const year = date.getFullYear();
+    return "BTC" + day.toString() + month.toUpperCase() + year.toString().slice(2) + "P" + strikePrice;
+}

@@ -5,6 +5,7 @@ import QRCode from "react-qr-code";
 import * as utils from '../utils/utils.js';
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { withRouter } from 'react-router-dom';
+import { pollAndUpdateConfirmations } from '../utils/poll';
 
 class SelectSeller extends React.Component {
     constructor(props) {
@@ -13,20 +14,21 @@ class SelectSeller extends React.Component {
             loaded: false,
             sellers: [],
             options: [],
+            pending: {},
         };
     }
 
     async componentDidMount() {
-        if (this.props.contract && this.props.contracts && !this.state.loaded) {
+        if (this.props.contract && this.props.contracts && this.props.storage && !this.state.loaded) {
             // load the option contract selected by the user
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             // get the seller and options denoted in a amountBtc of satoshi from a single option contract
             let [sellers, options] = await optionContract.getOptionOwnersFor(this.props.address);
-            console.log(options);
             this.setState({
                 loaded: true,
                 sellers: sellers,
                 options: options,
+                pending: this.props.storage.getPendingOptionsAsMap(),
             });
         }
     }
@@ -38,6 +40,7 @@ class SelectSeller extends React.Component {
             let amountBtc = utils.satToBtc(utils.newBig(this.state.options[index].toString()));
             let addressShow = address.substr(0, 10) + '...';
 
+            if (this.state.pending[seller]) return null;
             return (
                 <option key={address} value={address} onClick={() => this.props.updateAmount(amountBtc)}>{amountBtc.toString()} BTC (Seller: {addressShow})</option>
             );
@@ -89,9 +92,7 @@ class ScanBTC extends React.Component {
             let amountDai = amountOptions;
 
             let btcAddress = ethers.utils.toUtf8String(ethers.utils.hexlify(btcAddressRaw));
-
             let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amountBtc;
-
 
             // check if there is already a matching tx
             let txid = this.props.storage.getMatchingTxId(this.props.amountBtc, btcAddress, this.props.contract);
@@ -102,6 +103,9 @@ class ScanBTC extends React.Component {
                 txid: txid,
               })
             }
+
+            expiry = parseInt(expiry.toString());
+            strikePrice = utils.weiDaiToBtc(utils.newBig(strikePrice.toString()));
 
             // set the local state
             this.setState({
@@ -120,8 +124,9 @@ class ScanBTC extends React.Component {
             this.props.updateOption(this.props.contract);
             this.props.updateTxId(txid);
             this.props.updateConfirmations(0);
+            this.props.updateStrikePrice(strikePrice);
+            this.props.updateExpiry(expiry);
 
-            console.log("Updating state from Scan QR");
             // store the current exercise request in storage
             // this.props.storage.setPendingOptions(
             //   this.props.amountBtc,
@@ -162,25 +167,6 @@ class ScanBTC extends React.Component {
 class SubmitProof extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            progress: 0
-        }
-    }
-
-    componentDidMount() {
-        let proofCountdown = setInterval(() => {
-            this.setState({
-                progress: this.state.progress + 10
-            })
-            if (this.state.progress >= 100) clearInterval(proofCountdown);
-        }, 1000);
-    }
-
-    componentDidUpdate() {
-        console.log(this.props.storage.getPendingOptions());
-        if (this.state.progress >= 100) {
-
-        }
     }
 
     render() {
@@ -242,7 +228,7 @@ class ExerciseWizard extends Component {
             option: "",
             expiry: 0,
             premium: 0,
-            strikePrice: 0,
+            strikePrice: utils.newBig(0),
             txid: "",
             confirmations: 0,
         };
@@ -253,6 +239,9 @@ class ExerciseWizard extends Component {
         this.updateOption = this.updateOption.bind(this)
         this.updateTxId = this.updateTxId.bind(this)
         this.updateConfirmations = this.updateConfirmations.bind(this)
+        this.updateStrikePrice = this.updateStrikePrice.bind(this)
+        this.updateExpiry = this.updateExpiry.bind(this)
+
     }
 
     handleChange(event) {
@@ -292,6 +281,19 @@ class ExerciseWizard extends Component {
       });
     }
 
+    updateStrikePrice(s) {
+        this.setState({
+            strikePrice: s
+        });
+    }
+
+    updateExpiry(e) {
+        this.setState({
+            expiry: e
+        });
+    }
+
+
     isValid(step) {
         if (step == 0 && this.state.seller == "") {
             return false;
@@ -309,9 +311,10 @@ class ExerciseWizard extends Component {
         }
         // store txid to local storage
         // store a mapping of the option to the txid
-        const { seller, amountBtc, txid } = this.state;
+        const { seller, amountBtc, txid, expiry, strikePrice } = this.state;
+        const optionId = utils.btcPutOptionId(expiry, strikePrice.toString());
         try {
-            this.props.storage.setPendingOptions(amountBtc, seller, this.props.contract, txid, 0);
+            this.props.storage.setPendingOptions(amountBtc, seller, this.props.contract, optionId, txid, 0);
             showSuccessToast(this.props.toast, 'Awaiting verification!', 3000);
             this.props.hide();
             this.forceUpdate();
@@ -319,7 +322,8 @@ class ExerciseWizard extends Component {
                 let txStatus = await this.props.btcProvider.getStatusTransaction(txid);
                 this.props.storage.modifyPendingOptionsWithTxID(txid, "confirmations", txStatus.confirmations);
             } catch(error) {}
-          
+
+            pollAndUpdateConfirmations(this.props.btcProvider, this.props.storage, txid);
             this.props.history.push("/pending");
         } catch (error) {
             console.log(error);
@@ -404,6 +408,8 @@ class ExerciseWizard extends Component {
                             updateOption = {this.updateOption}
                             updateTxId = {this.updateTxId}
                             updateConfirmations = {this.updateConfirmations}
+                            updateStrikePrice = {this.updateStrikePrice}
+                            updateExpiry = {this.updateExpiry}
                             contract={this.props.contract}
                             contracts={this.props.contracts}
                             storage={this.props.storage}

@@ -100,14 +100,20 @@ export default class UserPurchasedOptions extends Component {
         return options;
     }
 
+    // TODO: fetch number of sellers
+    hasNonPendingSellers(contract, numSellers) {
+        return this.props.storage.getPendingOptionsForOption(contract).length != numSellers;
+    }
+
     renderTableData() {
         if (this.state.purchasedOptions.length > 0) {
             return this.state.purchasedOptions.map((option, index) => {
                 const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, income, btcInsured, premiumPaid, totalSupplyUnlocked, contract } = option;
-
+                const id = utils.btcPutOptionId(expiry, strikePrice.toString());
                 let percentInsured = ((totalSupply.lte(0)) ? utils.newBig(0) : (totalSupplyLocked.div(totalSupply)).mul(100));
                 return (
-                    <tr key={strikePrice.toString()}>
+                    <tr key={contract}>
+                        <td>{id}</td>
                         <td>{new Date(expiry * 1000).toLocaleString()}</td>
                         <td>{strikePrice.toString()} DAI</td>
                         <td><span className={(income >= 0.0 ? "text-success" : "text-danger")}>{spotPrice.toString()}</span> DAI</td>
@@ -119,7 +125,10 @@ export default class UserPurchasedOptions extends Component {
                           </strong> DAI </td>
 
                         <td>
-                            <Button variant="outline-success" onClick={() => { this.showExerciseModel(option.contract) }}>
+                            <Button 
+                                variant="outline-success"
+                                // disabled={!this.hasNonPendingSellers(contract, 1)}
+                                onClick={() => { this.showExerciseModel(option.contract) }}>
                                 Exercise
                             </Button>
                         </td>
@@ -181,7 +190,7 @@ export default class UserPurchasedOptions extends Component {
                                 </Row>
                             }
                             {this.state.purchasedLoaded &&
-                                <Row className="text-left">
+                                <Row className="text-center">
                                     <Col>
                                         <h3>{this.state.totalInsured.round(2, 0).toString()} BTC</h3>
                                         <h6>Insured</h6>
@@ -204,12 +213,13 @@ export default class UserPurchasedOptions extends Component {
                                 <Table hover responsive>
                                     <thead>
                                         <tr>
+                                            <th>ID</th>
                                             <th>Expiry</th>
                                             <th>Strike Price</th>
                                             <th>Current Price</th>
                                             <th>Insurance Issued</th>
                                             <th>Premium Paid</th>
-                                            <th>Earnings / Losses</th>
+                                            <th>Potential Earnings / Losses</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>

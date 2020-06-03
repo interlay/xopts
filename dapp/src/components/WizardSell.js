@@ -174,8 +174,8 @@ class SellWizard extends React.Component {
     } catch(error) {
       console.log(error);
       showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
+      this.setState({spinner: false});
     }
-    this.setState({spinner: false});
   }
 
   _next() {

@@ -22,6 +22,7 @@ import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
 import { Storage } from './controllers/storage.js';
 import Pending from "./views/Pending";
+import { pollPendingConfirmations } from './utils/poll';
 
 const INFURA_API_TOKEN = "cffc5fafb168418abcd50a3309eed8be";
 
@@ -202,23 +203,6 @@ class App extends Component {
       </Router>
     )
   }
-}
-
-function pollPendingConfirmations(bitcoin, storage) {
-  storage.getPendingOptions().map((option, _) => {
-    pollAndUpdateConfirmations(bitcoin, storage, option.txid);
-  })
-}
-
-// Continually checks if a transaction is included and
-// updates the number of confirmations
-function pollAndUpdateConfirmations(bitcoin, storage, txid) {
-  setInterval(async function() {
-    try {
-      let txStatus = await bitcoin.getStatusTransaction(txid);
-      storage.modifyPendingOptionsWithTxID(txid, "confirmations", txStatus.confirmations);
-    } catch(error) {}
-  }, 30000);
 }
 
 ReactDOM.render(<App />, document.getElementById("root"));
