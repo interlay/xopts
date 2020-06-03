@@ -1,3 +1,5 @@
+export const STABLE_CONFIRMATIONS = 6;
+
 export class BitcoinQuery {
 
   constructor() {

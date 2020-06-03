@@ -122,6 +122,7 @@ class OptionList extends Component {
         if (this.state.loaded) {
             return this.state.options.map((option, index) => {
                 const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked, contract } = option;
+                const id = utils.btcPutOptionId(expiry, strikePrice.toString());
 
                 let percentInsured = utils.newBig(0);
                 if (totalSupply > 0) {
@@ -130,7 +131,9 @@ class OptionList extends Component {
                 let currentDate = Math.floor(Date.now() / 1000);
 
                 return (
-                    <tr key={strikePrice} disabled={expiry < currentDate}>
+                    <tr key={contract} disabled={expiry < currentDate}>
+
+                        <td>{id}</td>
                         <td>{new Date(expiry * 1000).toLocaleString()}
                             {(expiry < currentDate) &&
                                 <b> (Expired)</b>
@@ -211,6 +214,7 @@ class OptionList extends Component {
                             <Table hover responsive size={"md"}>
                                 <thead>
                                     <tr>
+                                        <th>ID</th>
                                         <th>Expiry</th>
                                         <th>Strike Price</th>
                                         <th>Current Price</th>

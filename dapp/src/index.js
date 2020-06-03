@@ -21,6 +21,8 @@ import Topbar from "./components/Topbar";
 import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
 import { Storage } from './controllers/storage.js';
+import Pending from "./views/Pending";
+import { pollPendingConfirmations } from './utils/poll';
 
 const INFURA_API_TOKEN = "cffc5fafb168418abcd50a3309eed8be";
 
@@ -37,6 +39,7 @@ class App extends Component {
       btcProvider: null,
       contracts: null,
       storage: null,
+      hasPendingOptions: () => false,
       btcPrices: {
         dai: null,
         usd: null,
@@ -67,7 +70,7 @@ class App extends Component {
     }
     // Check if user is already logged in
     await this.tryLogIn(false);
-    
+
     if (!this.state.isLoggedIn) {
       // Connect to infura
       let provider = await new ethers.providers.InfuraProvider('ropsten', INFURA_API_TOKEN);
@@ -114,8 +117,10 @@ class App extends Component {
         address: address,
         contracts: contracts,
         storage: storage,
+        hasPendingOptions: storage.hasPendingOptions.bind(storage),
         btcProvider: btcProvider,
       });
+      pollPendingConfirmations(btcProvider, storage);
     } catch (error) {
       // Otherwise, fetch contracts in read-only mode
       contracts = new Contracts(provider, network);
@@ -173,8 +178,8 @@ class App extends Component {
 
   async getStorageProvider(address) {
     this.storage = new Storage(address);
+    // this.storage.clearPendingOptions();
   }
-
 
   render() {
     return (
@@ -189,12 +194,15 @@ class App extends Component {
             <Dashboard {...this.state} />
           </Route>
 
+          <Route path="/pending">
+            <Pending {...this.state} />
+          </Route>
+
           <Route path="/market" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
         </Switch>
       </Router>
     )
   }
 }
-
 
 ReactDOM.render(<App />, document.getElementById("root"));

@@ -1,8 +1,10 @@
 import React, { Component } from "react";
-import { Dropdown, DropdownButton, Modal, Button, ListGroup, ListGroupItem, FormGroup, Form } from "react-bootstrap";
+import { Modal, ListGroup, ListGroupItem, FormGroup, Form } from "react-bootstrap";
 import { SpinButton } from "./SpinButton";
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { ethers } from "ethers";
+import { FaTrash, FaCheck } from "react-icons/fa";
+import { STABLE_CONFIRMATIONS } from '../controllers/bitcoin-data';
 
 class ExerciseModal extends Component {
     constructor(props) {
@@ -24,7 +26,6 @@ class ExerciseModal extends Component {
             this.props.storage.removePendingOption(this.props.index);
             this.props.hide();
             this.forceUpdate();
-            this.props.reloadPurchased();
         } catch (error) {
             console.log(error);
             showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
@@ -89,11 +90,13 @@ export default class UserPending extends Component {
         let status;
         let proof;
         let rawtx;
-        
+
         try {
             status = await this.props.btcProvider.getStatusTransaction(txid);
-            proof = await this.props.btcProvider.getMerkleProof(txid);
-            rawtx = await this.props.btcProvider.getRawTransaction(txid);
+            if (status.confirmed) {
+              proof = await this.props.btcProvider.getMerkleProof(txid);
+              rawtx = await this.props.btcProvider.getRawTransaction(txid);
+            }
         } catch(error) {
             console.log(error);
             showFailureToast(this.props.toast, 'Error fetching transaction...', 3000);
@@ -125,16 +128,65 @@ export default class UserPending extends Component {
         this.setState({
             showModal: false,
         })
+        this.props.reloadPending();
     }
 
-    loadPending() {     
+    removePendingOption(index) {
+        this.props.storage.removePendingOption(index);
+        this.forceUpdate();
+        this.props.reloadPending();
+    }
+
+    loadPending() {
         if (this.state.loaded) {
             let options = this.props.storage.getPendingOptions();
             return options.map((pendingOption, index) => {
                 if (!pendingOption) return null;
-                const { amountBtc, recipient, option, txid, confirmations } = pendingOption;
-                
-                return <Dropdown.Item key={txid} onClick={() => this.showModal({amountBtc, recipient, option, txid, confirmations}, index)}>{amountBtc} BTC - {recipient}</Dropdown.Item>
+                const { amountBtc, recipient, option, optionId, txid, confirmations } = pendingOption;
+
+                return (
+                    <ListGroup key={txid + recipient} horizontal className="my-2">
+                        <ListGroup.Item 
+                            action
+                            disabled
+                            className="text-center"
+                            active={confirmations >= STABLE_CONFIRMATIONS}
+                        >
+                            {optionId}
+                        </ListGroup.Item>
+                        <ListGroup.Item 
+                            action
+                            disabled
+                            className="text-center"
+                            active={confirmations >= STABLE_CONFIRMATIONS}
+                        >
+                            {recipient}
+                        </ListGroup.Item>
+                        <ListGroup.Item 
+                            action
+                            disabled
+                            className="text-center"
+                            active={confirmations >= STABLE_CONFIRMATIONS}
+                        >
+                            {amountBtc} BTC
+                        </ListGroup.Item>
+                        <ListGroup.Item
+                            action
+                            disabled={confirmations < STABLE_CONFIRMATIONS}
+                            className="w-25 text-center"
+                            onClick={() => this.showModal({amountBtc, recipient, option, txid, confirmations}, index)}
+                        >
+                            Exercise <FaCheck/>
+                        </ListGroup.Item>
+                        <ListGroup.Item
+                            action
+                            className="w-25 text-center"
+                            onClick={() => this.removePendingOption(index)}
+                        >
+                            Remove <FaTrash/>
+                        </ListGroup.Item>
+                    </ListGroup>
+                  );
             });
         }
     }
@@ -142,13 +194,12 @@ export default class UserPending extends Component {
     render() {
         return (
             <div>
-                <DropdownButton title="Pending">
+                <ListGroup>
                     {this.loadPending()}
-                </DropdownButton>
-                <ExerciseModal 
+                </ListGroup>
+                <ExerciseModal
                     {...this.props}
                     hide={this.hideModel}
-                    reloadPurchased={this.props.reloadPurchased}
                     show={this.state.showModal}
                     tx={this.state.tx}
                     index={this.state.index}

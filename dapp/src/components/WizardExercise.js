@@ -1,10 +1,11 @@
 import React, { Component } from "react";
-import { Col, Container, Row, Form, Button, Modal, FormGroup } from "react-bootstrap";
+import { Col, ListGroup, ListGroupItem, Container, Row, Form, Button, Modal, FormGroup } from "react-bootstrap";
 import { ethers } from 'ethers';
 import QRCode from "react-qr-code";
 import * as utils from '../utils/utils.js';
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { withRouter } from 'react-router-dom';
+import { pollAndUpdateConfirmations } from '../utils/poll';
 
 class SelectSeller extends React.Component {
     constructor(props) {
@@ -13,20 +14,21 @@ class SelectSeller extends React.Component {
             loaded: false,
             sellers: [],
             options: [],
+            pending: {},
         };
     }
 
     async componentDidMount() {
-        if (this.props.contract && this.props.contracts && !this.state.loaded) {
-            // load the option contract
+        if (this.props.contract && this.props.contracts && this.props.storage && !this.state.loaded) {
+            // load the option contract selected by the user
             let optionContract = this.props.contracts.attachOption(this.props.contract);
-            // get the seller and options denoted in a amount of satoshi
+            // get the seller and options denoted in a amountBtc of satoshi from a single option contract
             let [sellers, options] = await optionContract.getOptionOwnersFor(this.props.address);
-            console.log(options);
             this.setState({
                 loaded: true,
                 sellers: sellers,
                 options: options,
+                pending: this.props.storage.getPendingOptionsAsMap(),
             });
         }
     }
@@ -34,10 +36,11 @@ class SelectSeller extends React.Component {
     renderOptions() {
         return this.state.sellers.map((seller, index) => {
             let address = seller.toString();
-            // convert the satoshi amount into a BTC amount
+            // convert the satoshi amountBtc into a BTC amount
             let amountBtc = utils.satToBtc(utils.newBig(this.state.options[index].toString()));
             let addressShow = address.substr(0, 10) + '...';
 
+            if (this.state.pending[seller]) return null;
             return (
                 <option key={address} value={address} onClick={() => this.props.updateAmount(amountBtc)}>{amountBtc.toString()} BTC (Seller: {addressShow})</option>
             );
@@ -70,22 +73,68 @@ class ScanBTC extends React.Component {
         super(props);
         this.state = {
             loaded: false,
-            paymentUri: ''
+            paymentUri: '',
+            selectionHasTxId: false
         };
     }
 
     async componentDidUpdate() {
-        if (this.props.contract && this.props.contracts && this.props.seller && !this.state.loaded) {
+        if (this.props.contract && this.props.contracts && this.props.seller && this.props.storage && !this.state.loaded) {
+            // get all the info from the selected contract to store this into storage
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
+            let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getDetails();
+
+            // strike price is denoted in weiDai per satoshi
+            let amountBtcInSat = utils.btcToSat(this.props.amountBtc);
+            let amountOptions = utils.newBig(amountBtcInSat || 0).mul(strikePrice);
+            // exchange rate between option and dai is 1:1
+            let amountDai = amountOptions;
+
             let btcAddress = ethers.utils.toUtf8String(ethers.utils.hexlify(btcAddressRaw));
+            let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amountBtc;
 
-            let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amount;
+            // check if there is already a matching tx
+            let txid = this.props.storage.getMatchingTxId(this.props.amountBtc, btcAddress, this.props.contract);
 
+            if (txid) {
+              this.setState({
+                selectionHasTxId: true,
+                txid: txid,
+              })
+            }
+
+            expiry = parseInt(expiry.toString());
+            strikePrice = utils.weiDaiToBtc(utils.newBig(strikePrice.toString()));
+
+            // set the local state
             this.setState({
                 loaded: true,
-                paymentUri: paymentUri
+                paymentUri: paymentUri,
+                recipient: btcAddress,
+                option: this.props.contract,
+                expiry: expiry,
+                premium: premium,
+                strikePrice: strikePrice,
+                amountOptions: amountOptions,
+                amountDai: amountDai,
             });
+            // set the wizard state
+            this.props.updateRecipient(btcAddress);
+            this.props.updateOption(this.props.contract);
+            this.props.updateTxId(txid);
+            this.props.updateConfirmations(0);
+            this.props.updateStrikePrice(strikePrice);
+            this.props.updateExpiry(expiry);
+
+            // store the current exercise request in storage
+            // this.props.storage.setPendingOptions(
+            //   this.props.amountBtc,
+            //   this.props.recipient,
+            //   this.props.option,
+            //   this.props.txid,
+            //   this.props.confirmations,
+            // );
         }
     }
 
@@ -95,15 +144,21 @@ class ScanBTC extends React.Component {
         }
         return (
             <FormGroup>
-                <Row className="justify-content-md-center">
+              <h5>Payment</h5>
+                  <Row className="justify-content-md-center">
                     <Col md="auto" className="text-center">
-                        <p>To exercise the option, please make the following Bitcoin payment</p>
+                        <p>To exercise the option, please make the following Bitcoin payment with a wallet of your choice.</p>
                         <QRCode value={this.state.paymentUri} />
-                    <p>
-                      Show detail: how much dai in return, BTC address, BTC amount etc.
-                    </p>
                     </Col>
                 </Row>
+              <h5>Summary</h5>
+                <FormGroup>
+                    <ListGroup>
+                      <ListGroupItem>Sending: <strong>{this.props.amountBtc.toString()} BTC</strong></ListGroupItem>
+                      <ListGroupItem>Address: <strong>{this.state.recipient}</strong></ListGroupItem>
+                      <ListGroupItem>Receiving: <strong>{utils.weiDaiToDai(this.state.amountOptions).toString()} DAI</strong></ListGroupItem>
+                    </ListGroup>
+                </FormGroup>
             </FormGroup>
         )
     }
@@ -112,24 +167,6 @@ class ScanBTC extends React.Component {
 class SubmitProof extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            progress: 0
-        }
-    }
-
-    componentDidMount() {
-        let proofCountdown = setInterval(() => {
-            this.setState({
-                progress: this.state.progress + 10
-            })
-            if (this.state.progress >= 100) clearInterval(proofCountdown);
-        }, 1000);
-    }
-
-    componentDidUpdate() {
-        if (this.state.progress >= 100) {
-
-        }
     }
 
     render() {
@@ -183,13 +220,28 @@ class ExerciseWizard extends Component {
         super(props);
         this.state = {
             currentStep: 1,
-            amount: 0,
             seller: "",
+            amountOptions: 0,
+            amountDai: 0,
+            amountBtc: utils.newBig(0),
+            recipient: "",
+            option: "",
+            expiry: 0,
+            premium: 0,
+            strikePrice: utils.newBig(0),
             txid: "",
+            confirmations: 0,
         };
 
         this.handleChange = this.handleChange.bind(this)
         this.updateAmount = this.updateAmount.bind(this)
+        this.updateRecipient = this.updateRecipient.bind(this)
+        this.updateOption = this.updateOption.bind(this)
+        this.updateTxId = this.updateTxId.bind(this)
+        this.updateConfirmations = this.updateConfirmations.bind(this)
+        this.updateStrikePrice = this.updateStrikePrice.bind(this)
+        this.updateExpiry = this.updateExpiry.bind(this)
+
     }
 
     handleChange(event) {
@@ -201,9 +253,46 @@ class ExerciseWizard extends Component {
 
     updateAmount(i) {
         this.setState({
-            amount: i
+            amountBtc: i
         });
     }
+
+    updateRecipient(r) {
+      this.setState({
+        recipient: r
+      });
+    }
+
+    updateOption(o) {
+      this.setState({
+        option: o
+      });
+    }
+
+    updateTxId(t) {
+      this.setState({
+        txid: t
+      });
+    }
+
+    updateConfirmations(c) {
+      this.setState({
+        confirmations: c
+      });
+    }
+
+    updateStrikePrice(s) {
+        this.setState({
+            strikePrice: s
+        });
+    }
+
+    updateExpiry(e) {
+        this.setState({
+            expiry: e
+        });
+    }
+
 
     isValid(step) {
         if (step == 0 && this.state.seller == "") {
@@ -222,13 +311,20 @@ class ExerciseWizard extends Component {
         }
         // store txid to local storage
         // store a mapping of the option to the txid
-        const { seller, amount, txid } = this.state;
+        const { seller, amountBtc, txid, expiry, strikePrice } = this.state;
+        const optionId = utils.btcPutOptionId(expiry, strikePrice.toString());
         try {
-            this.props.storage.setPendingOptions(amount, seller, this.props.contract, txid, 0);
+            this.props.storage.setPendingOptions(amountBtc, seller, this.props.contract, optionId, txid, 0);
             showSuccessToast(this.props.toast, 'Awaiting verification!', 3000);
             this.props.hide();
             this.forceUpdate();
-            this.props.reloadPurchased();
+            try {
+                let txStatus = await this.props.btcProvider.getStatusTransaction(txid);
+                this.props.storage.modifyPendingOptionsWithTxID(txid, "confirmations", txStatus.confirmations);
+            } catch(error) {}
+
+            pollAndUpdateConfirmations(this.props.btcProvider, this.props.storage, txid);
+            this.props.history.push("/pending");
         } catch (error) {
             console.log(error);
             showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
@@ -296,10 +392,11 @@ class ExerciseWizard extends Component {
                             currentStep={this.state.currentStep}
                             handleChange={this.handleChange}
                             seller={this.state.seller}
-                            amount={this.state.amount}
+                            amountBtc={this.state.amountBtc}
                             updateAmount={this.updateAmount}
                             contract={this.props.contract}
                             contracts={this.props.contracts}
+                            storage={this.props.storage}
                             signer={this.props.signer}
                             address={this.props.address}
                         />
@@ -307,16 +404,34 @@ class ExerciseWizard extends Component {
                             currentStep={this.state.currentStep}
                             handleChange={this.handleChange}
                             updateAmount={this.updateAmount}
+                            updateRecipient = {this.updateRecipient}
+                            updateOption = {this.updateOption}
+                            updateTxId = {this.updateTxId}
+                            updateConfirmations = {this.updateConfirmations}
+                            updateStrikePrice = {this.updateStrikePrice}
+                            updateExpiry = {this.updateExpiry}
                             contract={this.props.contract}
                             contracts={this.props.contracts}
+                            storage={this.props.storage}
                             signer={this.props.signer}
                             seller={this.state.seller}
-                            amount={this.state.amount}
+                            amountBtc={this.state.amountBtc}
+                            recipient = {this.state.recipient}
+                            option = { this.state.option }
+                            txid = { this.state.txid }
+                            confirmations = { this.state.confirmations }
                         />
                         <SubmitProof
                             currentStep={this.state.currentStep}
                             handleChange={this.handleChange}
+                            updateTxId = {this.updateTxId}
                             seller={this.state.seller}
+                            storage={this.props.storage}
+                            amountBtc={this.state.amountBtc}
+                            recipient = {this.state.recipient}
+                            option = { this.state.option }
+                            txid = { this.state.txid }
+                            confirmations = { this.state.confirmations }
                         />
                     </Form>
                 </Modal.Body>

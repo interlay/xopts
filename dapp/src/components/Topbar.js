@@ -1,13 +1,11 @@
-import { Navbar, Nav, Badge, Image } from "react-bootstrap";
+import { Navbar, Nav, Badge, Image, Tooltip, OverlayTrigger } from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
 import xoptsLogo from "../assets/img/xopts.png";
-
-
+import { FaBell, FaGavel, FaUser } from 'react-icons/fa';
 
 class Web3LogIn extends Component {
-
 
   async logIn() {
     let web3 = window.web3;
@@ -48,6 +46,19 @@ class Web3LogIn extends Component {
 
 const Web3LogInWithRouter = withRouter (Web3LogIn);
 
+const NavigationOverlay = ({ tip, link, children }) => (
+  <OverlayTrigger
+    placement="bottom"
+    delay={{ show: 250, hide: 400 }}
+    overlay={
+      <Tooltip>
+        {tip}
+      </Tooltip>
+    }
+  >
+
+  </OverlayTrigger>
+)
 
 class TopBar extends Component {
   
@@ -60,20 +71,21 @@ class TopBar extends Component {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
             <Link className="nav-link" to="/market">
-                Market
+              Market <FaGavel/>
             </Link>
+
             {this.props.isLoggedIn &&
               <Link className="nav-link" to="/dashboard">
-                Account
-            </Link>
+                Options <FaUser/>
+              </Link>
             }
-            <a className="nav-link" href="https://www.cryptocompare.com/" target="__blank"> | &nbsp; Prices: &nbsp;
-            {this.props.btcPrices.dai} BTC/DAI, &nbsp;
-            {this.props.btcPrices.usd} BTC/USD, &nbsp;
-            {this.props.daiPrices.usd} DAI/USD
-            </a>
+
+            {this.props.isLoggedIn && this.props.hasPendingOptions() &&
+              <Link className="nav-link" to="/pending">
+                Pending <FaBell/>
+              </Link>
+            }
           </Nav>
-          
           <Nav>
             <Web3LogInWithRouter {...this.props} />
           </Nav>

@@ -41,7 +41,6 @@ export default class UserSoldOptions extends Component {
     }
 
     async getOptions(optionContracts) {
-        console.log(optionContracts);
         // Remove 0-value contracts
         for (var i = optionContracts[1].length - 1; i >= 0; i--) {
             if (parseInt(optionContracts[1][i]._hex) == 0) {
@@ -152,12 +151,13 @@ export default class UserSoldOptions extends Component {
             if (this.state.soldOptions.length > 0) {
                 return this.state.soldOptions.map((option, index) => {
                     const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, soldOptions, percentSold, income, btcInsured, premiumEarned, contract } = option;
-
+                    const id = utils.btcPutOptionId(expiry, strikePrice.toString());
                     let percentInsured = ((totalSupply.lte(0)) ? 0 : (totalSupplyLocked.div(totalSupply)).mul(100));
                     let currentDate = Math.floor(Date.now() / 1000);
                     let priceDiff = strikePrice-spotPrice;
                     return (
-                        <tr key={expiry}>
+                        <tr key={contract}>
+                            <td>{id}</td>
                             <td>{new Date(expiry * 1000).toLocaleString()}</td>
                             <td>{strikePrice.toString()} DAI</td>
                             <td><span  className={(income.gte(0) ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
@@ -218,7 +218,7 @@ export default class UserSoldOptions extends Component {
                                 </Row>
                             }
                             {this.state.soldLoaded &&
-                                <Row className="text-left">
+                                <Row className="text-center">
                                     <Col>
                                         <h3>{this.state.totalInsured.round(2, 0).toString()} DAI ({this.state.percentSold.round(2, 0).toString()}%)</h3>
                                         <h6>Insurance Sold</h6>
@@ -246,13 +246,14 @@ export default class UserSoldOptions extends Component {
                                 <Table hover responsive>
                                     <thead>
                                         <tr>
+                                            <th>ID</th>
                                             <th>Expiry</th>
                                             <th>Strike Price</th>
                                             <th>Current Price</th>
                                             <th>Your Sold</th>
                                             <th>Total Sold</th>
                                             <th>Premium Earned</th>
-                                            <th>Earnings</th>
+                                            <th>Potential Earnings</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
