@@ -3,6 +3,9 @@ import { Dropdown, DropdownButton, Modal, Button, ListGroup, ListGroupItem, Form
 import { SpinButton } from "./SpinButton";
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { ethers } from "ethers";
+import { FaTrash, FaCheck } from "react-icons/fa";
+
+const REQUIRED_CONFIRMATIONS = 6;
 
 class ExerciseModal extends Component {
     constructor(props) {
@@ -24,7 +27,6 @@ class ExerciseModal extends Component {
             this.props.storage.removePendingOption(this.props.index);
             this.props.hide();
             this.forceUpdate();
-            this.props.reloadPurchased();
         } catch (error) {
             console.log(error);
             showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
@@ -129,6 +131,12 @@ export default class UserPending extends Component {
         })
     }
 
+    removePendingOption(index) {
+        this.props.storage.removePendingOption(index);
+        this.forceUpdate();
+        this.props.reloadPending();
+    }
+
     loadPending() {
         if (this.state.loaded) {
             let options = this.props.storage.getPendingOptions();
@@ -136,7 +144,39 @@ export default class UserPending extends Component {
                 if (!pendingOption) return null;
                 const { amountBtc, recipient, option, txid, confirmations } = pendingOption;
 
-                return <Dropdown.Item key={txid} onClick={() => this.showModal({amountBtc, recipient, option, txid, confirmations}, index)}>{amountBtc} BTC - {recipient}</Dropdown.Item>
+                return (
+                    <ListGroup key={txid + recipient} horizontal className="my-2">
+                        <ListGroup.Item 
+                            action
+                            disabled
+                            active={confirmations >= REQUIRED_CONFIRMATIONS}
+                        >
+                            {amountBtc} BTC
+                        </ListGroup.Item>
+                        <ListGroup.Item 
+                            action
+                            disabled
+                            active={confirmations >= REQUIRED_CONFIRMATIONS}
+                        >
+                            {recipient}
+                        </ListGroup.Item>
+                        <ListGroup.Item
+                            action
+                            disabled={confirmations < REQUIRED_CONFIRMATIONS}
+                            className="w-25 text-center"
+                            onClick={() => this.showModal({amountBtc, recipient, option, txid, confirmations}, index)}
+                        >
+                            <FaCheck/>
+                        </ListGroup.Item>
+                        <ListGroup.Item
+                            action
+                            className="w-25 text-center"
+                            onClick={() => this.removePendingOption(index)}
+                        >
+                            <FaTrash/>
+                        </ListGroup.Item>
+                    </ListGroup>
+                  );
             });
         }
     }
@@ -144,13 +184,12 @@ export default class UserPending extends Component {
     render() {
         return (
             <div>
-                <DropdownButton title="Pending">
+                <ListGroup>
                     {this.loadPending()}
-                </DropdownButton>
+                </ListGroup>
                 <ExerciseModal
                     {...this.props}
                     hide={this.hideModel}
-                    reloadPurchased={this.props.reloadPurchased}
                     show={this.state.showModal}
                     tx={this.state.tx}
                     index={this.state.index}

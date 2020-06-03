@@ -1,13 +1,11 @@
-import { Navbar, Nav, Badge, Image } from "react-bootstrap";
+import { Navbar, Nav, Badge, Image, Tooltip, OverlayTrigger } from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
 import xoptsLogo from "../assets/img/xopts.png";
-
-
+import { FaBell, FaGavel, FaUser } from 'react-icons/fa';
 
 class Web3LogIn extends Component {
-
 
   async logIn() {
     let web3 = window.web3;
@@ -48,6 +46,21 @@ class Web3LogIn extends Component {
 
 const Web3LogInWithRouter = withRouter (Web3LogIn);
 
+const NavigationOverlay = ({ tip, link, children }) => (
+  <OverlayTrigger
+    placement="bottom"
+    delay={{ show: 250, hide: 400 }}
+    overlay={
+      <Tooltip>
+        {tip}
+      </Tooltip>
+    }
+  >
+    <Link className="nav-link" to={link}>
+      {children}
+    </Link>
+  </OverlayTrigger>
+)
 
 class TopBar extends Component {
   
@@ -59,13 +72,9 @@ class TopBar extends Component {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
-            <Link className="nav-link" to="/market">
-                Market
-            </Link>
+            <NavigationOverlay tip="Market" link="/market"><FaGavel/></NavigationOverlay>
             {this.props.isLoggedIn &&
-              <Link className="nav-link" to="/dashboard">
-                Account
-            </Link>
+              <NavigationOverlay tip="Account" link="/dashboard"><FaUser/></NavigationOverlay>
             }
             <a className="nav-link" href="https://www.cryptocompare.com/" target="__blank"> | &nbsp; Prices: &nbsp;
             {this.props.btcPrices.dai} BTC/DAI, &nbsp;
@@ -73,7 +82,11 @@ class TopBar extends Component {
             {this.props.daiPrices.usd} DAI/USD
             </a>
           </Nav>
-          
+          {this.props.isLoggedIn && this.props.hasPendingOptions() &&
+            <Nav>
+              <NavigationOverlay tip="Pending" link="/pending"><FaBell/></NavigationOverlay>
+            </Nav>
+          }
           <Nav>
             <Web3LogInWithRouter {...this.props} />
           </Nav>

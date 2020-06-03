@@ -82,21 +82,29 @@ export class Storage {
   // updates a pending option
   modifyPendingOption(index, key, value) {
     let pendingOption = this.pendingOptions[index];
-    for (var k of pendingOption.keys()) {
-      if (k === key) {
-        pendingOption[k] = value;
-        this.getPendingOptions[index] = pendingOption;
-        // update in storage
-        let pendingOptionsArray = JSON.stringify(this.pendingOptions);
-        localStorage.setItem(this.userAddress, pendingOptionsArray);
-        return;
+    pendingOption[key] = value;
+    this.getPendingOptions[index] = pendingOption;
+    // update in storage
+    let pendingOptionsArray = JSON.stringify(this.pendingOptions);
+    localStorage.setItem(this.userAddress, pendingOptionsArray);      
+  }
+
+  modifyPendingOptionsWithTxID(txid, key, value) {
+    let pendingOptions = this.getPendingOptions();
+    pendingOptions.map((option, index) => {
+      if (option.txid == txid) {
+        this.modifyPendingOption(index, key, value);
       }
-    }
+    })
   }
 
   removePendingOption(index) {
     this.pendingOptions.splice(index, 1);
     let pendingOptionsArray = JSON.stringify(this.pendingOptions);
     localStorage.setItem(this.userAddress, pendingOptionsArray);
+  }
+
+  hasPendingOptions() {
+    return this.pendingOptions.length > 0;
   }
 }

@@ -21,6 +21,7 @@ import Topbar from "./components/Topbar";
 import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
 import { Storage } from './controllers/storage.js';
+import Pending from "./views/Pending";
 
 const INFURA_API_TOKEN = "cffc5fafb168418abcd50a3309eed8be";
 
@@ -37,6 +38,7 @@ class App extends Component {
       btcProvider: null,
       contracts: null,
       storage: null,
+      hasPendingOptions: () => false,
       btcPrices: {
         dai: null,
         usd: null,
@@ -114,8 +116,10 @@ class App extends Component {
         address: address,
         contracts: contracts,
         storage: storage,
+        hasPendingOptions: storage.hasPendingOptions.bind(storage),
         btcProvider: btcProvider,
       });
+      pollPendingConfirmations(btcProvider, storage);
     } catch (error) {
       // Otherwise, fetch contracts in read-only mode
       contracts = new Contracts(provider, network);
@@ -173,9 +177,8 @@ class App extends Component {
 
   async getStorageProvider(address) {
     this.storage = new Storage(address);
-    this.storage.clearPendingOptions();
+    // this.storage.clearPendingOptions();
   }
-
 
   render() {
     return (
@@ -190,6 +193,10 @@ class App extends Component {
             <Dashboard {...this.state} />
           </Route>
 
+          <Route path="/pending">
+            <Pending {...this.state} />
+          </Route>
+
           <Route path="/market" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
         </Switch>
       </Router>
@@ -197,5 +204,21 @@ class App extends Component {
   }
 }
 
+function pollPendingConfirmations(bitcoin, storage) {
+  storage.getPendingOptions().map((option, _) => {
+    pollAndUpdateConfirmations(bitcoin, storage, option.txid);
+  })
+}
+
+// Continually checks if a transaction is included and
+// updates the number of confirmations
+function pollAndUpdateConfirmations(bitcoin, storage, txid) {
+  setInterval(async function() {
+    try {
+      let txStatus = await bitcoin.getStatusTransaction(txid);
+      storage.modifyPendingOptionsWithTxID(txid, "confirmations", txStatus.confirmations);
+    } catch(error) {}
+  }, 30000);
+}
 
 ReactDOM.render(<App />, document.getElementById("root"));

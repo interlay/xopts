@@ -12,7 +12,6 @@ export default class UserPurchasedOptions extends Component {
         this.state = {
             purchasedLoaded: false,
             purchasedOptions: [],
-            pendingOptions: [],
             totalInsured: utils.newBig(0),
             insuranceAvailable: utils.newBig(0),
             paidPremium: utils.newBig(0),
@@ -45,7 +44,6 @@ export default class UserPurchasedOptions extends Component {
             let purchasedOptions = await this.getOptions(optionContracts);
             this.setState({
                 purchasedOptions: purchasedOptions,
-                pendingOptions: this.props.storage.getPendingOptions(),
                 purchasedLoaded: true
             });
         }
@@ -221,11 +219,6 @@ export default class UserPurchasedOptions extends Component {
                                 </Table>
                             </Row>
                         </Card.Body>
-                    }
-                    {this.state.pendingOptions.length > 0 &&
-                        <Card.Footer>
-                            <UserPending toast={toast} reloadPurchased={this.reloadPurchased} {...this.props}/>
-                        </Card.Footer>
                     }
                 </Card>
 

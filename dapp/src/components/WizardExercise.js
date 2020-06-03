@@ -123,13 +123,13 @@ class ScanBTC extends React.Component {
 
             console.log("Updating state from Scan QR");
             // store the current exercise request in storage
-            this.props.storage.setPendingOptions(
-              this.props.amountBtc,
-              this.props.recipient,
-              this.props.option,
-              this.props.txid,
-              this.props.confirmations,
-            );
+            // this.props.storage.setPendingOptions(
+            //   this.props.amountBtc,
+            //   this.props.recipient,
+            //   this.props.option,
+            //   this.props.txid,
+            //   this.props.confirmations,
+            // );
         }
     }
 
@@ -149,9 +149,9 @@ class ScanBTC extends React.Component {
               <h5>Summary</h5>
                 <FormGroup>
                     <ListGroup>
-                      <ListGroupItem>Amount BTC: <strong>{this.props.amountBtc.toString()} BTC</strong></ListGroupItem>
-                      <ListGroupItem>BTC Address: <strong>{this.state.recipient}</strong></ListGroupItem>
-                      <ListGroupItem>DAI to receive: <strong>{utils.weiDaiToDai(this.state.amountOptions).toString()} DAI</strong></ListGroupItem>
+                      <ListGroupItem>Sending: <strong>{this.props.amountBtc.toString()} BTC</strong></ListGroupItem>
+                      <ListGroupItem>Address: <strong>{this.state.recipient}</strong></ListGroupItem>
+                      <ListGroupItem>Receiving: <strong>{utils.weiDaiToDai(this.state.amountOptions).toString()} DAI</strong></ListGroupItem>
                     </ListGroup>
                 </FormGroup>
             </FormGroup>
@@ -237,6 +237,7 @@ class ExerciseWizard extends Component {
             seller: "",
             amountOptions: 0,
             amountDai: 0,
+            amountBtc: utils.newBig(0),
             recipient: "",
             option: "",
             expiry: 0,
@@ -314,7 +315,12 @@ class ExerciseWizard extends Component {
             showSuccessToast(this.props.toast, 'Awaiting verification!', 3000);
             this.props.hide();
             this.forceUpdate();
-            this.props.reloadPurchased();
+            try {
+                let txStatus = await this.props.btcProvider.getStatusTransaction(txid);
+                this.props.storage.modifyPendingOptionsWithTxID(txid, "confirmations", txStatus.confirmations);
+            } catch(error) {}
+          
+            this.props.history.push("/pending");
         } catch (error) {
             console.log(error);
             showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
