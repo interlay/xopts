@@ -83,7 +83,7 @@ class Confirm extends React.Component {
           <ListGroup>
               <ListGroupItem>Strike Price: <strong>{this.props.strikePrice.toString()} DAI</strong></ListGroupItem>
               <ListGroupItem>Expiry: <strong>{new Date(this.props.expiry*1000).toLocaleString()}</strong></ListGroupItem>
-              <ListGroupItem>Amount: <strong>{this.props.amountDai.toString()} DAI -> {utils.daiToWeiDai(this.props.amountDai).toString()} XOPT</strong></ListGroupItem>
+              <ListGroupItem>Amount: <strong>{this.props.amountDai.toString()} DAI -> {this.props.amountDai.toString()} XOPT</strong></ListGroupItem>
               <ListGroupItem>Underwrites: <strong>{utils.calculateAvailableBTC(this.props.amountDai, this.props.strikePrice).toString()} BTC</strong></ListGroupItem>
               <ListGroupItem>BTC Address: <strong>{this.props.btcAddress}</strong></ListGroupItem>
           </ListGroup>
@@ -151,17 +151,17 @@ class SellWizard extends React.Component {
     ];
     return valid[step];
   }
-  
+
   handleSubmit = async (event) => {
     event.preventDefault();
-    
+
     let currentStep = this.state.currentStep;
     if (currentStep <= 2) {
       if (!this.isValid(currentStep-1)) return;
       this.setState({currentStep: currentStep + 1});
       return;
     }
-    
+
     const { amountDai, btcAddress, optionContract } = this.state;
     this.setState({spinner: true});
     try {
@@ -187,7 +187,7 @@ class SellWizard extends React.Component {
       currentStep: currentStep
     });
   }
-    
+
   _prev() {
     let currentStep = this.state.currentStep
     // If the current step is 2 or 3, then subtract one on "previous" button click
@@ -202,8 +202,8 @@ class SellWizard extends React.Component {
     // If the current step is not 1, then render the "previous" button
     if(currentStep!==1){
       return (
-        <button 
-          className="btn btn-secondary float-left" 
+        <button
+          className="btn btn-secondary float-left"
           type="button" onClick={this._prev}>
         Previous
         </button>
@@ -212,23 +212,23 @@ class SellWizard extends React.Component {
     // ...else return nothing
     return null;
   }
-  
+
   get nextButton(){
     let currentStep = this.state.currentStep;
     // If the current step is not 3, then render the "next" button
     if(currentStep<3){
       return (
-        <button 
-          className="btn btn-primary float-right" 
+        <button
+          className="btn btn-primary float-right"
           type="button" onClick={this._next}>
         Next
-        </button>        
+        </button>
       )
     }
     // ...else render nothing
     return null;
   }
-  
+
   render() {
     return (
       <Container>
@@ -240,24 +240,24 @@ class SellWizard extends React.Component {
         <Modal.Body>
           <Form onSubmit={this.handleSubmit}>
             <EnterAmount
-              currentStep={this.state.currentStep} 
+              currentStep={this.state.currentStep}
               handleChange={this.handleChange}
               amountDai={this.state.amountDai}
             />
             <EnterAddress
-              currentStep={this.state.currentStep} 
+              currentStep={this.state.currentStep}
               handleChange={this.handleChange}
               btcAddress={this.state.btcAddress}
             />
             <Confirm
-              currentStep={this.state.currentStep} 
+              currentStep={this.state.currentStep}
               handleChange={this.handleChange}
               amountDai={this.state.amountDai}
               btcAddress={this.state.btcAddress}
               spinner={this.state.spinner}
               expiry={this.state.expiry}
               strikePrice={this.state.strikePrice}
-            />          
+            />
           </Form>
         </Modal.Body>
         <Modal.Footer>
