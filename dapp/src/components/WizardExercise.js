@@ -83,7 +83,7 @@ class ScanBTC extends React.Component {
             // get all the info from the selected contract to store this into storage
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
-            let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getDetails();
+            let [expiry, premium, strikePrice] = await optionContract.getDetails();
 
             // strike price is denoted in weiDai per satoshi
             let amountBtcInSat = utils.btcToSat(this.props.amountBtc);
@@ -165,9 +165,6 @@ class ScanBTC extends React.Component {
 }
 
 class SubmitProof extends React.Component {
-    constructor(props) {
-        super(props);
-    }
 
     render() {
         if (this.props.currentStep !== 3) {
@@ -295,7 +292,7 @@ class ExerciseWizard extends Component {
 
 
     isValid(step) {
-        if (step == 0 && this.state.seller == "") {
+        if (step === 0 && this.state.seller === "") {
             return false;
         }
         return true;

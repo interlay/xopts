@@ -1,10 +1,7 @@
 import React from "react";
-import { FormGroup, Button, Spinner } from "react-bootstrap";
+import { FormGroup, Spinner } from "react-bootstrap";
 
 export class SpinButton extends React.Component {
-    constructor(props) {
-      super(props);
-    }
   
     render() {
       return(

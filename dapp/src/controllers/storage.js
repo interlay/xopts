@@ -38,7 +38,7 @@ export class Storage {
 
   getPendingOptionsForOption(option) {
     return this.pendingOptions.filter((opt) => {
-      return opt.option == option;
+      return opt.option === option;
     });
   }
 
@@ -68,9 +68,9 @@ export class Storage {
     let pendingOptionsWithTxId = this.getPendingOptionsWithTxId();
     for (var option of pendingOptionsWithTxId) {
       if (
-        option.amountBtc == amountBtc
-        && option.option == optionAddress
-        && option.recipient == recipient
+        option.amountBtc === amountBtc
+        && option.option === optionAddress
+        && option.recipient === recipient
       ) {
         return option.txid;
       }
@@ -107,9 +107,10 @@ export class Storage {
   modifyPendingOptionsWithTxID(txid, key, value) {
     let pendingOptions = this.getPendingOptions();
     pendingOptions.map((option, index) => {
-      if (option.txid == txid) {
+      if (option.txid === txid) {
         this.modifyPendingOption(index, key, value);
       }
+      return null;
     })
   }
 
