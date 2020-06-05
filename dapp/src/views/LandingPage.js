@@ -1,8 +1,10 @@
 import React, { Component } from "react";
-import { withRouter, NavLink } from 'react-router-dom'
+import { withRouter, NavLink } from 'react-router-dom';
+import { Image, Container} from "react-bootstrap";
+import HelpBuy from '../components/HelpBuy.js';
 
 class LandingPage extends Component {
-  
+
   render() {
     return (
       <div>
@@ -13,6 +15,11 @@ class LandingPage extends Component {
             <h3 className="lead text-muted">Keep Control Over You Coins.</h3>
             <NavLink to="/market">Market</NavLink>
           </div>
+          <Container fluid>
+            <section className="mb-5">
+              <HelpBuy/>
+            </section>
+          </Container>
         </section>
       </div>
     );
