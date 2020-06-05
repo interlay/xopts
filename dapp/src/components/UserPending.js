@@ -177,7 +177,7 @@ export default class UserPending extends Component {
                             className="w-25 text-center"
                             onClick={() => this.showModal({amountBtc, recipient, option, txid, confirmations}, index)}
                         >
-                            Exercise <FaCheck/>
+                            Confirm <FaCheck/>
                         </ListGroup.Item>
                         <ListGroup.Item
                             action

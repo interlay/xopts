@@ -3,7 +3,7 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
 import xoptsLogo from "../assets/img/xopts.png";
-import { FaBell, FaGavel, FaUser } from 'react-icons/fa';
+import { FaBell, FaGavel, FaUser, FaExchangeAlt, FaFileAlt } from 'react-icons/fa';
 import BalanceTopbar from './BalanceTopbar.js';
 
 class Web3LogIn extends Component {
@@ -57,18 +57,18 @@ class TopBar extends Component {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
             <Link className="nav-link" to="/market">
-              Market <FaGavel />
+              Trade <FaExchangeAlt />
             </Link>
 
             {this.props.isLoggedIn &&
               <Link className="nav-link" to="/dashboard">
-                Options <FaUser />
+                Positions <FaFileAlt />
               </Link>
             }
 
             {this.props.isLoggedIn && this.props.hasPendingOptions() &&
               <Link className="nav-link" to="/pending">
-                Pending <FaBell />
+                Pending Transactions <FaBell />
               </Link>
             }
           </Nav>

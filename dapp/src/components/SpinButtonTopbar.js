@@ -7,7 +7,7 @@ export class SpinButtonTopbar extends React.Component {
     if(!this.props.balance) return "";
 
     return(
-        <Button variant="info" size="sm" disabled={this.props.spinner}>
+        <Button type="submit" variant="info" size="sm" disabled={this.props.spinner}>
         { this.props.spinner ? 
           <Spinner
             as="span"
