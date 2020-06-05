@@ -2,9 +2,9 @@ import React, { Component } from "react";
 import { Modal, ListGroup, ListGroupItem, FormGroup, Form } from "react-bootstrap";
 import { SpinButton } from "./SpinButton";
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
-import { ethers } from "ethers";
 import { FaTrash, FaCheck } from "react-icons/fa";
 import { STABLE_CONFIRMATIONS } from '../controllers/bitcoin-data';
+import endianness from 'endianness';
 
 class ExerciseModal extends Component {
     constructor(props) {
@@ -20,8 +20,7 @@ class ExerciseModal extends Component {
         const { contract, recipient, height, index, txid, proof, rawtx } = this.props.tx;
         this.setState({spinner: true});
         try {
-            let id = ethers.utils.sha256("0x" + txid);
-            await this.props.contracts.exerciseOption(contract, recipient, height, index, id, proof, rawtx);
+            await this.props.contracts.exerciseOption(contract, recipient, height, index, txid, proof, rawtx);
             showSuccessToast(this.props.toast, 'Success!', 3000);
             this.props.storage.removePendingOption(this.props.index);
             this.props.hide();
@@ -103,22 +102,24 @@ export default class UserPending extends Component {
             return;
         }
 
-        var proofRaw = proof.merkle.reduce(function(prev, curr) {
-            return prev.concat(curr);
-        });
+        let intermediateNodes = Buffer.from(proof.merkle.join(""), 'hex');
+        endianness(intermediateNodes, 32);
+    
+        let id = Buffer.from(txid, 'hex');
+        endianness(id, 32);
 
         this.setState({
             showModal: true,
             tx: {
-                txid: txid,
+                txid: "0x" + id.toString('hex'),
                 amountBtc: tx.amountBtc,
                 contract: tx.option,
                 recipient: tx.recipient,
                 confirmations: status.confirmations,
                 height: proof.block_height,
                 index: proof.pos,
-                proof: ethers.utils.toUtf8Bytes(proofRaw),
-                rawtx: rawtx,
+                proof: "0x" + intermediateNodes.toString('hex'),
+                rawtx: "0x" + rawtx.toString('hex'),
             },
             index: index,
         });

@@ -3,12 +3,13 @@ import { CollateralFactory } from "../typechain/CollateralFactory";
 import {
 	MockCollateral, MockRelay, MockTxValidator,
 	MockRegistryAndResolver, OptionPool, call, attachSellableOption, attachBuyableOption,
-    satoshiToMbtc, mbtcToSatoshi, mdaiToWeiDai, weiDaiToMdai, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC
+    satoshiToMbtc, mbtcToSatoshi, mdaiToWeiDai, weiDaiToMdai, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC, TxValidator
 } from "./contracts";
 import { Signer } from "ethers";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 
-let btcAddress = ethers.utils.toUtf8Bytes("19fkEq227H56rqwwjEoGg12rctq1c8L3a4");
+// NOTE: following address is owned by @gregdhill
+let btcAddress = ethers.utils.toUtf8Bytes("tb1q2krsjrpj3z6xm7xvj2xxjy9gcxa755y0exegh6");
 
 function getBuyable(address: string, signer: Signer) {
 	return attachSellableOption(signer, address).getBuyable();
@@ -33,6 +34,7 @@ async function main() {
 	const relay = await MockRelay(alice);
 	const validator = await MockTxValidator(alice);
 
+	// 0x151eA753f0aF1634B90e1658054C247eFF1C2464
 	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address);
 
     // get collateral for everyone

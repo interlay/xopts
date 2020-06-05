@@ -16,8 +16,8 @@ export class Contracts {
         let erc20Address;
         // Ganache
         if (network.chainId === 2222) {
-            optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
-            erc20Address = "0x99a463962829c26Da5357aE84ACAf85A401A7702";
+            optionPoolAddress = "0x6321Fd96859603358099b9B35B1bE54459777040";
+            erc20Address = "0xAB1a954C128E558963832Ba8d923D3BB1F7861F4";
         // Ropsten
         } else if (network.chainId === 3 && network.name === "ropsten") {
             optionPoolAddress = "0x80D56cB9a130042488b49607Aaaf6Ad0523bc8b6";

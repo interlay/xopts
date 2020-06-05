@@ -78,6 +78,15 @@ Run tests.
 npm test
 ```
 
+#### Bitcoin Testnet
+
+In order to verify testnet transactions we need to swap out any mocked components.
+
+1. Launch a local instance of Ganache.
+2. Clone the [btc-relay-sol](https://gitlab.com/interlay/btc-relay-sol) repository.
+3. Deploy using the testnet configuration.
+4. On `OptionPool` deployment use the live relay address and `./lib/TxValidator.sol`.
+
 ### Testdata
 
 Make sure ganache or buidlerevm is running in one terminal window.
