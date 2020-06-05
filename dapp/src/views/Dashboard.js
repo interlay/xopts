@@ -19,7 +19,7 @@ export default class Dashboard extends Component {
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
           <div className="container">
-            <h2>Your Options</h2>
+            <h2>Your Positions</h2>
             <p className="lead text-muted">Account: {this.props.address} </p>
             <h4> BTC <Image src={bitcoinImg}/> - DAI <Image src={daiImg} /></h4>
             <a className="nav-link" href="https://www.cryptocompare.com/" target="__blank"> 

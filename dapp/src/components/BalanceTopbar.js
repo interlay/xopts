@@ -32,6 +32,7 @@ class BalanceTopbar extends Component {
     }
 
     handleSubmit = async (event) => {
+        console.log("submit")
         event.preventDefault();
         this.setState({ spinner: true });
         try {
