@@ -304,13 +304,15 @@
     "@ethersproject/properties" ">=5.0.0-beta.140"
     "@ethersproject/strings" ">=5.0.0-beta.136"
 
-"@interlay/btc-relay-sol@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.1.0.tgz#a1ee17cfbc1e3257b2ea0523c29ea127cb5423dd"
-  integrity sha512-sFZivF5Lx4iv59DDT1HBuSeCV/j+SMoGFUUVM4G7spycjp1banf5AgIs0q5NKdRvgMY6p9e3QaamKS6Bh1gCRw==
+"@interlay/btc-relay-sol@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.2.0.tgz#7117d2decce3ac6a7f9abd8bc5c7f1bc5e7be816"
+  integrity sha512-1wStbXyb+N822ma2iUyB+jltfg1e1OPW8Yl8GvuQXab+IK0TV08DdGHFrtwXZ7FRwlJi9qQgPIliVwBurMF3xw==
   dependencies:
     "@summa-tx/bitcoin-spv-sol" "3.0.0"
+    bech32 "^1.1.4"
     bitcoinjs-lib "^5.1.7"
+    endianness "^8.0.2"
 
 "@nomiclabs/buidler-ethers@^1.3.0":
   version "1.3.3"
@@ -1645,7 +1647,7 @@ bcrypt-pbkdf@^1.0.0:
   dependencies:
     tweetnacl "^0.14.3"
 
-bech32@^1.1.2:
+bech32@^1.1.2, bech32@^1.1.4:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/bech32/-/bech32-1.1.4.tgz#e38c9f37bf179b8eb16ae3a772b40c356d4832e9"
   integrity sha512-s0IrSOzLlbvX7yp4WBfPITzpAU8sqQcpsmwXDiKwrG4r491vwCO/XpejasRNl0piBMe/DvP4Tz0mIS/X1DPJBQ==
@@ -2888,6 +2890,11 @@ end-of-stream@^1.0.0, end-of-stream@^1.1.0:
   integrity sha512-+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==
   dependencies:
     once "^1.4.0"
+
+endianness@^8.0.2:
+  version "8.0.2"
+  resolved "https://registry.yarnpkg.com/endianness/-/endianness-8.0.2.tgz#e35d16bbe80b6ff94fbc199168dd234d9f78168e"
+  integrity sha512-IU+77+jJ7lpw2qZ3NUuqBZFy3GuioNgXUdsL1L9tooDNTaw0TgOnwNuc+8Ns+haDaTifK97QLzmOANJtI/rGvw==
 
 enquirer@^2.3.0:
   version "2.3.5"
