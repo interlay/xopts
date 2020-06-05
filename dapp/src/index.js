@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { ethers } from 'ethers';
-import { withRouter } from 'react-router-dom'
 import { toast } from 'react-toastify';
 
 // Importing Sass with Bootstrap CSS
@@ -141,8 +140,8 @@ class App extends Component {
         }
         let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
         //  Check if we indeed have a signer + address => if yes, user is logged in.
-        let _signer = await provider.getSigner();
-        let _address = await _signer.getAddress();
+        let _signer = provider.getSigner();
+        await _signer.getAddress();
         this.setState({
           isLoggedIn: true
         });

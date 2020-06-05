@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { withRouter } from 'react-router-dom'
-import { Col, Card, Row, Form } from "react-bootstrap";
+import { Col, Row, Form } from "react-bootstrap";
 import * as utils from '../utils/utils.js'; 
 import { SpinButton } from "./SpinButton.js";
 

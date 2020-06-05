@@ -4,16 +4,6 @@
   text-align: center;
 }
 
-.wizard-container {
-  background-color: rgba(0,0,0,.03);
-  border: 1px solid rgba(0, 0, 0, 0.125);
-  border-radius: .25rem;
-  text-align: center;
-  padding: 20px;
-  display: block;
-  overflow: auto;
-}
-
 span {
   &.dangerText {
     color: #dc3545;

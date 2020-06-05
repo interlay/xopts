@@ -1,4 +1,4 @@
-import { Navbar, Nav, Badge, Image, Tooltip, OverlayTrigger } from "react-bootstrap";
+import { Navbar, Nav, Badge, Image } from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
@@ -47,22 +47,7 @@ class Web3LogIn extends Component {
 
 const Web3LogInWithRouter = withRouter(Web3LogIn);
 
-const NavigationOverlay = ({ tip, link, children }) => (
-  <OverlayTrigger
-    placement="bottom"
-    delay={{ show: 250, hide: 400 }}
-    overlay={
-      <Tooltip>
-        {tip}
-      </Tooltip>
-    }
-  >
-
-  </OverlayTrigger>
-)
-
 class TopBar extends Component {
-
 
   render() {
     return (

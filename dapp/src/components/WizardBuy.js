@@ -33,7 +33,6 @@ class SelectSeller extends React.Component {
       let amount = utils.weiDaiToDai(utils.newBig(this.state.options[index].toString()));
       let amountBtc = amount.div(this.props.strikePrice);
       let addressShow = address.substr(0,10) + '...';
-      console.log(this.state.options[index].toString());
       return (
         <option key={address} value={address} onClick={() => this.props.updateAmountOptions(amount)}> {amountBtc.round(5, 0).toString()} BTC (Seller: {addressShow})</option>
       );
@@ -57,9 +56,6 @@ class SelectSeller extends React.Component {
 }
 
 class EnterAmount extends React.Component {
-  constructor(props) {
-    super(props);
-  }
 
   render() {
     if (this.props.currentStep !== 2) {
@@ -84,9 +80,6 @@ class EnterAmount extends React.Component {
 }
 
 class Confirm extends React.Component {
-  constructor(props) {
-    super(props);
-  }
 
   render() {
     if (this.props.currentStep !== 3) {
@@ -138,7 +131,7 @@ class BuyWizard extends React.Component {
 
       let contracts = this.props.contracts;
       let optionContract = contracts.attachOption(contract);
-      let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getDetails();
+      let [expiry, premium, strikePrice] = await optionContract.getDetails();
 
       this.setState({
         optionContract: optionContract,
@@ -152,7 +145,7 @@ class BuyWizard extends React.Component {
   // Use the submitted data to set the state
   handleChange(event) {
     let {name, value} = event.target
-    if(name == "amountBTC"){
+    if(name === "amountBTC"){
       this.setState({
         amountOptions: utils.newBig(value || 0).mul(this.state.strikePrice)
       });
@@ -172,7 +165,7 @@ class BuyWizard extends React.Component {
   isValid(step) {
     const { seller, amountOptions } = this.state;
     let valid = [
-      seller != "",
+      seller !== "",
       amountOptions.gt(0),
       true,
     ];

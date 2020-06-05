@@ -3,7 +3,8 @@ import { STABLE_CONFIRMATIONS } from '../controllers/bitcoin-data';
 export function pollPendingConfirmations(bitcoin, storage) {
     storage.getPendingOptions().map((option, _) => {
         pollAndUpdateConfirmations(bitcoin, storage, option.txid);
-    })
+        return null;
+    });
 }
   
 // Continually checks if a transaction is included and

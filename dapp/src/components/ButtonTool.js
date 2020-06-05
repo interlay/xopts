@@ -1,10 +1,7 @@
 import React from "react";
-import { FormGroup, Button, OverlayTrigger, Tooltip, Col } from "react-bootstrap";
+import { Button, OverlayTrigger, Tooltip } from "react-bootstrap";
 
 export class ButtonTool extends React.Component {
-    constructor(props) {
-      super(props);
-    }
   
     render() {
       return(

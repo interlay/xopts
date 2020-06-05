@@ -1,5 +1,5 @@
 import React from "react";
-import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal, Button, Spinner } from "react-bootstrap";
+import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
 import * as utils from '../utils/utils.js';
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { SpinButton } from './SpinButton';
@@ -67,9 +67,6 @@ class EnterAddress extends React.Component {
 }
 
 class Confirm extends React.Component {
-  constructor(props) {
-    super(props);
-  }
 
   render() {
     if (this.props.currentStep !== 3) {
@@ -119,7 +116,7 @@ class SellWizard extends React.Component {
 
       let contracts = this.props.contracts;
       let optionContract = contracts.attachOption(contract);
-      let [expiry, premium, strikePrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked] = await optionContract.getDetails();
+      let [expiry, , strikePrice, , , ] = await optionContract.getDetails();
 
       this.setState({
         optionContract: optionContract,
@@ -146,7 +143,7 @@ class SellWizard extends React.Component {
     const { amountDai, btcAddress } = this.state;
     let valid = [
       amountDai.gt(0),
-      btcAddress != "",
+      btcAddress !== "",
       true,
     ];
     return valid[step];

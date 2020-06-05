@@ -6,7 +6,6 @@ import BuyWizard from "./WizardBuy";
 import SellWizard from "./WizardSell";
 import { ButtonTool } from "./ButtonTool.js";
 import { ToastContainer, toast } from 'react-toastify';
-import Balance from "./Balance.js";
 
 class OptionList extends Component {
 
@@ -32,7 +31,7 @@ class OptionList extends Component {
     }
 
     componentDidUpdate() {
-        if (this.state.loaded == false) {
+        if (this.state.loaded === false) {
             this.getOptions();
         }
     }
@@ -121,7 +120,7 @@ class OptionList extends Component {
     renderTableData() {
         if (this.state.loaded) {
             return this.state.options.map((option, index) => {
-                const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, totalSupplyUnlocked, contract } = option;
+                const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, contract } = option;
                 const id = utils.btcPutOptionId(expiry, strikePrice.toString());
 
                 let percentInsured = utils.newBig(0);

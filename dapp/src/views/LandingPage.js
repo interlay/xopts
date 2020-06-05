@@ -1,9 +1,5 @@
 import React, { Component } from "react";
-import { Image } from "react-bootstrap";
-import { fetchJson } from "ethers/utils";
-import OptionList from "../components/OptionList.js"
 import { withRouter, NavLink } from 'react-router-dom'
-import xoptsLogo from "../assets/img/xopts-logo.svg";
 
 class LandingPage extends Component {
   

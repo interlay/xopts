@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Col, Badge, Row, Table, Button, Card, Spinner, Modal, Toast } from "react-bootstrap";
+import { Col, Row, Table, Button, Card, Spinner, Modal } from "react-bootstrap";
 import { ToastContainer, toast } from 'react-toastify';
 import * as utils from '../utils/utils.js';
 import { ButtonTool } from "./ButtonTool";
@@ -42,8 +42,8 @@ export default class UserSoldOptions extends Component {
 
     async getOptions(optionContracts) {
         // Remove 0-value contracts
-        for (var i = optionContracts[1].length - 1; i >= 0; i--) {
-            if (parseInt(optionContracts[1][i]._hex) == 0) {
+        for (let i = optionContracts[1].length - 1; i >= 0; i--) {
+            if (parseInt(optionContracts[1][i]._hex) === 0) {
                 optionContracts[0].splice(i, 1);
                 optionContracts[1].splice(i, 1);
                 optionContracts[2].splice(i, 1);
@@ -56,7 +56,7 @@ export default class UserSoldOptions extends Component {
         let totalPremium = utils.newBig(0);
         let totalBtcInsured = utils.newBig(0);
         let totalIncome = utils.newBig(0);
-        for (var i = 0; i < optionContracts[0].length; i++) {
+        for (let i = 0; i < optionContracts[0].length; i++) {
             let addr = optionContracts[0][i];
             let optionContract = this.props.contracts.attachOption(addr);
             let optionRes = await optionContract.getDetails();
@@ -150,11 +150,10 @@ export default class UserSoldOptions extends Component {
         if (this.state.soldLoaded) {
             if (this.state.soldOptions.length > 0) {
                 return this.state.soldOptions.map((option, index) => {
-                    const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, soldOptions, percentSold, income, btcInsured, premiumEarned, contract } = option;
+                    const { expiry, premium, strikePrice, spotPrice, totalSupply, totalSupplyLocked, soldOptions, percentSold, income, premiumEarned, contract } = option;
                     const id = utils.btcPutOptionId(expiry, strikePrice.toString());
                     let percentInsured = ((totalSupply.lte(0)) ? 0 : (totalSupplyLocked.div(totalSupply)).mul(100));
                     let currentDate = Math.floor(Date.now() / 1000);
-                    let priceDiff = strikePrice-spotPrice;
                     return (
                         <tr key={contract}>
                             <td>{id}</td>

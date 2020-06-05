@@ -1,4 +1,4 @@
-export const STABLE_CONFIRMATIONS = 6;
+export const STABLE_CONFIRMATIONS = 1;
 
 export class BitcoinQuery {
 
@@ -81,10 +81,9 @@ async function query(url) {
     if (response.ok) {
       return response;
     } else {
-      console.log(response.status);
+      // TODO: retry?
     }
   } catch (error) {
-    console.log("Query error");
     console.log(error);
   }
 }
