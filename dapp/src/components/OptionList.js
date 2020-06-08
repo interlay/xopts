@@ -250,10 +250,3 @@ class OptionList extends Component {
 }
 
 export default withRouter(OptionList);
-
-
-/*
-                    <Card.Footer>
-                        <Balance {...this.props}/>
-                    </Card.Footer>
-                    */

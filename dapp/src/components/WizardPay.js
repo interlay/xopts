@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Col, ListGroup, ListGroupItem, Container, Row, Form, Button, Modal, FormGroup } from "react-bootstrap";
+import { Col, ListGroup, ListGroupItem, Row, Form, Button, Modal, FormGroup } from "react-bootstrap";
 import { ethers } from 'ethers';
 import QRCode from "react-qr-code";
 import * as utils from '../utils/utils.js';
@@ -13,7 +13,6 @@ class SelectSeller extends React.Component {
         this.state = {
             loaded: false,
             sellers: [],
-            options: [],
             pending: {},
         };
     }
@@ -23,24 +22,23 @@ class SelectSeller extends React.Component {
             // load the option contract selected by the user
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             // get the seller and options denoted in a amountBtc of satoshi from a single option contract
-            let [sellers, options] = await optionContract.getOptionOwnersFor(this.props.address);
+            let sellers = await optionContract.getOptionOwners();
             this.setState({
                 loaded: true,
                 sellers: sellers,
-                options: options,
-                pending: this.props.storage.getPendingOptionsAsMap(),
+                pending: this.props.storage.getPendingTransactionsFor(this.props.contract),
             });
         }
     }
 
     renderOptions() {
         return this.state.sellers.map((seller, index) => {
-            let address = seller.toString();
+            let address = seller[0].toString();
             // convert the satoshi amountBtc into a BTC amount
-            let amountBtc = utils.satToBtc(utils.newBig(this.state.options[index].toString()));
+            let amountBtc = utils.satToBtc(utils.newBig(seller[1].toString()));
             let addressShow = address.substr(0, 10) + '...';
 
-            if (this.state.pending[seller]) return null;
+            if (this.state.pending.filter((value) => value.recipient === seller[0]).length > 0) return null;
             return (
                 <option key={address} value={address} onClick={() => this.props.updateAmount(amountBtc)}>{amountBtc.toString()} BTC (Seller: {addressShow})</option>
             );
@@ -48,7 +46,7 @@ class SelectSeller extends React.Component {
     }
 
     render() {
-        if (this.props.currentStep !== 1) { // Prop: The current step
+        if (this.props.step !== 1) { // Prop: The current step
             return null
         }
         return (
@@ -95,14 +93,14 @@ class ScanBTC extends React.Component {
             let paymentUri = "bitcoin:" + btcAddress + "?amount=" + this.props.amountBtc;
 
             // check if there is already a matching tx
-            let txid = this.props.storage.getMatchingTxId(this.props.amountBtc, btcAddress, this.props.contract);
+            // let txid = this.props.storage.getMatchingTxId(this.props.amountBtc, btcAddress, this.props.contract);
 
-            if (txid) {
-              this.setState({
-                selectionHasTxId: true,
-                txid: txid,
-              })
-            }
+            // if (txid) {
+            //   this.setState({
+            //     selectionHasTxId: true,
+            //     txid: txid,
+            //   })
+            // }
 
             expiry = parseInt(expiry.toString());
             strikePrice = utils.weiDaiToBtc(utils.newBig(strikePrice.toString()));
@@ -122,13 +120,13 @@ class ScanBTC extends React.Component {
             // set the wizard state
             this.props.updateRecipient(btcAddress);
             this.props.updateOption(this.props.contract);
-            this.props.updateTxId(txid);
+            // this.props.updateTxId(txid);
             this.props.updateConfirmations(0);
             this.props.updateStrikePrice(strikePrice);
             this.props.updateExpiry(expiry);
 
             // store the current exercise request in storage
-            // this.props.storage.setPendingOptions(
+            // this.props.storage.setPendingOption(
             //   this.props.amountBtc,
             //   this.props.recipient,
             //   this.props.option,
@@ -139,7 +137,7 @@ class ScanBTC extends React.Component {
     }
 
     render() {
-        if (this.props.currentStep !== 2) {
+        if (this.props.step !== 2) {
             return null
         }
         return (
@@ -167,7 +165,7 @@ class ScanBTC extends React.Component {
 class SubmitProof extends React.Component {
 
     render() {
-        if (this.props.currentStep !== 3) {
+        if (this.props.step !== 3) {
             return null
         }
         return (
@@ -211,12 +209,12 @@ class SubmitProof extends React.Component {
 </FormGroup>
 */
 
-class ExerciseWizard extends Component {
+class PayWizard extends Component {
 
     constructor(props) {
         super(props);
         this.state = {
-            currentStep: 1,
+            step: 1,
             seller: "",
             amountOptions: 0,
             amountDai: 0,
@@ -238,7 +236,7 @@ class ExerciseWizard extends Component {
         this.updateConfirmations = this.updateConfirmations.bind(this)
         this.updateStrikePrice = this.updateStrikePrice.bind(this)
         this.updateExpiry = this.updateExpiry.bind(this)
-
+        this.exitModal = this.exitModal.bind(this);
     }
 
     handleChange(event) {
@@ -290,7 +288,6 @@ class ExerciseWizard extends Component {
         });
     }
 
-
     isValid(step) {
         if (step === 0 && this.state.seller === "") {
             return false;
@@ -300,10 +297,10 @@ class ExerciseWizard extends Component {
 
     handleSubmit = async (event) => {
         event.preventDefault();
-        let currentStep = this.state.currentStep;
-        if (currentStep <= 2) {
-            if (!this.isValid(currentStep-1)) return;
-            this.setState({currentStep: currentStep + 1});
+        let step = this.state.step;
+        if (step <= 2) {
+            if (!this.isValid(step-1)) return;
+            this.setState({step: step + 1});
             return;
         }
         // store txid to local storage
@@ -311,17 +308,16 @@ class ExerciseWizard extends Component {
         const { seller, amountBtc, txid, expiry, strikePrice } = this.state;
         const optionId = utils.btcPutOptionId(expiry, strikePrice.toString());
         try {
-            this.props.storage.setPendingOptions(amountBtc, seller, this.props.contract, optionId, txid, 0);
+            this.props.storage.setPendingOption(this.props.contract, txid, amountBtc, seller, optionId, 0);
             showSuccessToast(this.props.toast, 'Awaiting verification!', 3000);
             this.props.hide();
             this.forceUpdate();
             try {
                 let txStatus = await this.props.btcProvider.getStatusTransaction(txid);
-                this.props.storage.modifyPendingOptionsWithTxID(txid, "confirmations", txStatus.confirmations);
+                this.props.storage.modifyPendingOption(this.props.contract, txid, "confirmations", txStatus.confirmations);
             } catch(error) {}
 
-            pollAndUpdateConfirmations(this.props.btcProvider, this.props.storage, txid);
-            this.props.history.push("/pending");
+            pollAndUpdateConfirmations(this.props.btcProvider, this.props.storage, this.props.contract, txid);
         } catch (error) {
             console.log(error);
             showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);
@@ -329,27 +325,27 @@ class ExerciseWizard extends Component {
     }
 
     _next() {
-        let currentStep = this.state.currentStep;
-        if (!this.isValid(currentStep-1)) return;
+        let step = this.state.step;
+        if (!this.isValid(step-1)) return;
         // If the current step is 1 or 2, then add one on "next" button click
-        currentStep = currentStep >= 2 ? 3 : currentStep + 1;
+        step = step >= 2 ? 3 : step + 1;
         this.setState({
-            currentStep: currentStep
+            step: step
         })
     }
 
     _prev() {
-        let currentStep = this.state.currentStep
+        let step = this.state.step
         // If the current step is 2 or 3, then subtract one on "previous" button click
-        currentStep = currentStep <= 1 ? 1 : currentStep - 1
+        step = step <= 1 ? 1 : step - 1
         this.setState({
-            currentStep: currentStep
+            step: step
         })
     }
 
     get previousButton() {
-        let currentStep = this.state.currentStep;
-        if (currentStep !== 1) {
+        let step = this.state.step;
+        if (step !== 1) {
             return (
                 <button
                     className="btn btn-secondary float-left"
@@ -362,8 +358,8 @@ class ExerciseWizard extends Component {
     }
 
     get nextButton() {
-        let currentStep = this.state.currentStep;
-        if (currentStep < 3) {
+        let step = this.state.step;
+        if (step < 3) {
             return (
                 <button
                     className="btn btn-primary float-right"
@@ -375,18 +371,27 @@ class ExerciseWizard extends Component {
         return null;
     }
 
+    exitModal() {
+        this.props.hide();
+        this.setState({step: 1});
+    }
+
     render() {
         return (
-            <Container>
+            <Modal
+                size="lg"
+                aria-labelledby="contained-modal-title-vcenter"
+                centered
+                show={this.props.showPayModal} onHide={() => this.exitModal()}>
                 <Modal.Header closeButton>
                     <Modal.Title id="contained-modal-title-vcenter">
-                        Exercise Option
+                        Submit Payment
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Form onSubmit={this.handleSubmit}>
                         <SelectSeller
-                            currentStep={this.state.currentStep}
+                            step={this.state.step}
                             handleChange={this.handleChange}
                             seller={this.state.seller}
                             amountBtc={this.state.amountBtc}
@@ -398,7 +403,7 @@ class ExerciseWizard extends Component {
                             address={this.props.address}
                         />
                         <ScanBTC
-                            currentStep={this.state.currentStep}
+                            step={this.state.step}
                             handleChange={this.handleChange}
                             updateAmount={this.updateAmount}
                             updateRecipient = {this.updateRecipient}
@@ -419,7 +424,7 @@ class ExerciseWizard extends Component {
                             confirmations = { this.state.confirmations }
                         />
                         <SubmitProof
-                            currentStep={this.state.currentStep}
+                            step={this.state.step}
                             handleChange={this.handleChange}
                             updateTxId = {this.updateTxId}
                             seller={this.state.seller}
@@ -435,11 +440,11 @@ class ExerciseWizard extends Component {
                 <Modal.Footer>
                     {this.previousButton}
                     {this.nextButton}
-                    <Button variant="danger" onClick={() => this.props.hide()}>Cancel</Button>
+                    <Button variant="danger" onClick={() => this.exitModal()}>Cancel</Button>
                 </Modal.Footer>
-            </Container>
+            </Modal>
         )
     }
 }
 
-export default withRouter(ExerciseWizard);
+export default withRouter(PayWizard);

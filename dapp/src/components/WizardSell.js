@@ -166,7 +166,7 @@ class SellWizard extends React.Component {
       let weiDai = utils.daiToWeiDai(amountDai);
       await contracts.checkAllowance(weiDai);
       await contracts.underwriteOption(optionContract.address, weiDai, btcAddress);
-      this.props.history.push("/dashboard")
+      this.props.history.push("/positions")
       showSuccessToast(this.props.toast, 'Successfully sold options!', 3000);
     } catch(error) {
       console.log(error);

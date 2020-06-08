@@ -1,15 +1,20 @@
+//
+//                       (txId) -> Object
+//           (option) ->
+//                       (txId) -> Object
+// (user) ->
+//                       (txId) -> Object
+//           (option) ->
+//                       (txId) -> Object
+//
 export class Storage {
   // load pending transactions based on user account
   constructor(userAddress) {
     this.userAddress = userAddress;
-    this.pendingOptions = this.getPendingOptions();
+    this.pending = this.loadPendingOptions();
   }
 
-  clearPendingOptions() {
-    localStorage.clear()
-  }
-
-  // loads an array of pending options
+  // loads a tree of pending options
   // a pending option is an object
   // pendingOption = {
   //   amountBtc: number,
@@ -20,107 +25,69 @@ export class Storage {
   //   confirmations: number, // current number of confirmations
   //   pending: bool, // has this option been exercised
   // }
-  getPendingOptions() {
-    let pendingOptionsArray = localStorage.getItem(this.userAddress);
-    if (pendingOptionsArray != null) {
-      let pendingOptions = JSON.parse(pendingOptionsArray);
-      return pendingOptions;
+  loadPendingOptions() {
+    let pendingTree = localStorage.getItem(this.userAddress);
+    if (pendingTree != null) {
+      let pending = JSON.parse(pendingTree);
+      return pending;
     }
-    return [];
+    return {};
   }
 
-  getPendingOptionsAsMap() {
-    return this.pendingOptions.reduce(function(map, obj) {
-      map[obj.recipient] = obj;
-      return map;
-    }, {});
+  getPendingOptions() {
+    const obj = this.pending;
+    return obj ? Object.keys(obj) : [];
   }
 
-  getPendingOptionsForOption(option) {
-    return this.pendingOptions.filter((opt) => {
-      return opt.option === option;
+  getPendingTransactionsFor(option) {
+    let obj = this.pending[option];
+    if (!obj) return [];
+    return Object.keys(obj).map(function(key) {
+      return {
+        "txid": key,
+        ...obj[key]
+      };
     });
   }
 
-  getPendingOptionsWithoutTxId() {
-    let pendingOptions = this.getPendingOptions();
-    let pendingOptionsWithoutTxId = [];
-    for (var option of pendingOptions) {
-      if (option.txid) {
-        pendingOptionsWithoutTxId.push(option);
-      }
-    }
-    return pendingOptionsWithoutTxId;
-  }
-
-  getPendingOptionsWithTxId() {
-    let pendingOptions = this.getPendingOptions();
-    let pendingOptionsWithTxId = [];
-    for (var option of pendingOptions) {
-      if (option.txid) {
-        pendingOptionsWithTxId.push(option);
-      }
-    }
-    return pendingOptionsWithTxId;
-  }
-
-  getMatchingTxId(amountBtc, recipient, optionAddress) {
-    let pendingOptionsWithTxId = this.getPendingOptionsWithTxId();
-    for (var option of pendingOptionsWithTxId) {
-      if (
-        option.amountBtc === amountBtc
-        && option.option === optionAddress
-        && option.recipient === recipient
-      ) {
-        return option.txid;
-      }
-    }
-    return "";
-  }
-
   // stores an array of pending options
-  setPendingOptions(amountBtc, recipient, option, optionId, txid, confirmations) {
+  setPendingOption(option, txId, amountBtc, recipient, optionId, confirmations) {
     let pendingOption = {
       amountBtc: amountBtc,
       recipient: recipient,
-      option: option,
       optionId: optionId,
-      txid: txid,
       confirmations: confirmations,
       pending: true,
     };
-    this.pendingOptions.push(pendingOption);
-    let pendingOptionsArray = JSON.stringify(this.pendingOptions);
-    localStorage.setItem(this.userAddress, pendingOptionsArray);
+    if (this.pending[option] == null) this.pending[option] = {};
+    this.pending[option][txId] = pendingOption;
+    let pendingTree = JSON.stringify(this.pending);
+    localStorage.setItem(this.userAddress, pendingTree);
   }
 
   // updates a pending option
-  modifyPendingOption(index, key, value) {
-    let pendingOption = this.pendingOptions[index];
-    pendingOption[key] = value;
-    this.getPendingOptions[index] = pendingOption;
+  modifyPendingOption(option, txid, key, value) {
+    this.pending[option][txid][key] = value
     // update in storage
-    let pendingOptionsArray = JSON.stringify(this.pendingOptions);
-    localStorage.setItem(this.userAddress, pendingOptionsArray);      
+    let pendingTree = JSON.stringify(this.pending);
+    localStorage.setItem(this.userAddress, pendingTree);      
   }
 
-  modifyPendingOptionsWithTxID(txid, key, value) {
-    let pendingOptions = this.getPendingOptions();
-    pendingOptions.map((option, index) => {
-      if (option.txid === txid) {
-        this.modifyPendingOption(index, key, value);
-      }
-      return null;
-    })
+  removePendingOption(option, txId) {
+    let opt = this.pending[option];
+    delete opt[txId];
+    this.pending[option] = opt;
+
+    let pendingTree = JSON.stringify(this.pending);
+    localStorage.setItem(this.userAddress, pendingTree);
   }
 
-  removePendingOption(index) {
-    this.pendingOptions.splice(index, 1);
-    let pendingOptionsArray = JSON.stringify(this.pendingOptions);
-    localStorage.setItem(this.userAddress, pendingOptionsArray);
+  hasPending() {
+    return Object.keys(this.pending).length > 0;
   }
 
-  hasPendingOptions() {
-    return this.pendingOptions.length > 0;
+  hasPendingTransactionsFor(option) {
+    const obj = this.pending[option];
+    return obj ? Object.keys(obj).length > 0 : false;
   }
 }

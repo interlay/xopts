@@ -42,7 +42,7 @@ class BalanceTopbar extends Component {
             console.log(error);
             showFailureToast(toast, 'Something went wrong. We were unable to send you testnet DAI. Please try again later.', 3000);
         }
-        showSuccessToast(toast, 'We sent you some testnet DAI.', 3000);
+        showSuccessToast(toast, 'Testnet DAI Sent', 3000);
         this.setState({ spinner: false });
         await this.updateBalance();
 

@@ -11,26 +11,24 @@ class SelectSeller extends React.Component {
     this.state = {
       loaded: false,
       sellers: [],
-      options: [],
     };
   }
 
   async componentDidUpdate() {
     if (this.props.optionContract && !this.state.loaded) {
-      let [sellers, options] = await this.props.optionContract.getOptionSellers();
+      let sellers = await this.props.optionContract.getOptionSellers();
       this.setState({
         loaded: true,
         sellers: sellers,
-        options: options,
       });
     }
   }
 
   renderOptions() {
     return this.state.sellers.map((seller, index) => {
-      let address = seller.toString();
+      let address = seller[0].toString();
       // one option == one dai wei
-      let amount = utils.weiDaiToDai(utils.newBig(this.state.options[index].toString()));
+      let amount = utils.weiDaiToDai(utils.newBig(seller[1].toString()));
       let amountBtc = amount.div(this.props.strikePrice);
       let addressShow = address.substr(0,10) + '...';
       return (
@@ -189,7 +187,7 @@ class BuyWizard extends React.Component {
       let satoshis = utils.btcToSat(utils.calculateAvailableBTC(amountOptions, strikePrice)).round(0, 0);
       await contracts.checkAllowance(satoshis);
       await contracts.insureOption(optionContract.address, seller, satoshis.toString());
-      this.props.history.push("/dashboard")
+      this.props.history.push("/positions")
       showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
     } catch(error) {
       console.log(error);
