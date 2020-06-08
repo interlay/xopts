@@ -3,7 +3,7 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
 import xoptsLogo from "../assets/img/xopts.png";
-import { FaExchangeAlt, FaFileAlt } from 'react-icons/fa';
+import { FaBell, FaExchangeAlt, FaFileAlt, FaQuestionCircle } from 'react-icons/fa';
 import BalanceTopbar from './BalanceTopbar.js';
 
 class Web3LogIn extends Component {
@@ -65,6 +65,11 @@ class TopBar extends Component {
                 Positions <FaFileAlt />
               </Link>
             }
+
+            <Link className="nav-link" to="/help">
+              Help <FaQuestionCircle />
+            </Link>
+
           </Nav>
           <Nav>
             <BalanceTopbar {...this.props} />

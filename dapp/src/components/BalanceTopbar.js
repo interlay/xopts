@@ -57,7 +57,7 @@ class BalanceTopbar extends Component {
                     </Form>
                     &nbsp;
                     <a href="https://coinfaucet.eu/en/btc-testnet/" target="__blank">
-                    <Button variant="warning" size="sm" >Get Testnet BTC</Button></a>
+                    <Button variant="outline-warning" size="sm" >Get Testnet BTC</Button></a>
 
                 </React.Fragment>
             )
