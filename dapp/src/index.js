@@ -15,7 +15,10 @@ import './assets/css/custom.css';
 import Dashboard from "./views/Dashboard";
 import Home from "./views/Home";
 import LandingPage from "./views/LandingPage";
+import Help from "./views/Help";
+
 import Topbar from "./components/Topbar";
+import Footer from "./components/Footer";
 
 import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
@@ -189,6 +192,10 @@ class App extends Component {
             <LandingPage />
           </Route>
 
+          <Route path="/help">
+            <Help />
+          </Route>
+
           <Route path="/dashboard">
             <Dashboard {...this.state} />
           </Route>
@@ -198,7 +205,10 @@ class App extends Component {
           </Route>
 
           <Route path="/market" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
+
+          
         </Switch>
+        <Footer />
       </Router>
     )
   }

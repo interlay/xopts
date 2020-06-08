@@ -1,6 +1,16 @@
 import React, { Component } from "react";
 import { withRouter, NavLink } from 'react-router-dom';
-import { Image, Container} from "react-bootstrap";
+import { Image, Container, Button, Col, Row } from "react-bootstrap";
+
+
+import buysellImg from "../assets/img/icons/buy-sell.png";
+import noncustodialImg from "../assets/img/icons/noncustodial.png";
+import opensourceImg from "../assets/img/icons/open-source.png";
+import paybtcImg from "../assets/img/icons/paybtc.png";
+import permissionlessImg from "../assets/img/icons/permissionless.png";
+import premiumImg from "../assets/img/icons/premium.png";
+import trustlessImg from "../assets/img/icons/trustless.png";
+import interlayImg from "../assets/img/interlay.png";
 
 class LandingPage extends Component {
 
@@ -9,14 +19,66 @@ class LandingPage extends Component {
       <div>
         <section className="jumbotron text-center white-background">
           <div className="container">
-            <h1 style={{fontSize: "3.8em"}}>Trustless, Non-Custodial Bitcoin Options</h1>
-            <h3 className="lead text-muted">Trade Bitcoin Options. Keep Control Over You Coins.</h3>
-            <NavLink to="/market">Market</NavLink>
+            <h1 style={{ fontSize: "3.4em" }}>Trustless, Non-Custodial Bitcoin Options</h1>
+            <h3 style={{ fontSize: "1.5em" }}className="lead text-muted">Trade Bitcoin Options. Keep Control Over Your Funds.</h3>
+
+            <Row className="mt-4">
+              <Col className="mt-2" xs="12" sm={{ span: 4, offset: 2 }} lg={{ span: 2, offset: 4 }}>
+                <NavLink className="text-decoration-none" to="/market"><Button variant="outline-primary" size="lg" block>Trade</Button></NavLink>
+              </Col>
+              <Col className="mt-2" xs="12" sm={{ span: 4 }} lg={{ span: 2 }}>
+                <NavLink className="text-decoration-none" to="/help"><Button variant="outline-dark" size="lg" block>How it works</Button></NavLink>
+              </Col>
+            </Row>
           </div>
         </section>
         <Container fluid>
-          <section>
+          <section className="jumbotron text-center">
+            <Col xl={{ span: 6, offset: 3 }}>
 
+              <Row className="">
+                <Col xs={{ span: 4 }} className="text-center">
+                  <Image rounded src={buysellImg} width="64"></Image>
+                  <h4 className="mt-3">Hedge BTC Risk</h4>
+                  <p>Secure yourself against BTC volatility.</p>
+                </Col>
+                <Col xs={{ span: 4 }} className="text-center">
+                  <Image rounded src={paybtcImg} width="64"></Image>
+                  <h4 className="mt-3">Pay in Bitcoin</h4>
+                  <p>Settle in native BTC. No need for wrapped tokens.</p>
+                </Col>
+                <Col xs={{ span: 4 }} className="text-center">
+                  <Image rounded src={premiumImg} width="64"></Image>
+                  <h4 className="mt-3">Earn Premium</h4>
+                  <p>Sell insurance to earn premium in DAI, other stablecoins, or ETH.</p>
+                </Col>
+              </Row>
+
+              <Row className="mt-5">
+                <Col xs={{ span: 4 }} className="text-center">
+                  <Image rounded src={trustlessImg} width="64"></Image>
+                  <h4 className="mt-3">Trustless</h4>
+                  <p>XOpts is fully decentralized and uses no intermediaries.</p>
+                </Col>
+                <Col xs={{ span: 4 }} className="text-center">
+                  <Image rounded src={noncustodialImg} width="64"></Image>
+                  <h4 className="mt-3">Non-Custodial</h4>
+                  <p>You keep control over your funds at all times.</p>
+                </Col>
+                <Col xs={{ span: 4 }} className="text-center">
+                  <Image rounded src={permissionlessImg} width="64"></Image>
+                  <h4 className="mt-3">Permissionless</h4>
+                  <p>Anyone can create and price their own options, without restriction.</p>
+                </Col>
+              </Row>
+            </Col>
+          </section>
+          <section>
+            <Col className="text-center mb-5" xl={{ span: 6, offset: 3 }}>
+
+              <h3>XOpts is built and maintained by </h3>
+              <a href="https://www.interlay.io/" target="__blank"><Image src={interlayImg} width="256"></Image></a>
+            </Col>
           </section>
         </Container>
       </div>
