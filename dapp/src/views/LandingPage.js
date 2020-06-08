@@ -1,8 +1,6 @@
 import React, { Component } from "react";
 import { withRouter, NavLink } from 'react-router-dom';
 import { Image, Container} from "react-bootstrap";
-import HelpBuy from '../components/HelpBuy.js';
-import buyImage from "../assets/img/process/buy.png";
 
 class LandingPage extends Component {
 
@@ -18,7 +16,7 @@ class LandingPage extends Component {
         </section>
         <Container fluid>
           <section>
-            <HelpBuy/>
+
           </section>
         </Container>
       </div>
