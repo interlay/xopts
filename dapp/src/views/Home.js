@@ -15,14 +15,14 @@ class Home extends Component {
     return (
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
-        <Container fluid>
+        <Container>
             <h2>Buy and Sell Put Options</h2>
             <p className="lead text-muted">Available Markets:</p>
             <h4> BTC <Image src={bitcoinImg}/> - DAI <Image src={daiImg} /></h4>
-            <a className="nav-link" href="https://www.cryptocompare.com/" target="__blank"> 
-            {this.props.btcPrices.dai} BTC/DAI  &nbsp; - &nbsp;
-            {this.props.btcPrices.usd} BTC/USD &nbsp; - &nbsp;
-            {this.props.daiPrices.usd} DAI/USD
+            <a className="nav-link prices" href="https://www.cryptocompare.com/" target="__blank"> 
+              {this.props.btcPrices.dai} BTC/DAI  &nbsp; - &nbsp;
+              {this.props.btcPrices.usd} BTC/USD &nbsp; - &nbsp;
+              {this.props.daiPrices.usd} DAI/USD
             </a>
           </Container>
         </section>

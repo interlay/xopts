@@ -3,7 +3,7 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
 import xoptsLogo from "../assets/img/xopts.png";
-import { FaBell, FaGavel, FaUser, FaExchangeAlt, FaFileAlt, FaQuestion, FaQuestionCircle } from 'react-icons/fa';
+import { FaBell, FaExchangeAlt, FaFileAlt, FaQuestionCircle } from 'react-icons/fa';
 import BalanceTopbar from './BalanceTopbar.js';
 
 class Web3LogIn extends Component {
@@ -34,7 +34,7 @@ class Web3LogIn extends Component {
   render() {
     if (this.props.isLoggedIn && this.props.address) {
       return (
-        <Link className="nav-link" to="/dashboard">
+        <Link className="nav-link" to="/positions">
           <Badge pill variant="success"> {this.props.address.substring(0, 6)}...{this.props.address.substring(38)}</Badge>
         </Link>)
     } else if (this.props.isWeb3) {
@@ -56,25 +56,20 @@ class TopBar extends Component {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">
-            <Link className="nav-link" to="/market">
+            <Link className="nav-link" to="/trade">
               Trade <FaExchangeAlt />
             </Link>
 
             {this.props.isLoggedIn &&
-              <Link className="nav-link" to="/dashboard">
+              <Link className="nav-link" to="/positions">
                 Positions <FaFileAlt />
               </Link>
             }
 
             <Link className="nav-link" to="/help">
-                Help <FaQuestionCircle />
-              </Link>
+              Help <FaQuestionCircle />
+            </Link>
 
-            {this.props.isLoggedIn && this.props.hasPendingOptions() &&
-              <Link className="nav-link" to="/pending">
-                Pending Transactions <FaBell />
-              </Link>
-            }
           </Nav>
           <Nav>
             <BalanceTopbar {...this.props} />

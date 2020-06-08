@@ -13,12 +13,12 @@ export default class Dashboard extends Component {
   
   render() {
     if(!this.props.isLoggedIn){
-      return <Redirect to="/market" />
+      return <Redirect to="/trade" />
     }
     return (
       <div>
         <section className="jumbotron text-center border-bottom shadow-sm">
-          <div className="container">
+          <Container>
             <h2>Your Positions</h2>
             <p className="lead text-muted">Account: {this.props.address} </p>
             <h4> BTC <Image src={bitcoinImg}/> - DAI <Image src={daiImg} /></h4>
@@ -27,7 +27,7 @@ export default class Dashboard extends Component {
             {this.props.btcPrices.usd} BTC/USD &nbsp; - &nbsp;
             {this.props.daiPrices.usd} DAI/USD
             </a>
-          </div>
+          </Container>
         </section>
         <Container fluid>
           <section>

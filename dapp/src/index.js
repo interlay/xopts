@@ -12,7 +12,7 @@ import './assets/css/custom-bootstrap.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './assets/css/custom.css';
 
-import Dashboard from "./views/Dashboard";
+import Dashboard from "./views/Positions";
 import Home from "./views/Home";
 import LandingPage from "./views/LandingPage";
 import Help from "./views/Help";
@@ -23,8 +23,8 @@ import Footer from "./components/Footer";
 import { Contracts } from './controllers/contracts';
 import { BitcoinQuery } from './controllers/bitcoin-data.js';
 import { Storage } from './controllers/storage.js';
-import Pending from "./views/Pending";
-import { pollPendingConfirmations } from './utils/poll';
+import { pollAllPendingConfirmations } from './utils/poll';
+import { showFailureToast } from "./controllers/toast";
 
 const INFURA_API_TOKEN = "cffc5fafb168418abcd50a3309eed8be";
 
@@ -41,7 +41,6 @@ class App extends Component {
       btcProvider: null,
       contracts: null,
       storage: null,
-      hasPendingOptions: () => false,
       btcPrices: {
         dai: null,
         usd: null,
@@ -75,7 +74,7 @@ class App extends Component {
 
     if (!this.state.isLoggedIn) {
       // Connect to infura
-      let provider = await new ethers.providers.InfuraProvider('ropsten', INFURA_API_TOKEN);
+      let provider = new ethers.providers.InfuraProvider('ropsten', INFURA_API_TOKEN);
       this.setState({
         provider: provider
       });
@@ -85,17 +84,8 @@ class App extends Component {
         // Get user account data, if already logged in
       } else {
         console.log("Could not find Web3 provider.");
-        toast.info('Could not fetch blockchain data. Please connect to a wallet (e.g. Metamask), or try again later.', {
-          position: "top-center",
-          autoClose: 10000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
+        showFailureToast(toast, 'Could not fetch blockchain data. Please connect to a wallet (e.g. Metamask), or try again later.', 10000);
       }
-
     }
   }
 
@@ -110,7 +100,8 @@ class App extends Component {
       // Try to get signer (needed to send transactions)
       signer = await provider.getSigner();
       address = await signer.getAddress();
-      contracts = new Contracts(signer, network);
+      const { optionPoolAddress, erc20Address } = Contracts.resolve(network);
+      contracts = new Contracts(signer, optionPoolAddress, erc20Address);
       let storage = new Storage(address);
       let btcProvider = new BitcoinQuery();
       this.setState({
@@ -119,13 +110,15 @@ class App extends Component {
         address: address,
         contracts: contracts,
         storage: storage,
-        hasPendingOptions: storage.hasPendingOptions.bind(storage),
         btcProvider: btcProvider,
       });
-      pollPendingConfirmations(btcProvider, storage);
+      pollAllPendingConfirmations(btcProvider, storage);
     } catch (error) {
       // Otherwise, fetch contracts in read-only mode
-      contracts = new Contracts(provider, network);
+      try {
+        contracts = new Contracts(provider, "", "");
+      } catch(e) {}
+      showFailureToast(toast, error.toString(), 3000);
     }
     this.setState({
       isWeb3: true,
@@ -180,7 +173,6 @@ class App extends Component {
 
   async getStorageProvider(address) {
     this.storage = new Storage(address);
-    // this.storage.clearPendingOptions();
   }
 
   render() {
@@ -195,18 +187,12 @@ class App extends Component {
           <Route path="/help">
             <Help />
           </Route>
-
-          <Route path="/dashboard">
+          
+          <Route path="/positions">
             <Dashboard {...this.state} />
           </Route>
 
-          <Route path="/pending">
-            <Pending {...this.state} />
-          </Route>
-
-          <Route path="/market" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
-
-          
+          <Route path="/trade" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
         </Switch>
         <Footer />
       </Router>

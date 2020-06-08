@@ -24,7 +24,7 @@ class LandingPage extends Component {
 
             <Row className="mt-4">
               <Col className="mt-2" xs="12" sm={{ span: 4, offset: 2 }} lg={{ span: 2, offset: 4 }}>
-                <NavLink className="text-decoration-none" to="/market"><Button variant="outline-primary" size="lg" block>Trade</Button></NavLink>
+                <NavLink className="text-decoration-none" to="/trade"><Button variant="outline-primary" size="lg" block>Trade</Button></NavLink>
               </Col>
               <Col className="mt-2" xs="12" sm={{ span: 4 }} lg={{ span: 2 }}>
                 <NavLink className="text-decoration-none" to="/help"><Button variant="outline-dark" size="lg" block>How it works</Button></NavLink>
