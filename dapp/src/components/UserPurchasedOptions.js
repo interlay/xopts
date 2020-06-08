@@ -1,8 +1,10 @@
 import React, { Component } from "react";
-import { Col, Row, Table, Button, Card, Spinner, Modal } from "react-bootstrap";
+import { Col, Row, Table, Button, Card, Spinner } from "react-bootstrap";
 import { ToastContainer, toast } from 'react-toastify';
 import * as utils from '../utils/utils.js';
-import ExerciseWizard from './WizardExercise';
+import PayWizard from './WizardPay';
+import ConfWizard from './WizardConf';
+import { ButtonTool } from "./ButtonTool.js";
 
 export default class UserPurchasedOptions extends Component {
 
@@ -15,17 +17,20 @@ export default class UserPurchasedOptions extends Component {
             insuranceAvailable: utils.newBig(0),
             paidPremium: utils.newBig(0),
             totalIncome: utils.newBig(0),
-            currentStep: 1,
             amount: 0,
             height: 0,
             index: 0,
             txid: null,
             proof: null,
             rawtx: null,
+            showPayModal: false,
+            showConfModal: false,
         };
 
         this.handleChange = this.handleChange.bind(this);
-        this.hideExerciseModel = this.hideExerciseModel.bind(this);
+        this.showPayModal = this.showPayModal.bind(this);
+        this.hidePayModal = this.hidePayModal.bind(this);
+        this.hideConfModal = this.hideConfModal.bind(this);
         this.reloadPurchased = this.reloadPurchased.bind(this);
     }
 
@@ -73,6 +78,7 @@ export default class UserPurchasedOptions extends Component {
                     totalSupply: utils.weiDaiToDai(utils.newBig(optionRes[3].toString())),
                     // User's purchased options
                     totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionContracts[1][i].toString())),
+                    numSellers: (await optionContract.getOptionOwners()).length,
                 }
                 option.spotPrice = utils.newBig(this.props.btcPrices.dai);
                 option.contract = optionContracts[0][i];
@@ -101,7 +107,7 @@ export default class UserPurchasedOptions extends Component {
 
     // TODO: fetch number of sellers
     hasNonPendingSellers(contract, numSellers) {
-        return this.props.storage.getPendingOptionsForOption(contract).length !== numSellers;
+        return this.props.storage.getPendingTransactionsFor(contract).length !== numSellers;
     }
 
     renderTableData() {
@@ -124,18 +130,31 @@ export default class UserPurchasedOptions extends Component {
                           </strong> DAI </td>
 
                         <td>
-                            <Button 
-                                variant="outline-success"
-                                // disabled={!this.hasNonPendingSellers(contract, 1)}
-                                onClick={() => { this.showExerciseModel(option.contract) }}>
-                                Exercise
-                            </Button>
+                            <ButtonTool
+                                disable={!this.hasNonPendingSellers(contract, option.numSellers)}
+                                reason={"Pending"}
+                                placement={"left"}
+                                text={"Pay"}
+                                variant={"outline-success"}
+                                show={this.showPayModal}
+                                showValue={option.contract}
+                            />
+                            {" "}
+                            {
+                                this.props.storage.hasPendingTransactionsFor(option.contract) &&
+                                    <Button 
+                                        variant="outline-danger"
+                                        // disabled={!this.hasNonPendingSellers(contract, 1)}
+                                        onClick={() => { this.showConfModal(option.contract) }}>
+                                        Confirm
+                                    </Button>
+                            }
                         </td>
                     </tr>
                 )
             })
         } else {
-            return <tr><td colSpan="7">No options purchased yet</td></tr>
+            return <tr><td className="text-center" colSpan="8">No Options</td></tr>
         }
     }
 
@@ -146,17 +165,29 @@ export default class UserPurchasedOptions extends Component {
         });
     }
 
-    showExerciseModel(contract) {
+    showPayModal(contract) {
         this.setState({
             contractAddress: contract,
-            showExerciseModal: true,
+            showPayModal: true,
         });
     }
 
-    hideExerciseModel() {
+    hidePayModal() {
         this.setState({
-            currentStep: 1,
-            showExerciseModal: false,
+            showPayModal: false,
+        })
+    }
+
+    showConfModal(contract) {
+        this.setState({
+            contractAddress: contract,
+            showConfModal: true,
+        });
+    }
+
+    hideConfModal() {
+        this.setState({
+            showConfModal: false,
         })
     }
 
@@ -231,19 +262,22 @@ export default class UserPurchasedOptions extends Component {
                     }
                 </Card>
 
-                <Modal
-                    size="lg"
-                    aria-labelledby="contained-modal-title-vcenter"
-                    centered
-                    show={this.state.showExerciseModal} onHide={() => this.setState({ showExerciseModal: false })}>
-                    <ExerciseWizard 
-                        contract={this.state.contractAddress}
-                        hide={this.hideExerciseModel}
-                        toast={toast}
-                        reloadPurchased={this.reloadPurchased}
-                        {...this.props}>
-                    </ExerciseWizard>
-                </Modal>
+                <PayWizard 
+                    contract={this.state.contractAddress}
+                    hide={this.hidePayModal}
+                    toast={toast}
+                    reloadPurchased={this.reloadPurchased}
+                    showPayModal={this.state.showPayModal}
+                    {...this.props}>
+                </PayWizard>
+                <ConfWizard 
+                    contract={this.state.contractAddress}
+                    hide={this.hideConfModal}
+                    toast={toast}
+                    reloadPurchased={this.reloadPurchased}
+                    showConfModal={this.state.showConfModal}
+                    {...this.props}>
+                </ConfWizard>
             </Col>
         </div>;
     }

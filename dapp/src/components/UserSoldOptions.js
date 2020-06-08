@@ -180,7 +180,7 @@ export default class UserSoldOptions extends Component {
                     )
                 })
             } else {
-                return <tr><td colSpan="7">No options sold yet</td></tr>
+                return <tr><td className="text-center" colSpan="9">No Options</td></tr>
             }
         } else {
             return <tr><td colSpan="7" className="text-center"><Spinner animation="border" /></td></tr>
