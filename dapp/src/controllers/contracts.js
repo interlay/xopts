@@ -9,15 +9,20 @@ const DEFAULT_CONFIRMATIONS = 1;
 
 export class Contracts {
 
-    constructor(signer, network) {
+    constructor(signer, optionPoolAddress, erc20Address) {
         this.signer = signer;
 
-        let optionPoolAddress;
-        let erc20Address;
+        this.optionPoolContract = new ethers.Contract(optionPoolAddress, optionPoolArtifact.abi, signer);
+        this.erc20Contract = new ethers.Contract(erc20Address, erc20Artifact.abi, signer);
+    }
+
+    static resolve(network) {
+        let optionPoolAddress = "";
+        let erc20Address = "";
         // Ganache
         if (network.chainId === 2222) {
-            optionPoolAddress = "0x6321Fd96859603358099b9B35B1bE54459777040";
-            erc20Address = "0xAB1a954C128E558963832Ba8d923D3BB1F7861F4";
+            optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
+            erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
         // Ropsten
         } else if (network.chainId === 3 && network.name === "ropsten") {
             optionPoolAddress = "0x80D56cB9a130042488b49607Aaaf6Ad0523bc8b6";
@@ -26,10 +31,11 @@ export class Contracts {
         } else if (network.chainId === 31337) {
             optionPoolAddress = "0xf4e77E5Da47AC3125140c470c71cBca77B5c638c";
             erc20Address = "0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F";
+        } else {
+            throw new Error("Unsupported Network");
         }
-
-        this.optionPoolContract = new ethers.Contract(optionPoolAddress, optionPoolArtifact.abi, signer);
-        this.erc20Contract = new ethers.Contract(erc20Address, erc20Artifact.abi, signer);
+        return {optionPoolAddress, erc20Address};
+    
     }
 
     getOptions() {
@@ -102,14 +108,25 @@ export class Option {
         return this.sellable.getDetails();
     }
 
-    getOptionSellers() {
-        return this.sellable.getOptionSellers();
+    async getOptionSellers() {
+        let [sellers, amounts] = await this.sellable.getOptionSellers();
+        return sellers.map((seller, i) => {
+            return [seller, amounts[i]];
+        }).filter((value => {
+            return xutils.newBig(value[1].toString()).gt(0);
+        }));
     }
 
-    async getOptionOwnersFor(address) {
+    async getOptionOwners() {
+        let address = await this.signer.getAddress();
         let buyableAddress = await this.sellable.getBuyable();
         let buyable = new ethers.Contract(buyableAddress, optionBuyableArtifact.abi, this.signer);
-        return buyable.getOptionOwnersFor(address);
+        let [sellers, amounts] = await buyable.getOptionOwnersFor(address);
+        return sellers.map((seller, i) => {
+            return [seller, amounts[i]];
+        }).filter((value => {
+            return xutils.newBig(value[1].toString()).gt(0);
+        }));
     }
 
     getBtcAddress(address) {
