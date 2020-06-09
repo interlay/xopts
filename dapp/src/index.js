@@ -92,37 +92,44 @@ class App extends Component {
   async getBlockchainData(provider) {
     let network = await provider.getNetwork();
 
+    let optionPoolAddress = "";
+    let erc20Address = "";
+    try {
+      ({ optionPoolAddress, erc20Address } = Contracts.resolve(network));
+    } catch (error) {
+      showFailureToast(toast, error.toString(), 3000);
+      return;
+    }
+
     let contracts = null;
     let address = null;
     let signer = null;
+
+    let storage = new Storage(address);
+    let btcProvider = new BitcoinQuery();
+    pollAllPendingConfirmations(btcProvider, storage);
 
     try {
       // Try to get signer (needed to send transactions)
       signer = await provider.getSigner();
       address = await signer.getAddress();
-      const { optionPoolAddress, erc20Address } = Contracts.resolve(network);
       contracts = new Contracts(signer, optionPoolAddress, erc20Address);
-      let storage = new Storage(address);
-      let btcProvider = new BitcoinQuery();
       this.setState({
         isLoggedIn: true,
         signer: signer,
         address: address,
-        contracts: contracts,
-        storage: storage,
-        btcProvider: btcProvider,
       });
-      pollAllPendingConfirmations(btcProvider, storage);
+      
     } catch (error) {
       // Otherwise, fetch contracts in read-only mode
-      try {
-        contracts = new Contracts(provider, "", "");
-      } catch(e) {}
-      showFailureToast(toast, error.toString(), 3000);
+      contracts = new Contracts(provider, optionPoolAddress, erc20Address);
     }
+  
     this.setState({
       isWeb3: true,
       contracts: contracts,
+      storage: storage,
+      btcProvider: btcProvider,
     });
 
   }
