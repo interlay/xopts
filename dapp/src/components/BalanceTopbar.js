@@ -56,8 +56,12 @@ class BalanceTopbar extends Component {
                         <SpinButtonTopbar text="Get Testnet DAI" balance={this.state.balance} spinner={this.state.spinner} />
                     </Form>
                     &nbsp;
-                    <a href="https://coinfaucet.eu/en/btc-testnet/" target="__blank">
+                    <a href="https://faucet.ropsten.be/" target="__blank">
+                    <Button variant="outline-dark" size="sm" >Get Testnet ETH</Button></a>
+                    &nbsp;
+                    <a href="https://testnet-faucet.mempool.co/" target="__blank">
                     <Button variant="outline-warning" size="sm" >Get Testnet BTC</Button></a>
+
 
                 </React.Fragment>
             )

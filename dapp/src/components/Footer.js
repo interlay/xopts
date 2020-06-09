@@ -7,6 +7,8 @@ import { FaTelegramPlane, FaMediumM, FaGitlab, FaGithub, FaTwitter } from 'react
 import BalanceTopbar from './BalanceTopbar.js';
 
 
+//               <a href="https://www.interlay.io/" target="__blank"><Image src={interlayImg} width="256"></Image></a>
+
 class Footer extends Component {
 
     render() {
