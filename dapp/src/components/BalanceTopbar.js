@@ -61,8 +61,6 @@ class BalanceTopbar extends Component {
                     &nbsp;
                     <a href="https://testnet-faucet.mempool.co/" target="__blank">
                     <Button variant="outline-warning" size="sm" >Get Testnet BTC</Button></a>
-
-
                 </React.Fragment>
             )
         } else return "";

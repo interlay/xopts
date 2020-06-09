@@ -38,9 +38,9 @@ class Web3LogIn extends Component {
           <Button  variant="outline-success" size="sm" style={{"border-radius": "1em"}}>  Account: {this.props.address.substring(0, 10)}...{this.props.address.substring(38)}</Button>
         </Link>)
     } else if (this.props.isWeb3) {
-      return <Link className="nav-link" to="#"><Badge pill variant="dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Badge></Link>
+      return <Link className="nav-link" to="#"><Button size="sm" variant="outline-dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Button></Link>
     } else {
-      return <a className="nav-link" href="https://metamask.io/download.html" target="__blank"><Badge pill variant="primary"> Get MetaMask</Badge></a>
+      return <a className="nav-link" href="https://metamask.io/download.html" target="__blank"><Button size="sm" variant="outline-primary"> Get MetaMask</Button></a>
     }
   }
 }
