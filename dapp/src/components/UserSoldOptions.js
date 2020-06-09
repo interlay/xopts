@@ -233,7 +233,7 @@ export default class UserSoldOptions extends Component {
                                     </Col>
                                     <Col>
                                         <h3 className={(this.state.totalIncome.gt(0) ? "text-success": (this.state.totalIncome.lt(0) ? "text-danger" : ""))}>{this.state.totalIncome.toString()} DAI</h3>
-                                        <h6>Income</h6>
+                                        <h6>(Potential) Income</h6>
                                     </Col>
                                 </Row>
                             }
