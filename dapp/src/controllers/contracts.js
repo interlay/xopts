@@ -35,7 +35,6 @@ export class Contracts {
             throw new Error("Unsupported Network");
         }
         return {optionPoolAddress, erc20Address};
-    
     }
 
     getOptions() {
