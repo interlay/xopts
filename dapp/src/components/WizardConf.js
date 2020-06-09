@@ -8,6 +8,19 @@ import { SpinButton } from "./SpinButton.js";
 import { endianness } from "os";
 import blockstreamImg from "../assets/img/blockstream.png";
 
+const Item = ({ active, children }) => (
+    <ListGroup.Item 
+        action
+        disabled
+        className="text-center"
+        variant="success"
+        active={active}
+        variant={active ? "success" : ""}
+    >
+        {children}
+    </ListGroup.Item>
+)
+
 class Select extends Component {
     constructor(props) {
         super(props);
@@ -39,30 +52,11 @@ class Select extends Component {
 
                 return (
                     <ListGroup key={txid + recipient} horizontal>
-                        <ListGroup.Item 
-                            action
-                            disabled
-                            className="text-center"
-                            active={confirmations >= STABLE_CONFIRMATIONS}
-                        >
-                            {optionId}
-                        </ListGroup.Item>
-                        <ListGroup.Item 
-                            action
-                            disabled
-                            className="text-center"
-                            active={confirmations >= STABLE_CONFIRMATIONS}
-                        >
-                            {recipient.substring(0, 6)}...{recipient.substring(38)}
-                        </ListGroup.Item>
-                        <ListGroup.Item 
-                            action
-                            disabled
-                            className="text-center"
-                            active={confirmations >= STABLE_CONFIRMATIONS}
-                        >
-                            {amountBtc.toString()} BTC
-                        </ListGroup.Item>
+                        <Item active={confirmations >= STABLE_CONFIRMATIONS}>{optionId}</Item>
+                        <Item active={confirmations >= STABLE_CONFIRMATIONS}>{recipient.substring(0, 6)}...{recipient.substring(38)}</Item>
+                        <Item active={confirmations >= STABLE_CONFIRMATIONS}>{amountBtc.toString()} BTC</Item>
+                        <Item active={confirmations >= STABLE_CONFIRMATIONS}>{confirmations} / {STABLE_CONFIRMATIONS}</Item>
+
                         <ListGroup.Item
                             action
                             disabled={confirmations < STABLE_CONFIRMATIONS}
@@ -90,7 +84,7 @@ class Select extends Component {
         }
         return (
             <ListGroup>
-                <p>We monitor your pending transactions via the <Image src={blockstreamImg}  height="40" /> API, please confirm to finalize contract.</p>
+                <p>We monitor your pending transactions via the <Image src={blockstreamImg}  height="40" /> API, please confirm once ready to finalize the contract.</p>
                 {this.loadPending()}
             </ListGroup>
         )
@@ -215,7 +209,7 @@ class ConfWizard extends Component {
     render() {
         return (
             <Modal
-                size="lg"
+                size="xl"
                 aria-labelledby="contained-modal-title-vcenter"
                 centered
                 show={this.props.showConfModal} onHide={() => this.exitModal()}>
