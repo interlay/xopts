@@ -10,7 +10,6 @@ import paybtcImg from "../assets/img/icons/paybtc.png";
 import permissionlessImg from "../assets/img/icons/permissionless.png";
 import premiumImg from "../assets/img/icons/premium.png";
 import trustlessImg from "../assets/img/icons/trustless.png";
-import interlayImg from "../assets/img/interlay.png";
 
 class LandingPage extends Component {
 
