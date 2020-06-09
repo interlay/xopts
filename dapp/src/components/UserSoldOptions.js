@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Col, Row, Table, Button, Card, Spinner, Modal } from "react-bootstrap";
+import { Col, Row, Table, Card, Spinner } from "react-bootstrap";
 import { ToastContainer, toast } from 'react-toastify';
 import * as utils from '../utils/utils.js';
 import { ButtonTool } from "./ButtonTool";
