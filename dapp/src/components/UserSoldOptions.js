@@ -1,8 +1,9 @@
 import React, { Component } from "react";
-import { Col, Row, Table, Button, Card, Spinner, Modal } from "react-bootstrap";
+import { Col, Row, Table, Card, Spinner } from "react-bootstrap";
 import { ToastContainer, toast } from 'react-toastify';
 import * as utils from '../utils/utils.js';
 import { ButtonTool } from "./ButtonTool";
+import { RefundModal } from "./RefundModal.js";
 
 export default class UserSoldOptions extends Component {
     constructor(props) {
@@ -16,9 +17,15 @@ export default class UserSoldOptions extends Component {
             insuranceAvailable: utils.newBig(0),
             totalPremium: utils.newBig(0),
             totalIncome : utils.newBig(0),
-            showRefund: false,
-            refundOption: {}
+            showRefundModal: false,
+            refundOption: {
+                totalSupplyLocked: utils.newBig(0),
+            },
         };
+
+        this.showRefundModal = this.showRefundModal.bind(this);
+        this.hideRefundModal = this.hideRefundModal.bind(this);
+        this.reloadSold = this.reloadSold.bind(this);
     }
 
     componentDidUpdate() {
@@ -99,52 +106,25 @@ export default class UserSoldOptions extends Component {
         return options;
     }
 
-
-    handleRefund(index) {
+    showRefundModal(index) {
         this.setState({
             refundOption: this.state.soldOptions[index],
-            showRefund: true
+            showRefundModal: true
         });
     }
 
-    async doRefund() {
-        try {
-            await this.props.contracts.refundOption(this.state.refundOption.contract);
-            toast.success('Refund successful!', {
-                position: "top-center",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-            });
-            this.forceUpdate()
-        } catch (error) {
-            toast.error('Oops.. Something went wrong!', {
-                position: "top-center",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-            });
-        }
+    hideRefundModal() {
         this.setState({
-            refundOption: {},
-            showRefund: false,
-        });
-
-    }
-
-    cancelRefund() {
-        this.setState({
-            refundOption: {},
-            showRefund: false
+            refundOption: {
+                totalSupplyLocked: utils.newBig(0),
+            },
+            showRefundModal: false
         });
     }
 
+    reloadSold() {
+        this.getCurrentOptions();
+    }
 
     renderTableData() {
         if (this.state.soldLoaded) {
@@ -159,7 +139,7 @@ export default class UserSoldOptions extends Component {
                             <td>{id}</td>
                             <td>{new Date(expiry * 1000).toLocaleString()}</td>
                             <td>{strikePrice.toString()} DAI</td>
-                            <td><span  className={(income.gte(0) ? "text-success": "text-danger")}>{spotPrice}</span> DAI</td>
+                            <td><span  className={(income.gte(0) ? "text-success": "text-danger")}>{spotPrice.toString()}</span> DAI</td>
                             <td><strong>{soldOptions.round(2, 0).toString()}</strong> / {totalSupplyLocked.round(2, 0).toString()} DAI <br/>({percentSold.toFixed(0)}%) </td>
                             <td>{totalSupplyLocked.round(2, 0).toString()} / {totalSupply.round(2, 0).toString()} DAI <br/> ({percentInsured.toFixed(0)}%)</td>
                             <td><strong className={"text-success"}>{premiumEarned.round(2, 0).toString()}</strong> DAI <br/> ({premium.round(2, 0).toString()} DAI/BTC)</td>
@@ -172,7 +152,7 @@ export default class UserSoldOptions extends Component {
                                     placement={"right"}
                                     text={"Refund"}
                                     variant={"outline-danger"}
-                                    show={this.handleRefund}
+                                    show={this.showRefundModal}
                                     showValue={index}
                                 />
                             </td>
@@ -264,26 +244,14 @@ export default class UserSoldOptions extends Component {
                         </Card.Body>
                     }
                 </Card>
-                <Modal
-                    size="lg"
-                    aria-labelledby="contained-modal-title-vcenter"
-                    centered
-                    show={this.state.showRefund} onHide={() => this.setState({ showRefund: false })}>
-                    <Modal.Header closeButton>
-                        <Modal.Title id="contained-modal-title-vcenter">
-                            Refund {this.state.refundOption.totalSupplyLocked} DAI From Option Contract?
-                        </Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <p>
-                            Are you sure you want to refund this option contract, worth <strong>{this.state.refundOption.totalSupplyLocked} DAI</strong> to <strong>{this.props.address}</strong>?
-                        </p>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button onClick={() => this.doRefund()}>Refund</Button>
-                        <Button variant="danger" onClick={() => this.cancelRefund()}>Cancel</Button>
-                    </Modal.Footer>
-                </Modal>
+                <RefundModal
+                    showRefundModal={this.state.showRefundModal}
+                    hideRefundModal={this.hideRefundModal}
+                    refundOption={this.state.refundOption}
+                    reloadSold={this.reloadSold}
+                    toast={toast}
+                    {...this.props}
+                />
 
             </Col>
         </div>;

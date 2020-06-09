@@ -124,9 +124,9 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 ### Ropsten
 
 ```
-Collateral (ERC20): 0x3DE71EcBa8ef146cbe56B72c8c0c4b5A23F0020C
-TxValidator: 0x70c5D42b8BEDF9b7E6330B50325F3f41563d8F94
-OptionPool: 0x80D56cB9a130042488b49607Aaaf6Ad0523bc8b6
+Collateral (ERC20): 0xa87b5C7F0a3484E87857e9bdEeDE9D1b193B9dDa
+TxValidator: 0xBEf0F76452f7040460930A9135ab60aaA410C340
+OptionPool: 0xE49141126fACde1033210ba1b01Ec9Cd86297A8E
 ```
 
 You can interact with a locally deployed front-end on [localhost:3000](http://localhost:3000).
@@ -135,7 +135,7 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 
 - [x] Integration with [Uniswap v2](https://uniswap.org/docs/v2).
 - [ ] Integration with [ENS](https://ens.domains/).
-- [ ] Deployment on Ropsten.
+- [x] Deployment on Ropsten.
 - [ ] Development of call options.
 
 ## Contributing
