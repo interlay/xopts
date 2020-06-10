@@ -26,7 +26,7 @@ class BalanceTopbar extends Component {
     }
 
     async componentDidUpdate() {
-        if (this.props.address && !this.state.loaded && this.props.contracts) {
+        if (this.props.signer && !this.state.loaded && this.props.contracts) {
             await this.updateBalance();
         }
     }
@@ -45,7 +45,6 @@ class BalanceTopbar extends Component {
         showSuccessToast(toast, 'Testnet DAI Sent', 3000);
         this.setState({ spinner: false });
         await this.updateBalance();
-
     }
 
     render() {
@@ -61,8 +60,6 @@ class BalanceTopbar extends Component {
                     &nbsp;
                     <a href="https://testnet-faucet.mempool.co/" target="__blank">
                     <Button variant="outline-warning" size="sm" >Get Testnet BTC</Button></a>
-
-
                 </React.Fragment>
             )
         } else return "";
