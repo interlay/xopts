@@ -7,3 +7,4 @@ dapp/build
 docs/venv
 docs/build
 *.pyc
+keys.json

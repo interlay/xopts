@@ -7,26 +7,6 @@ import { FaExchangeAlt, FaFileAlt, FaQuestionCircle, FaComment } from 'react-ico
 import BalanceTopbar from './BalanceTopbar.js';
 
 class Web3LogIn extends Component {
-
-  async logIn() {
-    let web3 = window.web3;
-    if (typeof web3 !== 'undefined') {
-      try {
-        await window.ethereum.enable();
-        let signer = await this.props.provider.getSigner();
-        let address = await signer.getAddress();
-        this.setState({
-          isLoggedIn: true,
-          signer: signer,
-          address: address
-        });
-        this.forceUpdate();
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  }
-
   handleLogIn() {
     this.props.tryLogIn(true);
   }

@@ -40,6 +40,7 @@ pages:
   stage: deploy
   script:
     - mv dapp/build/ public/
+    - cp public/index.html public/404.html
   artifacts:
     paths:
     - public
