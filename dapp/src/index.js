@@ -61,7 +61,6 @@ class App extends Component {
     this.getStorageProvider();
   }
 
-
   async getWeb3() {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
@@ -118,6 +117,8 @@ class App extends Component {
         isLoggedIn: true,
         signer: signer,
         address: address,
+        // don't set state without contracts
+        contracts: contracts,
       });
       
     } catch (error) {
@@ -135,20 +136,15 @@ class App extends Component {
   }
 
   tryLogIn = async (activeLogin) => {
-    let web3 = window.web3;
-    if (typeof web3 !== 'undefined') {
+    if (typeof window.ethereum !== 'undefined') {
       try {
         if (activeLogin) {
           await window.ethereum.enable();
         }
-        let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
-        //  Check if we indeed have a signer + address => if yes, user is logged in.
-        let _signer = provider.getSigner();
-        await _signer.getAddress();
-        this.setState({
-          isLoggedIn: true
-        });
-        this.getBlockchainData(provider);
+        let provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.ready;
+        // do not re-render until we have contracts controller
+        await this.getBlockchainData(provider);
       } catch (error) {
         console.log("Not logged in.")
       }

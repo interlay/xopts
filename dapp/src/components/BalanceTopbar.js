@@ -26,7 +26,7 @@ class BalanceTopbar extends Component {
     }
 
     async componentDidUpdate() {
-        if (this.props.address && !this.state.loaded && this.props.contracts) {
+        if (this.props.signer && !this.state.loaded && this.props.contracts) {
             await this.updateBalance();
         }
     }
@@ -45,7 +45,6 @@ class BalanceTopbar extends Component {
         showSuccessToast(toast, 'Testnet DAI Sent', 3000);
         this.setState({ spinner: false });
         await this.updateBalance();
-
     }
 
     render() {
