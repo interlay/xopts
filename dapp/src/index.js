@@ -61,7 +61,6 @@ class App extends Component {
     this.getStorageProvider();
   }
 
-
   async getWeb3() {
     let web3 = window.web3;
     if (typeof web3 !== 'undefined') {
@@ -92,56 +91,60 @@ class App extends Component {
   async getBlockchainData(provider) {
     let network = await provider.getNetwork();
 
+    let optionPoolAddress = "";
+    let erc20Address = "";
+    try {
+      ({ optionPoolAddress, erc20Address } = Contracts.resolve(network));
+    } catch (error) {
+      showFailureToast(toast, error.toString(), 3000);
+      return;
+    }
+
     let contracts = null;
     let address = null;
     let signer = null;
+
+    let storage = new Storage(address);
+    let btcProvider = new BitcoinQuery();
+    pollAllPendingConfirmations(btcProvider, storage);
 
     try {
       // Try to get signer (needed to send transactions)
       signer = await provider.getSigner();
       address = await signer.getAddress();
-      const { optionPoolAddress, erc20Address } = Contracts.resolve(network);
       contracts = new Contracts(signer, optionPoolAddress, erc20Address);
-      let storage = new Storage(address);
-      let btcProvider = new BitcoinQuery();
       this.setState({
         isLoggedIn: true,
         signer: signer,
         address: address,
+        // don't set state without contracts
         contracts: contracts,
-        storage: storage,
-        btcProvider: btcProvider,
       });
-      pollAllPendingConfirmations(btcProvider, storage);
+
     } catch (error) {
       // Otherwise, fetch contracts in read-only mode
-      try {
-        contracts = new Contracts(provider, "", "");
-      } catch(e) {}
-      showFailureToast(toast, error.toString(), 3000);
+      contracts = new Contracts(provider, optionPoolAddress, erc20Address);
     }
+
     this.setState({
       isWeb3: true,
       contracts: contracts,
+      storage: storage,
+      btcProvider: btcProvider,
     });
 
   }
 
   tryLogIn = async (activeLogin) => {
-    let web3 = window.web3;
-    if (typeof web3 !== 'undefined') {
+    if (typeof window.ethereum !== 'undefined') {
       try {
         if (activeLogin) {
           await window.ethereum.enable();
         }
-        let provider = await new ethers.providers.Web3Provider(web3.currentProvider);
-        //  Check if we indeed have a signer + address => if yes, user is logged in.
-        let _signer = provider.getSigner();
-        await _signer.getAddress();
-        this.setState({
-          isLoggedIn: true
-        });
-        this.getBlockchainData(provider);
+        let provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.ready;
+        // do not re-render until we have contracts controller
+        await this.getBlockchainData(provider);
       } catch (error) {
         console.log("Not logged in.")
       }
@@ -178,23 +181,27 @@ class App extends Component {
   render() {
     return (
       <Router>
-        <Topbar {...this.state} tryLogIn={this.tryLogIn} />
-        <Switch>
-          <Route exact path="/">
-            <LandingPage />
-          </Route>
+        <div class="main d-flex flex-column min-vh-100">
+          <Topbar {...this.state} tryLogIn={this.tryLogIn} />
+          <div class="mb-5">
+            <Switch>
+              <Route exact path="/">
+                <LandingPage />
+              </Route>
 
-          <Route path="/help">
-            <Help />
-          </Route>
-          
-          <Route path="/positions">
-            <Dashboard {...this.state} />
-          </Route>
+              <Route path="/help">
+                <Help />
+              </Route>
 
-          <Route path="/trade" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
-        </Switch>
-        <Footer />
+              <Route path="/positions">
+                <Dashboard {...this.state} />
+              </Route>
+
+              <Route path="/trade" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
+            </Switch>
+          </div>
+          <Footer />
+        </div>
       </Router>
     )
   }

@@ -131,10 +131,11 @@ export default class UserPurchasedOptions extends Component {
 
                         <td>
                             <ButtonTool
+                                // TODO: allow repeats 
                                 disable={!this.hasNonPendingSellers(contract, option.numSellers)}
                                 reason={"Pending"}
                                 placement={"left"}
-                                text={"Pay"}
+                                text={"Exercise"}
                                 variant={"outline-success"}
                                 show={this.showPayModal}
                                 showValue={option.contract}
@@ -143,7 +144,7 @@ export default class UserPurchasedOptions extends Component {
                             {
                                 this.props.storage.hasPendingTransactionsFor(option.contract) &&
                                     <Button 
-                                        variant="outline-danger"
+                                        variant="outline-success"
                                         // disabled={!this.hasNonPendingSellers(contract, 1)}
                                         onClick={() => { this.showConfModal(option.contract) }}>
                                         Confirm
