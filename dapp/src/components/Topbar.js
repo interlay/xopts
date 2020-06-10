@@ -3,7 +3,7 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { withRouter } from 'react-router-dom'
 import xoptsLogo from "../assets/img/xopts.png";
-import { FaBell, FaExchangeAlt, FaFileAlt, FaQuestionCircle } from 'react-icons/fa';
+import { FaExchangeAlt, FaFileAlt, FaQuestionCircle, FaComment } from 'react-icons/fa';
 import BalanceTopbar from './BalanceTopbar.js';
 
 class Web3LogIn extends Component {
@@ -35,7 +35,7 @@ class Web3LogIn extends Component {
     if (this.props.isLoggedIn && this.props.address) {
       return (
         <Link className="nav-link" to="/positions">
-          <Button  variant="outline-success" size="sm" style={{"border-radius": "1em"}}>  Account: {this.props.address.substring(0, 10)}...{this.props.address.substring(38)}</Button>
+          <Button  variant="outline-success" size="sm" style={{borderRadius: "1em"}}>  Account: {this.props.address.substring(0, 10)}...{this.props.address.substring(38)}</Button>
         </Link>)
     } else if (this.props.isWeb3) {
       return <Link className="nav-link" to="#"><Button size="sm" variant="outline-dark" onClick={() => { this.handleLogIn() }}> Connect Wallet</Button></Link>
@@ -70,6 +70,10 @@ class TopBar extends Component {
               Help <FaQuestionCircle />
             </Link>
 
+            <a className="nav-link" href="https://forms.gle/Rean9U1EiGfpTQha6" target="__blank">
+              Give Feedback <FaComment />
+            </a>
+              
           </Nav>
           <Nav>
             <BalanceTopbar {...this.props} />
