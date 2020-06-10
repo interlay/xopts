@@ -9,7 +9,7 @@ class Footer extends Component {
 
     render() {
         return (
-            <footer className="footer">
+            <footer className="footer mt-5 flex-fill">
                 <Container>
                     <div className="row">
                         <div className="col-lg-4 col-xs-12 float-left">

@@ -120,12 +120,12 @@ class App extends Component {
         // don't set state without contracts
         contracts: contracts,
       });
-      
+
     } catch (error) {
       // Otherwise, fetch contracts in read-only mode
       contracts = new Contracts(provider, optionPoolAddress, erc20Address);
     }
-  
+
     this.setState({
       isWeb3: true,
       contracts: contracts,
@@ -181,23 +181,27 @@ class App extends Component {
   render() {
     return (
       <Router>
-        <Topbar {...this.state} tryLogIn={this.tryLogIn} />
-        <Switch>
-          <Route exact path="/">
-            <LandingPage />
-          </Route>
+        <div class="main d-flex flex-column min-vh-100">
+          <Topbar {...this.state} tryLogIn={this.tryLogIn} />
+          <div class="mb-5">
+            <Switch>
+              <Route exact path="/">
+                <LandingPage />
+              </Route>
 
-          <Route path="/help">
-            <Help />
-          </Route>
-          
-          <Route path="/positions">
-            <Dashboard {...this.state} />
-          </Route>
+              <Route path="/help">
+                <Help />
+              </Route>
 
-          <Route path="/trade" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
-        </Switch>
-        <Footer />
+              <Route path="/positions">
+                <Dashboard {...this.state} />
+              </Route>
+
+              <Route path="/trade" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
+            </Switch>
+          </div>
+          <Footer />
+        </div>
       </Router>
     )
   }
