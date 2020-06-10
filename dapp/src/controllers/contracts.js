@@ -25,8 +25,8 @@ export class Contracts {
             erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
         // Ropsten
         } else if (network.chainId === 3 && network.name === "ropsten") {
-            optionPoolAddress = "0xE49141126fACde1033210ba1b01Ec9Cd86297A8E";
-            erc20Address = "0xa87b5C7F0a3484E87857e9bdEeDE9D1b193B9dDa";
+            optionPoolAddress = "0xcF86c98b12d2F3CEF79619E1B957556322BE6b91";
+            erc20Address = "0x33BB85bf22C6C58DEd9768a84bB3EAC0C2438577";
         // Buidlerevm
         } else if (network.chainId === 31337) {
             optionPoolAddress = "0xf4e77E5Da47AC3125140c470c71cBca77B5c638c";
