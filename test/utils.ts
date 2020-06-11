@@ -14,7 +14,7 @@ export const fromWei = (x: BigNumber, u = 18) => ethers.utils.formatUnits(x, u);
 export const generateDai = async function(user:Signer, userAddress: string, collateralAmount: number, collateral: Contract) {
     const proxyRegistry = await ethers.getContractAt(
         legos.maker.proxyRegistry.abi,
-        contracts.proxyRegistry,
+        contracts.ropsten.proxyRegistry,
         user
     );
     let proxyAddress = await proxyRegistry.proxies(userAddress);
@@ -34,10 +34,10 @@ export const generateDai = async function(user:Signer, userAddress: string, coll
     );
 
     const _data = IDssProxyActions.functions.openLockETHAndDraw.encode([
-        contracts.cdpManager,
-        contracts.jug,
-        contracts.join_eth_A,
-        contracts.join_dai,
+        contracts.ropsten.cdpManager,
+        contracts.ropsten.jug,
+        contracts.ropsten.join_eth_A,
+        contracts.ropsten.join_dai,
         ethers.utils.formatBytes32String(legos.maker.ethA.symbol),
         ethers.utils.parseUnits("20", legos.erc20.dai.decimals),
     ]);
@@ -48,7 +48,7 @@ export const generateDai = async function(user:Signer, userAddress: string, coll
     console.log("Dai balance before: ", daiBefore.toString());
 
     // Open vault through proxy
-    await proxyContract.execute(contracts.dssProxyActions, _data, {
+    await proxyContract.execute(contracts.ropsten.dssProxyActions, _data, {
         gasLimit: 2500000,
         value: ethers.utils.parseEther("1"),
     });
