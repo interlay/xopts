@@ -21,7 +21,7 @@ const INFURA_ID = process.env.INFURA_XFLASH_ID;
 if (INFURA_ID) {
     const INFURA_URL = 'https://ropsten.infura.io/v3/'.concat(INFURA_ID);
     ganache_config = {...ganache_config, ...{fork: INFURA_URL}};
-    ganache_config = {...ganache_config, ...{unlocked_accounts: [contracts.dai_account, contracts.dai]}};
+    ganache_config = {...ganache_config, ...{unlocked_accounts: [contracts.ropsten.dai_account, contracts.ropsten.dai]}};
 }
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY || '';
