@@ -24,7 +24,6 @@ class Home extends Component {
               {this.props.btcPrices.usd} BTC/USD &nbsp; - &nbsp;
               {this.props.daiPrices.usd} DAI/USD
             </a>
-            <p className="text-muted">Network: Ropsten Testnet</p>
           </Container>
         </section>
         

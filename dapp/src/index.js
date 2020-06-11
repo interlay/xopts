@@ -93,8 +93,9 @@ class App extends Component {
 
     let optionPoolAddress = "";
     let erc20Address = "";
+    let relayAddress = "";
     try {
-      ({ optionPoolAddress, erc20Address } = Contracts.resolve(network));
+      ({ optionPoolAddress, erc20Address, relayAddress } = Contracts.resolve(network));
     } catch (error) {
       showFailureToast(toast, error.toString(), 3000);
       return;
@@ -112,7 +113,7 @@ class App extends Component {
       // Try to get signer (needed to send transactions)
       signer = await provider.getSigner();
       address = await signer.getAddress();
-      contracts = new Contracts(signer, optionPoolAddress, erc20Address);
+      contracts = new Contracts(signer, optionPoolAddress, erc20Address, relayAddress);
       this.setState({
         isLoggedIn: true,
         signer: signer,
@@ -123,7 +124,7 @@ class App extends Component {
 
     } catch (error) {
       // Otherwise, fetch contracts in read-only mode
-      contracts = new Contracts(provider, optionPoolAddress, erc20Address);
+      contracts = new Contracts(provider, optionPoolAddress, erc20Address, relayAddress);
     }
 
     this.setState({
