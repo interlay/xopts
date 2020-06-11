@@ -30,7 +30,7 @@ export function call<A extends Callable, B extends Attachable<A>>(contract: A, f
 }
 
 export async function mintDai(collateral: Contract, userAddress: string, collateralAmount: string) {
-    let signer = ethers.provider.getSigner(contracts.dai_account);
+    let signer = ethers.provider.getSigner(contracts.ropsten.dai_account);
     let fromDaiAccount = collateral.connect(signer);
 
     await fromDaiAccount.transfer(userAddress, collateralAmount);
@@ -89,8 +89,8 @@ export function strikePriceInDaiForOneBTC(amount: number) {
 
 // use Dai addresses
 export async function Collateral() {
-    // if we use the ganache forking option, use the Dai address on Ropsten
-	const dai = contracts.dai;
+    // if we use the ganache forking option, use the collateral address on Ropsten
+	const dai = contracts.ropsten.dai;
     const collateral = await ethers.getContractAt(legos.erc20.abi, dai);
 	console.log("Collateral (Dai)", dai);
 	return collateral;
