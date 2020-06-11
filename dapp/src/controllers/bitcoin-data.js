@@ -6,6 +6,11 @@ export class BitcoinQuery {
     this.rootUrl = "https://blockstream.info/testnet/api/"
   }
 
+  getBlockHeight() {
+    let currentChainTipQuery = this.rootUrl.concat("blocks/tip/height");
+    return queryToText(currentChainTipQuery);
+  }
+
   // Returns a status object with
   // status = {
   //   confirmed: bool,
@@ -22,8 +27,7 @@ export class BitcoinQuery {
 
     txStatus.confirmed = statusResult.confirmed;
 
-    let currentChainTipQuery = this.rootUrl.concat("blocks/tip/height");
-    let currentChainTip = await queryToText(currentChainTipQuery);
+    let currentChainTip = await this.getBlockHeight();
 
     if (statusResult.hasOwnProperty('block_height')) {
       txStatus.confirmations = currentChainTip - statusResult.block_height;
@@ -31,7 +35,6 @@ export class BitcoinQuery {
 
     return txStatus;
   }
-
 
   // Compatible with BTC core getrawtransaction
   // https://developer.bitcoin.org/reference/rpc/getrawtransaction.html

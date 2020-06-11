@@ -5,7 +5,7 @@ import {
 
 // ROPSTEN
 
-const relay = "0xADBF61ecBa3799Db71005F6b49fac8A5C2ab6C86";
+const relay = "0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb";
 
 async function main() {
 	let signers = await ethers.signers();

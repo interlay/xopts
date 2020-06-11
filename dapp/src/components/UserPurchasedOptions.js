@@ -5,6 +5,7 @@ import * as utils from '../utils/utils.js';
 import PayWizard from './WizardPay';
 import ConfWizard from './WizardConf';
 import { ButtonTool } from "./ButtonTool.js";
+import Relay from "./Relay.js";
 
 export default class UserPurchasedOptions extends Component {
 
@@ -212,7 +213,11 @@ export default class UserPurchasedOptions extends Component {
             <Col xl={{ span: 8, offset: 2 }}>
                 <Card border="dark">
                     <Card.Header>
-                        <Card.Title><h2 className="text-center">Purchased BTC/DAI Put Option Contracts</h2>
+                        <Card.Title>
+                            <div className="text-center mb-4">
+                                <h2>Purchased BTC/DAI Put Option Contracts</h2>
+                                <Relay {...this.props} />
+                            </div>
                             {!this.state.purchasedLoaded &&
                                 <Row>
                                     <Col className="text-center">
