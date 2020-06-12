@@ -1,7 +1,8 @@
-import optionPoolArtifact from "../artifacts/OptionPool.json"
-import erc20Artifact from "../artifacts/ICollateral.json"
-import optionSellableArtifact from "../artifacts/IERC20Sellable.json"
-import optionBuyableArtifact from "../artifacts/IERC20Buyable.json"
+import optionPoolArtifact from "../artifacts/OptionPool.json";
+import erc20Artifact from "../artifacts/ICollateral.json";
+import relayArtifact from "../artifacts/IRelay.json";
+import optionSellableArtifact from "../artifacts/IERC20Sellable.json";
+import optionBuyableArtifact from "../artifacts/IERC20Buyable.json";
 import { ethers } from 'ethers';
 import * as xutils from '../utils/utils';
 
@@ -9,32 +10,42 @@ const DEFAULT_CONFIRMATIONS = 1;
 
 export class Contracts {
 
-    constructor(signer, optionPoolAddress, erc20Address) {
+    constructor(signer, optionPoolAddress, erc20Address, relayAddress) {
         this.signer = signer;
 
         this.optionPoolContract = new ethers.Contract(optionPoolAddress, optionPoolArtifact.abi, signer);
         this.erc20Contract = new ethers.Contract(erc20Address, erc20Artifact.abi, signer);
+        this.relayContract = new ethers.Contract(relayAddress, relayArtifact.abi, signer);
     }
 
     static resolve(network) {
         let optionPoolAddress = "";
         let erc20Address = "";
+        let relayAddress = "";
         // Ganache
         if (network.chainId === 2222) {
             optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
             erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
+            relayAddress = "0x99a463962829c26Da5357aE84ACAf85A401A7702"
         // Ropsten
         } else if (network.chainId === 3 && network.name === "ropsten") {
-            optionPoolAddress = "0xcF86c98b12d2F3CEF79619E1B957556322BE6b91";
-            erc20Address = "0x33BB85bf22C6C58DEd9768a84bB3EAC0C2438577";
+            optionPoolAddress = "0xf889D192692922683233567Be0944F5773276021";
+            erc20Address = "0xBA390fDf9F460E7C6c87012e018755E1fC0f36d7";
+            relayAddress = "0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb";
         // Buidlerevm
         } else if (network.chainId === 31337) {
             optionPoolAddress = "0xf4e77E5Da47AC3125140c470c71cBca77B5c638c";
             erc20Address = "0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F";
+            relayAddress = "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf";
         } else {
             throw new Error("Unsupported Network");
         }
-        return {optionPoolAddress, erc20Address};
+        return {optionPoolAddress, erc20Address, relayAddress};
+    }
+
+    async getRelayHeight() {
+        const {height} = await this.relayContract.getBestBlock();
+        return height;
     }
 
     getOptions() {

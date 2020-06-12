@@ -13,4 +13,8 @@ contract MockRelay is IRelay {
     ) external view returns(bool) {
         return true;
     }
+
+    function getBestBlock() external view returns (bytes32 digest, uint256 score, uint256 height) {
+        return (bytes32(0), 0, 0);
+    }
 }

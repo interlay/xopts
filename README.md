@@ -124,9 +124,9 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 ### Ropsten
 
 ```
-Collateral (ERC20): 0x33BB85bf22C6C58DEd9768a84bB3EAC0C2438577
-TxValidator: 0xCB917F7fE94aB244F46778af447b9b9230330f19
-OptionPool: 0xcF86c98b12d2F3CEF79619E1B957556322BE6b91
+Collateral (ERC20): 0xBA390fDf9F460E7C6c87012e018755E1fC0f36d7
+TxValidator: 0x9f29d3F6F883c241ceC9c60C6aAc89A30F3656cD
+OptionPool: 0xf889D192692922683233567Be0944F5773276021
 ```
 
 You can interact with a locally deployed front-end on [localhost:3000](http://localhost:3000).

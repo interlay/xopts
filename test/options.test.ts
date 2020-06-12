@@ -45,7 +45,7 @@ function call<A extends Callable, B extends Attachable<A>>(contract: A, factory:
 
 async function getCollateral(user: Signer): Promise<Contract> {
     if ((await ethers.provider.getNetwork()).chainId == 3) {
-      const dai = contracts.dai;
+      const dai = contracts.ropsten.dai;
       const collateral = await ethers.getContractAt(legos.erc20.abi, dai);
       return collateral;
     } else {
@@ -104,7 +104,7 @@ describe("Options", () => {
 
   const mint = async function(user: Signer, userAddress: string, collateralAmount: number) {
     if ((await ethers.provider.getNetwork()).chainId == 3) {
-      let signer = ethers.provider.getSigner(contracts.dai_account);
+      let signer = ethers.provider.getSigner(contracts.ropsten.dai_account);
       let fromDaiAccount = collateral.connect(signer);
 
       await fromDaiAccount.transfer(userAddress, "100");
