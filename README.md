@@ -2,12 +2,15 @@
 
 <div align="center">
 	<p align="center">
-		<img src="media/xopt.svg.png" alt="logo" width="128" height="128">
+		<img src="dapp/src/assets/img/xopts.png" alt="logo" width="128" height="128">
 	</p>
 	<p>
-		<h3 align="center">XOPTS: Bitcoin Backed Options on Ethereum</h3>
+		<h3 align="center">XOPTS: Trustless, Non-Custodial Bitcoin Options on Ethereum</h3>
+		<h4 align="center">Live at: <a href="https://xopts.io" target="__blank">xopts.io</a></h5>
+		<h5 align="center">Status: Testnet (Ropsten) </h5>
 	</p>
 </div>
+
 
 ## About
 
@@ -24,6 +27,13 @@ Finally, options can be exercised once the buyer proves payment to the respectiv
 - During the expiry time, the buyer can exercise the option. To achieve this, he must send a number of BTC to the seller. Then, he proves that he sent the required number of BTC to the option smart contract. In return, the option tokens are burned and the buyer obtains underlying Dai provided by the seller.
 - After the expiry time, the seller can reclaim any unused collateral.
 - At any time a buyer can exchange his option tokens on Uniswap in a (Dai/Options) trading pair.
+
+
+### System Overview
+
+You can find more details on how XOpts works in our [Guides](https://xopts.io/help) (buy, sell, exercise, refund options).
+
+<img src="media/process/overview.png" alt="XOpts system overview" width="700">
 
 ### Built with
 
@@ -124,12 +134,12 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 ### Ropsten
 
 ```
-Collateral (ERC20): 0xBA390fDf9F460E7C6c87012e018755E1fC0f36d7
-TxValidator: 0x9f29d3F6F883c241ceC9c60C6aAc89A30F3656cD
-OptionPool: 0xf889D192692922683233567Be0944F5773276021
+Collateral (ERC20): [0xd7a0fEE3B296cc354037D5C03779016E66Cb7941](https://ropsten.etherscan.io/address/0xd7a0fEE3B296cc354037D5C03779016E66Cb7941)
+OptionPool: [0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB](https://ropsten.etherscan.io/address/0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB)
+Interlay's BTC-Relay: [0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb](https://ropsten.etherscan.io/address/0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb)
 ```
 
-You can interact with a locally deployed front-end on [localhost:3000](http://localhost:3000).
+You can interact with Xopts on [xopts.io ](https://xopts.io)or run a locally deployed front-end on [localhost:3000](http://localhost:3000).
 
 ## Roadmap
 
@@ -138,13 +148,32 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 - [x] Deployment on Ropsten.
 - [ ] Development of call options.
 
+
 ## Contributing
 
+If you would like to contribute, please file an issue on Github or reach out to us.
+
+- [Telegram](t.me/interlay)
+- [Riot](https://matrix.to/#/!nZablWWaicZyVTWyZk:matrix.org?via=matrix.org)
+
+We are [hiring](https://www.interlay.io/careers/)!
+
+
 ## License
+
+(C) Copyright 2020 [Interlay](https://www.interlay.io) Ltd
 
 XOPTS is licensed under the terms of the Apache License (Version 2.0). See [LICENSE](LICENSE).
 
 ## Contact
+
+
+Website: [Interlay.io](https://www.interlay.io)
+
+Twitter: [@interlayHQ](https://twitter.com/InterlayHQ)
+
+Email: contact@interlay.io
+
 
 ## Acknowledgements
 
