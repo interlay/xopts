@@ -169,7 +169,7 @@ export async function MockRegistryAndResolver(signer: Signer) {
 }
 
 export async function OptionPool(signer: Signer, collateral: string, relay: string, valid: string) {
-    let factory = new OptionPoolFactory(signer);
+  let factory = new OptionPoolFactory(signer);
 	let contract = await factory.deploy(collateral, relay, valid);
 	console.log("OptionPool contract:", contract.address);
 	return contract.deployed();

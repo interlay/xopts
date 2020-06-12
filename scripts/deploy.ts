@@ -6,6 +6,9 @@ import {
 // ROPSTEN
 
 const relay = "0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb";
+let overrides = {
+  gasLimit: 4_000_000,
+}
 
 async function main() {
 	let signers = await ethers.signers();
@@ -28,13 +31,13 @@ async function main() {
   // dividend yield 3.9% (see https://www.coingecko.com/en/earn/bitcoin)
   // volatility per year 48.5% (see https://www.bitpremier.com/volatility-index)
   // time to expiration as indicated
-  // premium based on Amercian option calculated by http://www.math.columbia.edu/~smirnov/options13.html
-	await pool.createOption(inAWeek, premiumInDaiForOneBTC(131), strikePriceInDaiForOneBTC(9_500));
-	await pool.createOption(inAWeek, premiumInDaiForOneBTC(66), strikePriceInDaiForOneBTC(9_250));
-	await pool.createOption(inAWeek, premiumInDaiForOneBTC(28), strikePriceInDaiForOneBTC(9_000));
-	await pool.createOption(inAMonth, premiumInDaiForOneBTC(391), strikePriceInDaiForOneBTC(9_500));
-	await pool.createOption(inAMonth, premiumInDaiForOneBTC(303), strikePriceInDaiForOneBTC(9_250));
-	await pool.createOption(inAMonth, premiumInDaiForOneBTC(216), strikePriceInDaiForOneBTC(9_000));
+  // premium based on American option calculated by http://www.math.columbia.edu/~smirnov/options.html
+	await pool.createOption(inAWeek, premiumInDaiForOneBTC(131), strikePriceInDaiForOneBTC(9_500), overrides);
+	await pool.createOption(inAWeek, premiumInDaiForOneBTC(66), strikePriceInDaiForOneBTC(9_250), overrides);
+	await pool.createOption(inAWeek, premiumInDaiForOneBTC(28), strikePriceInDaiForOneBTC(9_000), overrides);
+	await pool.createOption(inAMonth, premiumInDaiForOneBTC(391), strikePriceInDaiForOneBTC(9_500), overrides);
+	await pool.createOption(inAMonth, premiumInDaiForOneBTC(303), strikePriceInDaiForOneBTC(9_250), overrides);
+	await pool.createOption(inAMonth, premiumInDaiForOneBTC(216), strikePriceInDaiForOneBTC(9_000), overrides);
 }
 
 main()

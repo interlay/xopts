@@ -8,9 +8,9 @@ const contracts = {
       join_eth_A: "0xa885b27E8754f8238DBedaBd2eae180490C341d7",
       join_dai: "0xA0b569e9E0816A20Ab548D692340cC28aC7Be986",
       dai_account: "0xd422104e6310367abe12456fc6017513601e5732",
-      collateral: "0x33BB85bf22C6C58DEd9768a84bB3EAC0C2438577",
+      collateral: "0xEa81e6a0b47b724C38cc56583310EAc6D26f3dD2",
       relay: "0xCB917F7fE94aB244F46778af447b9b9230330f19",
-      optionPool: "0xcF86c98b12d2F3CEF79619E1B957556322BE6b91"
+      optionPool: "0x07633ee498C7084Cf7B47c886ecD27A7E57C6907"
     }
 };
 
