@@ -16,6 +16,10 @@ import IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import IUniswapV2Pair from '@uniswap/v2-core/build/IUniswapV2Pair.json'
 import IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
 
+let overrides = {
+  gasPrice: ethers.utils.parseUnits('20.0', 'gwei'),
+}
+
 interface Callable {
 	address: string;
 }
@@ -132,7 +136,7 @@ export async function addLiquidity(
 
 export async function MockCollateral(signer: Signer) {
 	let factory = new CollateralFactory(signer);
-	let contract = await factory.deploy();
+	let contract = await factory.deploy(overrides);
 	console.log("Collateral (ERC20):", contract.address);
 	return contract.deployed();
 }
@@ -153,7 +157,7 @@ export async function MockTxValidator(signer: Signer) {
 
 export async function TxValidator(signer: Signer) {
     let factory = new TxValidatorFactory(signer);
-	let contract = await factory.deploy();
+	let contract = await factory.deploy(overrides);
 	console.log("TxValidator contract:", contract.address);
 	return contract.deployed();
 }
@@ -170,7 +174,7 @@ export async function MockRegistryAndResolver(signer: Signer) {
 
 export async function OptionPool(signer: Signer, collateral: string, relay: string, valid: string) {
   let factory = new OptionPoolFactory(signer);
-	let contract = await factory.deploy(collateral, relay, valid);
+	let contract = await factory.deploy(collateral, relay, valid, overrides);
 	console.log("OptionPool contract:", contract.address);
 	return contract.deployed();
 }
