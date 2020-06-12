@@ -131,13 +131,13 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 
 ## Deployments
 
-### Ropsten
+### Ethereum Ropsten Testnet
 
-```
-Collateral (ERC20): [0xd7a0fEE3B296cc354037D5C03779016E66Cb7941](https://ropsten.etherscan.io/address/0xd7a0fEE3B296cc354037D5C03779016E66Cb7941)
-OptionPool: [0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB](https://ropsten.etherscan.io/address/0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB)
-Interlay's BTC-Relay: [0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb](https://ropsten.etherscan.io/address/0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb)
-```
+
++ Collateral (ERC20): [0xd7a0fEE3B296cc354037D5C03779016E66Cb7941](https://ropsten.etherscan.io/address/0xd7a0fEE3B296cc354037D5C03779016E66Cb7941)
++ OptionPool: [0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB](https://ropsten.etherscan.io/address/0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB)
++ Interlay's BTC-Relay: [0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb](https://ropsten.etherscan.io/address/0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb)
+
 
 You can interact with Xopts on [xopts.io ](https://xopts.io)or run a locally deployed front-end on [localhost:3000](http://localhost:3000).
 
