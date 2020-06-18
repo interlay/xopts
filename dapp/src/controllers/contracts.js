@@ -24,13 +24,13 @@ export class Contracts {
         let relayAddress = "";
         // Ganache
         if (network.chainId === 2222) {
-            optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
-            erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
-            relayAddress = "0x99a463962829c26Da5357aE84ACAf85A401A7702"
+            optionPoolAddress = "0x71dBe5Bd681c86d12211629EB19fE836149c6bf8";
+            erc20Address = "0x99a463962829c26Da5357aE84ACAf85A401A7702";
+            relayAddress = "0x151eA753f0aF1634B90e1658054C247eFF1C2464"
         // Ropsten
         } else if (network.chainId === 3 && network.name === "ropsten") {
-            optionPoolAddress = "0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB";
-            erc20Address = "0xd7a0fEE3B296cc354037D5C03779016E66Cb7941";
+            optionPoolAddress = "0x11Bb2d104E82a4DE8e40E9562d17999Ec2E46B8c";
+            erc20Address = "0x4DfB2bE72b3F2ac346Be86B78491E56f21522fB2";
             relayAddress = "0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb";
         // Buidlerevm
         } else if (network.chainId === 31337) {

@@ -41,12 +41,12 @@ class Relay extends Component {
         return (
             <p className="text-muted">
                 <a href={"https://ropsten.etherscan.io/address/" + this.state.relayAddress}>
-                BTC-Relay status: &nbsp;
-                {relayDiff <= 1 ? "online" : (relayDiff <= 6 ? "tailing" : "offline")} 
+                Relay Status: &nbsp;
+                {relayDiff <= 1 ? "Online" : (relayDiff <= 6 ? "tailing" : "Offline")} 
                 &nbsp;
                 <Badge pill variant={relayDiff <= 1 ? "success" : (relayDiff <= 6 ? "warning" : "danger")}>&nbsp;</Badge>
                 &nbsp;
-                (Block height: {this.state.relayHeight} / {this.state.blockstreamHeight})
+                (Block Height: {this.state.relayHeight} / {this.state.blockstreamHeight})
                 </a>
             </p>
         )

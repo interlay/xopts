@@ -79,7 +79,7 @@ class OptionList extends Component {
         this.setState({
             insuranceAvailable: insuranceAvailable,
             totalInsured: totalInsured,
-            avgPremium: totalPremium.div(options.length)
+            avgPremium: options.length > 0 ? totalPremium.div(options.length) : utils.newBig(0),
         })
 
         return options;
