@@ -216,7 +216,6 @@ export default class UserPurchasedOptions extends Component {
                         <Card.Title>
                             <div className="text-center mb-4">
                                 <h2>Purchased BTC/DAI Put Option Contracts</h2>
-                                <Relay {...this.props} />
                             </div>
                             {!this.state.purchasedLoaded &&
                                 <Row>

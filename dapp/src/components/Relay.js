@@ -36,15 +36,19 @@ class Relay extends Component {
     }
 
     render() {
-        if (!this.state.loaded) return (
-            <h5><Badge variant="success">Relay / Testnet Height</Badge></h5>  
-        );
+        if (!this.state.loaded) return "";
+        let relayDiff = this.state.relayHeight - this.state.blockstreamHeight;
         return (
-            <h5>
+            <p className="text-muted">
                 <a href={"https://ropsten.etherscan.io/address/" + this.state.relayAddress}>
-                    <Badge variant="success">{this.state.relayHeight} / {this.state.blockstreamHeight} - (Relay / Testnet Height)</Badge>
+                BTC-Relay status: &nbsp;
+                {relayDiff <= 1 ? "online" : (relayDiff <= 6 ? "tailing" : "offline")} 
+                &nbsp;
+                <Badge pill variant={relayDiff <= 1 ? "success" : (relayDiff <= 6 ? "warning" : "danger")}>&nbsp;</Badge>
+                &nbsp;
+                (Block height: {this.state.relayHeight} / {this.state.blockstreamHeight})
                 </a>
-            </h5>
+            </p>
         )
     }
 }
