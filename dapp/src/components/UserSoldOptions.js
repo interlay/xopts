@@ -78,13 +78,13 @@ export default class UserSoldOptions extends Component {
                 totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionContracts[2][i].toString()))
             }
             option.soldOptions = option.totalSupplyLocked.sub(option.unsoldOptions);
-            option.spotPrice = this.props.btcPrices.dai;
+            option.spotPrice = utils.newBig(this.props.btcPrices.dai);
             option.contract = optionContracts[0][i];
             option.percentSold = ((option.totalSupplyLocked.lte(0)) ? 0 : (option.soldOptions.div(option.totalSupplyLocked)).mul(100));
             option.btcInsured = option.soldOptions.div(option.strikePrice);
             option.premiumEarned = option.premium.mul(option.btcInsured);
-            option.income = option.btcInsured.mul((option.premium.add(option.strikePrice)).sub(option.spotPrice));
-
+            option.income = option.btcInsured.mul((option.spotPrice.sub(option.strikePrice)).add(option.premium));
+            (option.premium.add(option.strikePrice)).sub(option.spotPrice)
             options.push(option);
 
             totalLocked = totalLocked.add(option.totalSupplyLocked);
@@ -212,7 +212,7 @@ export default class UserSoldOptions extends Component {
                                         <h6>Premium Earned</h6>
                                     </Col>
                                     <Col>
-                                        <h3 className={(this.state.totalIncome.gt(0) ? "text-success": (this.state.totalIncome.lt(0) ? "text-danger" : ""))}>{this.state.totalIncome.toString()} DAI</h3>
+                                        <h3 className={(this.state.totalIncome.gt(0) ? "text-success": (this.state.totalIncome.lt(0) ? "text-danger" : ""))}>{(this.state.totalIncome).toString()} DAI</h3>
                                         <h6>(Potential) Income</h6>
                                     </Col>
                                 </Row>

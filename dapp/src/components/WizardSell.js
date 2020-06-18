@@ -160,13 +160,24 @@ class SellWizard extends React.Component {
     }
 
     const { amountDai, btcAddress, optionContract } = this.state;
+
+    try {
+      let dai = await this.props.contracts.balanceOf();
+      if (amountDai > dai) {
+        showFailureToast(this.props.toast, 'Insufficient collateral!', 3000);
+        return;
+      }
+    } catch(err) {
+      showFailureToast(this.props.toast, 'Something went wrong...', 3000);
+    }
+
     this.setState({spinner: true});
     try {
       let contracts = this.props.contracts;
       let weiDai = utils.daiToWeiDai(amountDai);
       await contracts.checkAllowance(weiDai);
       await contracts.underwriteOption(optionContract.address, weiDai, btcAddress);
-      this.props.history.push("/positions")
+      //this.props.history.push("/positions")
       showSuccessToast(this.props.toast, 'Successfully sold options!', 3000);
     } catch(error) {
       console.log(error);

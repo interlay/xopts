@@ -133,9 +133,8 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 
 ### Ethereum Ropsten Testnet
 
-
-+ Collateral (ERC20): [0xd7a0fEE3B296cc354037D5C03779016E66Cb7941](https://ropsten.etherscan.io/address/0xd7a0fEE3B296cc354037D5C03779016E66Cb7941)
-+ OptionPool: [0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB](https://ropsten.etherscan.io/address/0x0BceF07AEC8454DB953b4CA10f85E8E414a5dddB)
++ Collateral (ERC20): [0x4DfB2bE72b3F2ac346Be86B78491E56f21522fB2](https://ropsten.etherscan.io/address/0x4DfB2bE72b3F2ac346Be86B78491E56f21522fB2)
++ OptionPool: [0x11Bb2d104E82a4DE8e40E9562d17999Ec2E46B8c](https://ropsten.etherscan.io/address/0x11Bb2d104E82a4DE8e40E9562d17999Ec2E46B8c)
 + Interlay's BTC-Relay: [0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb](https://ropsten.etherscan.io/address/0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb)
 
 

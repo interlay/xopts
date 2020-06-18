@@ -187,7 +187,7 @@ class BuyWizard extends React.Component {
       let satoshis = utils.btcToSat(utils.calculateAvailableBTC(amountOptions, strikePrice)).round(0, 0);
       await contracts.checkAllowance(satoshis);
       await contracts.insureOption(optionContract.address, seller, satoshis.toString());
-      this.props.history.push("/positions")
+      //this.props.history.push("/positions")
       showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
     } catch(error) {
       console.log(error);
