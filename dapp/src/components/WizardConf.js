@@ -113,9 +113,10 @@ class Exercise extends Component {
         const { contract, recipient, height, index, txid, proof, rawtx } = this.props.tx;
         this.setState({spinner: true});
         try {
-            await this.props.contracts.exerciseOption(contract, recipient, height, index, txid, proof, rawtx);
+            let id = "0x" + Buffer.from(txid, 'hex').reverse().toString('hex');
+            await this.props.contracts.exerciseOption(contract, recipient, height, index, id, proof, rawtx);
             showSuccessToast(this.props.toast, 'Success!', 3000);
-            this.props.storage.removePendingOption(contract, txid.substr(2));
+            this.props.storage.removePendingOption(contract, txid);
             this.props.exitModal();
             this.props.reloadPurchased();
         } catch (error) {
@@ -178,23 +179,19 @@ class ConfWizard extends Component {
             return;
         }
 
-        let intermediateNodes = Buffer.from(proof.merkle.join(""), 'hex');
-        endianness(intermediateNodes, 32);
-    
-        let id = Buffer.from(txid, 'hex');
-        endianness(id, 32);
+        let nodes = proof.merkle.map((value) => Buffer.from(value, 'hex').reverse().toString('hex')).join("");
 
         this.setState({
             step: step,
             tx: {
-                txid: "0x" + id.toString('hex'),
+                txid: txid,
                 amountBtc: tx.amountBtc.toString(),
                 contract: tx.option,
                 recipient: tx.recipient,
                 confirmations: status.confirmations,
                 height: proof.block_height,
                 index: proof.pos,
-                proof: "0x" + intermediateNodes.toString('hex'),
+                proof: "0x" + nodes,
                 rawtx: "0x" + rawtx.toString('hex'),
             },
             index: index,

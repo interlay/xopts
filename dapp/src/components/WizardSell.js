@@ -160,6 +160,17 @@ class SellWizard extends React.Component {
     }
 
     const { amountDai, btcAddress, optionContract } = this.state;
+
+    try {
+      let dai = await this.props.contracts.balanceOf();
+      if (amountDai > dai) {
+        showFailureToast(this.props.toast, 'Insufficient collateral!', 3000);
+        return;
+      }
+    } catch(err) {
+      showFailureToast(this.props.toast, 'Something went wrong...', 3000);
+    }
+
     this.setState({spinner: true});
     try {
       let contracts = this.props.contracts;

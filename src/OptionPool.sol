@@ -98,7 +98,7 @@ contract OptionPool is Context {
         bytes32 txid,
         bytes calldata proof,
         bytes calldata rawtx
-    ) external returns (uint) {
+    ) external {
         require(_options.exists(option), ERR_INVALID_OPTION);
         address buyer = _msgSender();
         uint amount = IERC20Sellable(option).exerciseOption(

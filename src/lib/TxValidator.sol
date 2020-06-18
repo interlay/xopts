@@ -26,24 +26,31 @@ contract TxValidator is ITxValidator {
     ) external view returns(bool) {
         (, uint lenInputs) = rawTx.extractInputLength();
         bytes memory outputs = rawTx.slice(lenInputs, rawTx.length - lenInputs);
-        // TODO: loop over outputs and summate dest amounts
-        bytes memory output = outputs.extractOutputAtIndex(0);
-        require(output.extractOutputValue() == btcAmount, "Invalid output amount");
-        (,bytes memory witnessProgram) = output.extractOutputScript().isP2WPKH();
+        (uint numOutputs, ) = outputs.extractOutputLength();
 
-        uint[] memory words = Bech32.convert(uintArrayFrom(witnessProgram), 8, 5);
-        uint[] memory version = new uint[](1);
-        version[0] = 0;
+        for (uint i = 0; i < numOutputs; i++) {
+            bytes memory output = outputs.extractOutputAtIndex(i);
+            (,bytes memory witnessProgram) = output.extractOutputScript().isP2WPKH();
 
-        // testnet
-        uint[] memory hrp = new uint[](2);
-        hrp[0] = 116;
-        hrp[1] = 98;
+            uint[] memory words = Bech32.convert(uintArrayFrom(witnessProgram), 8, 5);
+            uint[] memory version = new uint[](1);
+            version[0] = 0;
 
-        bytes memory result = Bech32.encode(hrp, Bech32.concat(version, words));
+            // testnet
+            uint[] memory hrp = new uint[](2);
+            hrp[0] = 116;
+            hrp[1] = 98;
 
-        // TODO: prefix should be encoded above
-        return keccak256(abi.encodePacked('tb1', result)) == keccak256(btcAddress);
+            bytes memory result = Bech32.encode(hrp, Bech32.concat(version, words));
+
+            // TODO: prefix should be encoded above
+            if (keccak256(abi.encodePacked('tb1', result)) == keccak256(btcAddress)) {
+                require(output.extractOutputValue() == btcAmount, "Invalid output amount");
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
