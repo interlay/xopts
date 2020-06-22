@@ -1,0 +1,28 @@
+import React, { Component } from "react";
+import { Button, Spinner } from "react-bootstrap";
+
+interface Props {
+  balance: any
+  spinner: boolean
+  text: string
+}
+
+export class SpinButtonTopbar extends Component<Props> {
+
+  render() {
+    if(!this.props.balance) return "";
+
+    return (
+        <Button type="submit" variant="outline-info" size="sm" disabled={this.props.spinner}>
+        { this.props.spinner ? 
+          <Spinner
+            as="span"
+            animation="border"
+            size="sm"
+            role="status"
+            aria-hidden="true"
+          /> : "" + this.props.balance.round(2, 0).toString() + " DAI | " +  this.props.text || "Confirm"}
+        </Button>
+    )
+  }
+}
