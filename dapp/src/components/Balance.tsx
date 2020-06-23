@@ -4,27 +4,19 @@ import { Col, Row, Form } from "react-bootstrap";
 import * as utils from '../utils/utils'; 
 import { SpinButton } from "./SpinButton";
 import { AppProps } from "../types/App";
+import { Big } from 'big.js';
 
 interface BalanceState {
     loaded: boolean
     spinner: boolean
-    balance: any
+    balance: Big
 }
 
 export default class Balance extends Component<AppProps, BalanceState> {
     state: BalanceState = {
         loaded: false,
         spinner: false,
-        balance: null,
-    }
-
-    constructor(props: AppProps) {
-        super(props);
-        this.state = {
-            loaded: false,
-            spinner: false,
-            balance: utils.newBig(0),
-        };
+        balance: utils.newBig(0),
     }
 
     async updateBalance() {

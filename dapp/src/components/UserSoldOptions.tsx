@@ -6,10 +6,25 @@ import { ButtonTool } from "./ButtonTool";
 import { RefundModal } from "./RefundModal";
 import {AppProps} from "../types/App";
 import { Big } from 'big.js';
+import { BigNumber } from "ethers/utils";
 
 interface UserSoldOptionsState {
     soldLoaded: boolean
-    soldOptions: any[]
+    soldOptions: {
+        expiry: number;
+        premium: Big;
+        strikePrice: Big;
+        totalSupply: Big;
+        unsoldOptions: Big;
+        totalSupplyLocked: Big;
+        soldOptions: Big;
+        spotPrice: Big;
+        contract: string;
+        percentSold: Big;
+        btcInsured: Big;
+        premiumEarned: Big;
+        income: Big;
+    }[]
     totalInsured: Big
     totalBtcInsured: Big
     percentSold: Big
@@ -69,13 +84,17 @@ export default class UserSoldOptions extends Component<AppProps> {
         }
     }
 
-    async getOptions(optionContracts: any) {
+    async getOptions(optionContracts: {
+        optionContracts: string[];
+        unsoldOptions: BigNumber[];
+        totalOptions: BigNumber[];    
+    }) {
         // Remove 0-value contracts
-        for (let i = optionContracts[1].length - 1; i >= 0; i--) {
-            if (parseInt(optionContracts[1][i]._hex) === 0) {
-                optionContracts[0].splice(i, 1);
-                optionContracts[1].splice(i, 1);
-                optionContracts[2].splice(i, 1);
+        for (let i = optionContracts.unsoldOptions.length - 1; i >= 0; i--) {
+            if (parseInt(optionContracts.unsoldOptions[i].toString()) === 0) {
+                optionContracts.optionContracts.splice(i, 1);
+                optionContracts.unsoldOptions.splice(i, 1);
+                optionContracts.totalOptions.splice(i, 1);
             }
         }
 
@@ -85,19 +104,19 @@ export default class UserSoldOptions extends Component<AppProps> {
         let totalPremium = utils.newBig(0);
         let totalBtcInsured = utils.newBig(0);
         let totalIncome = utils.newBig(0);
-        for (let i = 0; i < optionContracts[0].length; i++) {
-            let addr = optionContracts[0][i];
-            let optionContract = this.props.contracts.attachOption(addr);
+        for (let i = 0; i < optionContracts.optionContracts.length; i++) {
+            let addr = optionContracts.optionContracts[i];
+            let optionContract = this.props.contracts?.attachOption(addr);
             let optionRes = await optionContract.getDetails();
             let option = {
-                expiry: parseInt(optionRes[0].toString()),
-                premium: utils.weiDaiToBtc(utils.newBig(optionRes[1].toString())),
-                strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes[2].toString())),
-                totalSupply: utils.weiDaiToDai(utils.newBig(optionRes[3].toString())),
+                expiry: parseInt(optionRes.expiry.toString()),
+                premium: utils.weiDaiToBtc(utils.newBig(optionRes.premium.toString())),
+                strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes.strikePrice.toString())),
+                totalSupply: utils.weiDaiToDai(utils.newBig(optionRes.total.toString())),
 
                 // User's unsold options & total locked DAI
-                unsoldOptions: utils.weiDaiToDai(utils.newBig(optionContracts[1][i].toString())),
-                totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionContracts[2][i].toString())),
+                unsoldOptions: utils.weiDaiToDai(utils.newBig(optionContracts.unsoldOptions[i].toString())),
+                totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionContracts.totalOptions[i].toString())),
 
                 soldOptions: utils.newBig(0),
                 spotPrice: utils.newBig(0),
@@ -109,7 +128,7 @@ export default class UserSoldOptions extends Component<AppProps> {
             }
             option.soldOptions = option.totalSupplyLocked.sub(option.unsoldOptions);
             option.spotPrice = utils.newBig(this.props.btcPrices.dai);
-            option.contract = optionContracts[0][i];
+            option.contract = optionContracts.optionContracts[i];
             option.percentSold = ((option.totalSupplyLocked.lte(0)) ? utils.newBig(0) : (option.soldOptions.div(option.totalSupplyLocked)).mul(100));
             option.btcInsured = option.soldOptions.div(option.strikePrice);
             option.premiumEarned = option.premium.mul(option.btcInsured);

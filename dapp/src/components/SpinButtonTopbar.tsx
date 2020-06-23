@@ -1,8 +1,9 @@
 import React, { Component } from "react";
 import { Button, Spinner } from "react-bootstrap";
+import Big from "big.js";
 
 interface Props {
-  balance: any
+  balance?: Big
   spinner: boolean
   text: string
 }

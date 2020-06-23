@@ -1,13 +1,12 @@
-import { Navbar, Nav, Badge, Image, Button } from "react-bootstrap";
+import { Navbar, Nav, Image, Button } from "react-bootstrap";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
-import { withRouter } from 'react-router-dom'
 import xoptsLogo from "../assets/img/xopts.png";
 import { FaExchangeAlt, FaFileAlt, FaQuestionCircle, FaComment } from 'react-icons/fa';
 import BalanceTopbar from './BalanceTopbar';
-import {AppProps} from "../types/App";
+import { AppPropsLoading } from "../types/App";
 
-class Web3LogIn extends Component<AppProps> {
+class Web3LogIn extends Component<AppPropsLoading> {
   handleLogIn() {
     this.props.tryLogIn(true);
   }
@@ -28,7 +27,7 @@ class Web3LogIn extends Component<AppProps> {
 
 // const Web3LogInWithRouter = withRouter(Web3LogIn);
 
-export default class TopBar extends Component<AppProps> {
+export default class TopBar extends Component<AppPropsLoading> {
 
   render() {
     return (

@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 
 // theme
@@ -40,13 +39,9 @@ export default class App extends Component<{}, AppState> {
   state: AppState = {
     isWeb3: false,
     isLoggedIn: false,
-    signer: null,
     address: '',
-    provider: null,
     btcProvider: new BitcoinQuery(),
-    contracts: null,
     storage: new Storage(''),
-    optionPoolContract: null,
     btcPrices: {
       dai: 0,
       usd: 0,
@@ -81,9 +76,6 @@ export default class App extends Component<{}, AppState> {
     if (!this.state.isLoggedIn) {
       // Connect to infura
       let provider = new ethers.providers.InfuraProvider('ropsten', INFURA_API_TOKEN);
-      this.setState({
-        provider: provider
-      });
 
       if (provider) {
         this.getBlockchainData(provider);
@@ -118,12 +110,11 @@ export default class App extends Component<{}, AppState> {
 
     try {
       // Try to get signer (needed to send transactions)
-      signer = await provider.getSigner();
+      signer = provider.getSigner();
       address = await signer.getAddress();
       contracts = new Contracts(signer, optionPoolAddress, erc20Address, relayAddress);
       this.setState({
         isLoggedIn: true,
-        signer: signer,
         address: address,
         // don't set state without contracts
         contracts: contracts,
@@ -193,11 +184,25 @@ export default class App extends Component<{}, AppState> {
                 <Help />
               </Route>
 
-              <Route path="/positions">
-                <Dashboard {...this.state} tryLogIn={this.tryLogIn} />
-              </Route>
+              {this.state.contracts &&
+                <Route path="/positions">
+                  <Dashboard 
+                    {...this.state}
+                    contracts={this.state.contracts}
+                    tryLogIn={this.tryLogIn}
+                  />
+                </Route>
+              }
 
-              <Route path="/trade" render={() => <Home {...this.state} tryLogIn={this.tryLogIn} />} />
+              {this.state.contracts &&
+                <Route path="/trade">
+                  <Home 
+                    {...this.state}
+                    contracts={this.state.contracts}
+                    tryLogIn={this.tryLogIn}
+                  />
+                </Route>
+              }
             </Switch>
           </div>
           <Footer />

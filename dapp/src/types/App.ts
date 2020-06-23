@@ -1,16 +1,15 @@
 import { StorageInterface } from "./Storage";
 import { BitcoinInterface } from "./Bitcoin";
+import { ContractsInterface } from "./Contracts";
+import { ethers } from "ethers";
 
 export interface AppState {
   isWeb3: boolean
   isLoggedIn: boolean
-  signer: any
   address: string
-  provider: any
   btcProvider: BitcoinInterface
-  contracts: any
+  contracts?: ContractsInterface
   storage: StorageInterface
-  optionPoolContract: any
   btcPrices: {
     dai: number
     usd: number
@@ -22,6 +21,10 @@ export interface AppState {
   }
 }
 
-export interface AppProps extends AppState {
+export interface AppPropsLoading extends AppState {
   tryLogIn: (activeLogin: boolean) => Promise<void>
+}
+
+export interface AppProps extends AppPropsLoading {
+  contracts: ContractsInterface
 }

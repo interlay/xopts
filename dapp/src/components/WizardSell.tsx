@@ -1,12 +1,12 @@
-import React, { Component, FormEvent } from "react";
-import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal, FormControlProps, FormCheck, InputGroup } from "react-bootstrap";
+import React, { Component } from "react";
+import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
 import * as utils from '../utils/utils';
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { SpinButton } from './SpinButton';
-import { withRouter } from 'react-router-dom'
 import { AppProps } from "../types/App";
 import { Big } from 'big.js';
 import { FormControlElement } from "../types/Inputs";
+import { OptionInterface } from "../types/Contracts";
 
 interface EnterAmountProps {
   currentStep: number
@@ -133,7 +133,7 @@ interface SellWizardState {
   currentStep: number
   amountDai: Big
   btcAddress: string
-  optionContract: any
+  optionContract?: OptionInterface
   spinner: boolean
   expiry: number
   strikePrice: Big
@@ -144,7 +144,6 @@ export default class SellWizard extends Component<SellWizardProps> {
     currentStep: 1,
     amountDai: utils.newBig(1),
     btcAddress: '',
-    optionContract: null,
     spinner: false,
     expiry: 0,
     strikePrice: utils.newBig(0),
@@ -159,19 +158,17 @@ export default class SellWizard extends Component<SellWizardProps> {
   }
 
   async componentDidMount() {
-    if (this.props.signer) {
-      const contract = this.props.contract;
+    const contract = this.props.contract;
 
-      let contracts = this.props.contracts;
-      let optionContract = contracts.attachOption(contract);
-      let [expiry, , strikePrice, , , ] = await optionContract.getDetails();
+    let contracts = this.props.contracts;
+    let optionContract = contracts.attachOption(contract);
+    let {expiry, strikePrice} = await optionContract.getDetails();
 
-      this.setState({
-        optionContract: optionContract,
-        expiry: parseInt(expiry.toString()),
-        strikePrice: utils.weiDaiToBtc(utils.newBig(strikePrice.toString())),
-      });
-    }
+    this.setState({
+      optionContract: optionContract,
+      expiry: parseInt(expiry.toString()),
+      strikePrice: utils.weiDaiToBtc(utils.newBig(strikePrice.toString())),
+    });
   }
 
   handleChange(event: React.ChangeEvent<FormControlElement>) {
@@ -211,7 +208,7 @@ export default class SellWizard extends Component<SellWizardProps> {
 
     try {
       let dai = await this.props.contracts.balanceOf();
-      if (amountDai > dai) {
+      if (amountDai.gt(dai.toString())) {
         showFailureToast(this.props.toast, 'Insufficient collateral!', 3000);
         return;
       }
@@ -224,9 +221,13 @@ export default class SellWizard extends Component<SellWizardProps> {
       let contracts = this.props.contracts;
       let weiDai = utils.daiToWeiDai(amountDai);
       await contracts.checkAllowance(weiDai);
-      await contracts.underwriteOption(optionContract.address, weiDai, btcAddress);
-      //this.props.history.push("/positions")
-      showSuccessToast(this.props.toast, 'Successfully sold options!', 3000);
+      if (optionContract) {
+        await contracts.underwriteOption(optionContract.address, weiDai, btcAddress);
+        //this.props.history.push("/positions")
+        showSuccessToast(this.props.toast, 'Successfully sold options!', 3000);
+      } else {
+        throw Error("Options contract not found.");
+      }
     } catch(error) {
       console.log(error);
       showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);

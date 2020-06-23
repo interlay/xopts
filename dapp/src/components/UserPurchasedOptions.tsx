@@ -8,10 +8,23 @@ import { ButtonTool } from "./ButtonTool";
 import {AppProps} from "../types/App";
 import { Big } from 'big.js';
 import { FormControlElement } from "../types/Inputs";
+import { BigNumber } from "ethers/utils";
 
 interface UserPurchasedOptionsState {
     purchasedLoaded: boolean
-    purchasedOptions: any[]
+    purchasedOptions: {
+        expiry: number;
+        premium: Big;
+        strikePrice: Big;
+        totalSupply: Big;
+        totalSupplyLocked: Big;
+        numSellers: number;
+        spotPrice: Big;
+        contract: string;
+        btcInsured: Big;
+        premiumPaid: Big;
+        income: Big;    
+    }[]
     totalInsured: Big
     insuranceAvailable: Big
     paidPremium: Big
@@ -19,9 +32,9 @@ interface UserPurchasedOptionsState {
     amount: number
     height: number
     index: number
-    txid: any
-    proof: any
-    rawtx: any
+    txid: string
+    proof: string
+    rawtx: string
     showPayModal: boolean
     showConfModal: boolean
     contractAddress: string
@@ -38,9 +51,9 @@ export default class UserPurchasedOptions extends Component<AppProps> {
         amount: 0,
         height: 0,
         index: 0,
-        txid: null,
-        proof: null,
-        rawtx: null,
+        txid: '',
+        proof: '',
+        rawtx: '',
         showPayModal: false,
         showConfModal: false,
         contractAddress: '',
@@ -75,12 +88,15 @@ export default class UserPurchasedOptions extends Component<AppProps> {
         }
     }
 
-    async getOptions(optionContracts: any[]) {
+    async getOptions(optionContracts: {
+        optionContracts: string[];
+        purchasedOptions: BigNumber[];
+    }) {
         // Remove 0-value contracts
-        for (let i = optionContracts[1].length - 1; i >= 0; i--) {
-            if (parseInt(optionContracts[1][i]._hex) === 0) {
-                optionContracts[0].splice(i, 1);
-                optionContracts[1].splice(i, 1);
+        for (let i = optionContracts.purchasedOptions.length - 1; i >= 0; i--) {
+            if (optionContracts.purchasedOptions[i].eq(0)) {
+                optionContracts.optionContracts.splice(i, 1);
+                optionContracts.purchasedOptions.splice(i, 1);
             }
         }
 
@@ -89,17 +105,17 @@ export default class UserPurchasedOptions extends Component<AppProps> {
         let paidPremium = utils.newBig(0);
         let totalIncome = utils.newBig(0);
         try {
-            for (let i = 0; i < optionContracts[0].length; i++) {
-                let addr = optionContracts[0][i];
-                let optionContract = this.props.contracts.attachOption(addr);
+            for (let i = 0; i < optionContracts.optionContracts.length; i++) {
+                let addr = optionContracts.optionContracts[i];
+                let optionContract = this.props.contracts?.attachOption(addr);
                 let optionRes = await optionContract.getDetails();
                 let option = {
-                    expiry: parseInt(optionRes[0].toString()),
-                    premium: utils.weiDaiToBtc(utils.newBig(optionRes[1].toString())),
-                    strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes[2].toString())),
-                    totalSupply: utils.weiDaiToDai(utils.newBig(optionRes[3].toString())),
+                    expiry: parseInt(optionRes.expiry.toString()),
+                    premium: utils.weiDaiToBtc(utils.newBig(optionRes.premium.toString())),
+                    strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes.strikePrice.toString())),
+                    totalSupply: utils.weiDaiToDai(utils.newBig(optionRes.total.toString())),
                     // User's purchased options
-                    totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionContracts[1][i].toString())),
+                    totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionContracts.purchasedOptions[i].toString())),
                     numSellers: (await optionContract.getOptionOwners()).length,
 
                     spotPrice: utils.newBig(0),
@@ -109,7 +125,7 @@ export default class UserPurchasedOptions extends Component<AppProps> {
                     income: utils.newBig(0),
                 }
                 option.spotPrice = utils.newBig(this.props.btcPrices.dai);
-                option.contract = optionContracts[0][i];
+                option.contract = optionContracts.optionContracts[i];
                 option.btcInsured = option.totalSupplyLocked.div(option.strikePrice);
                 option.premiumPaid = option.premium.mul(option.btcInsured);
 
@@ -149,11 +165,11 @@ export default class UserPurchasedOptions extends Component<AppProps> {
                         <td>{id}</td>
                         <td>{new Date(expiry * 1000).toLocaleString()}</td>
                         <td>{strikePrice.toString()} DAI</td>
-                        <td><span className={(income >= 0.0 ? "text-success" : "text-danger")}>{spotPrice.toString()}</span> DAI</td>
+                        <td><span className={(income.gte(0.0) ? "text-success" : "text-danger")}>{spotPrice.toString()}</span> DAI</td>
                         <td>{totalSupplyLocked.round(2, 0).toString()} / {totalSupply.round(2, 0).toString()} DAI ({percentInsured.toFixed(0)} %)</td>
                         <td>{premiumPaid.round(2, 0).toString()} DAI <br /> ({premium.round(2, 0).toString()} DAI/BTC)</td>
                         <td>
-                          <strong className={(income >= 0.0 ? "text-success" : "text-danger")}>
+                          <strong className={(income.gte(0.0) ? "text-success" : "text-danger")}>
                             {( income.round(2,0).toString() )}
                           </strong> DAI </td>
 

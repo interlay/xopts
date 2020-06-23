@@ -4,11 +4,11 @@ import { ethers } from 'ethers';
 import QRCode from "react-qr-code";
 import * as utils from '../utils/utils';
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
-import { withRouter } from 'react-router-dom';
 import { pollAndUpdateConfirmations } from '../utils/poll';
 import { AppProps } from "../types/App";
 import { Big } from 'big.js';
 import { FormControlElement } from "../types/Inputs";
+import { Option } from "../types/Storage";
 
 interface SelectSellerProps extends AppProps {
     step: number
@@ -19,8 +19,10 @@ interface SelectSellerProps extends AppProps {
 
 interface SelectSellerState {
     loaded: boolean
-    sellers: any[]
-    pending: any[]
+    sellers: (string | ethers.utils.BigNumber)[][]
+    pending: (Option & {
+        txid: string;
+    })[]
 }
 
 class SelectSeller extends Component<SelectSellerProps, SelectSellerState> {
@@ -128,11 +130,11 @@ class ScanBTC extends Component<ScanBTCProps, ScanBTCState> {
             // get all the info from the selected contract to store this into storage
             let optionContract = this.props.contracts.attachOption(this.props.contract);
             let btcAddressRaw = await optionContract.getBtcAddress(this.props.seller);
-            let [expiry, premium, strikePrice] = await optionContract.getDetails();
+            let {expiry, premium, strikePrice} = await optionContract.getDetails();
 
             // strike price is denoted in weiDai per satoshi
             let amountBtcInSat = utils.btcToSat(this.props.amountBtc);
-            let amountOptions = utils.newBig(amountBtcInSat || 0).mul(strikePrice);
+            let amountOptions = utils.newBig(amountBtcInSat || 0).mul(strikePrice.toString());
             // exchange rate between option and dai is 1:1
             let amountDai = amountOptions;
 
@@ -149,8 +151,8 @@ class ScanBTC extends Component<ScanBTCProps, ScanBTCState> {
             //   })
             // }
 
-            expiry = parseInt(expiry.toString());
-            strikePrice = utils.weiDaiToBtc(utils.newBig(strikePrice.toString()));
+            let expiryDate = parseInt(expiry.toString());
+            let strikePriceBtc = utils.weiDaiToBtc(utils.newBig(strikePrice.toString()));
 
             // set the local state
             this.setState({
@@ -158,9 +160,9 @@ class ScanBTC extends Component<ScanBTCProps, ScanBTCState> {
                 paymentUri: paymentUri,
                 recipient: btcAddress,
                 option: this.props.contract,
-                expiry: expiry,
-                premium: premium,
-                strikePrice: strikePrice,
+                expiry: expiryDate,
+                premium: utils.newBig(premium.toString()),
+                strikePrice: strikePriceBtc,
                 amountOptions: amountOptions,
                 amountDai: amountDai,
             });
@@ -169,8 +171,8 @@ class ScanBTC extends Component<ScanBTCProps, ScanBTCState> {
             this.props.updateOption(this.props.contract);
             // this.props.updateTxId(txid);
             this.props.updateConfirmations(0);
-            this.props.updateStrikePrice(strikePrice);
-            this.props.updateExpiry(expiry);
+            this.props.updateStrikePrice(strikePriceBtc);
+            this.props.updateExpiry(expiryDate);
 
             // store the current exercise request in storage
             // this.props.storage.setPendingOption(

@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import { Image, Container} from "react-bootstrap";
 import OptionList from "../components/OptionList"
-import { withRouter } from 'react-router-dom'
 import bitcoinImg from "../assets/img/icons/32/btc.png";
 import daiImg from "../assets/img/icons/32/dai.png";
 import {AppProps} from "../types/App";

@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { withRouter, Link } from 'react-router-dom'
 import { Badge } from "react-bootstrap";
 import { AppProps } from "../types/App";
 

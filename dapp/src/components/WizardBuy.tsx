@@ -3,33 +3,29 @@ import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Moda
 import * as utils from '../utils/utils'; 
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { SpinButton } from './SpinButton';
-import { withRouter } from 'react-router-dom';
 import {AppProps} from "../types/App";
 import { Big } from 'big.js';
 import { FormControlElement } from "../types/Inputs";
+import { OptionInterface } from "../types/Contracts";
+import { BigNumber } from "ethers/utils";
 
 interface SelectSellerProps {
   currentStep: number
   handleChange: (event: React.ChangeEvent<FormControlElement>) => void
-  optionContract: any
+  optionContract?: OptionInterface
   strikePrice: Big
   updateAmountOptions: (amount: Big) => void
 }
 
 interface SelectSellerState {
   loaded: boolean
-  sellers: any[]
+  sellers: (string | BigNumber)[][]
 }
 
 class SelectSeller extends Component<SelectSellerProps, SelectSellerState> {
   state: SelectSellerState = {
     loaded: false,
     sellers: [],
-
-  }
-
-  constructor(props: SelectSellerProps) {
-    super(props);
   }
 
   async componentDidUpdate() {
@@ -147,7 +143,7 @@ interface BuyWizardState {
   currentStep: number
   seller: string
   amountOptions: Big
-  optionContract: any
+  optionContract?: OptionInterface
   expiry: number
   premium: Big
   strikePrice: Big
@@ -159,7 +155,6 @@ export default class BuyWizard extends Component<BuyWizardProps> {
     currentStep: 1,
     seller: '',
     amountOptions: utils.newBig(0),
-    optionContract: null,
     expiry: 0,
     premium: utils.newBig(0),
     strikePrice: utils.newBig(0),
@@ -176,20 +171,18 @@ export default class BuyWizard extends Component<BuyWizardProps> {
   }
 
   async componentDidMount() {
-    if (this.props.signer) {
-      const contract = this.props.contract;
+    const contract = this.props.contract;
 
-      let contracts = this.props.contracts;
-      let optionContract = contracts.attachOption(contract);
-      let [expiry, premium, strikePrice] = await optionContract.getDetails();
+    let contracts = this.props.contracts;
+    let optionContract = contracts.attachOption(contract);
+    let {expiry, premium, strikePrice} = await optionContract.getDetails();
 
-      this.setState({
-        optionContract: optionContract,
-        expiry: expiry,
-        premium: utils.weiDaiToBtc(utils.newBig(premium.toString())),
-        strikePrice: utils.weiDaiToBtc(utils.newBig(strikePrice.toString())),
-      });
-    }
+    this.setState({
+      optionContract: optionContract,
+      expiry: expiry,
+      premium: utils.weiDaiToBtc(utils.newBig(premium.toString())),
+      strikePrice: utils.weiDaiToBtc(utils.newBig(strikePrice.toString())),
+    });
   }
 
   // Use the submitted data to set the state
@@ -238,9 +231,13 @@ export default class BuyWizard extends Component<BuyWizardProps> {
       let contracts = this.props.contracts;
       let satoshis = utils.btcToSat(utils.calculateAvailableBTC(amountOptions, strikePrice)).round(0, 0);
       await contracts.checkAllowance(satoshis);
-      await contracts.insureOption(optionContract.address, seller, satoshis.toString());
-      //this.props.history.push("/positions")
-      showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
+      if (optionContract) {
+        await contracts.insureOption(optionContract.address, seller, satoshis);
+        //this.props.history.push("/positions")
+        showSuccessToast(this.props.toast, 'Successfully purchased option!', 3000);
+      } else {
+        throw Error("Options contract not found.");
+      }
     } catch(error) {
       console.log(error);
       showFailureToast(this.props.toast, 'Failed to send transaction...', 3000);

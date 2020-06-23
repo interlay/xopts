@@ -1,10 +1,16 @@
-import optionPoolArtifact from "../artifacts/OptionPool.json";
-import erc20Artifact from "../artifacts/ICollateral.json";
-import relayArtifact from "../artifacts/IRelay.json";
-import optionSellableArtifact from "../artifacts/IERC20Sellable.json";
-import optionBuyableArtifact from "../artifacts/IERC20Buyable.json";
 import { ethers } from 'ethers';
 import * as xutils from '../utils/utils';
+import { Big } from 'big.js';
+import { ContractsInterface } from "../types/Contracts";
+import { OptionPoolFactory } from '@interlay/xopts/dist/typechain/OptionPoolFactory';
+import { OptionPool } from '@interlay/xopts/dist/typechain/OptionPool';
+import { ICollateralFactory } from '@interlay/xopts/dist/typechain/ICollateralFactory';
+import { ICollateral } from "@interlay/xopts/dist/typechain/ICollateral";
+import { IRelayFactory } from '@interlay/xopts/dist/typechain/IRelayFactory';
+import { IRelay } from "@interlay/xopts/dist/typechain/IRelay";
+import { IERC20SellableFactory } from "@interlay/xopts/dist/typechain/IERC20SellableFactory";
+import { IERC20Sellable } from "@interlay/xopts/dist/typechain/IERC20Sellable";
+import { IERC20BuyableFactory } from "@interlay/xopts/dist/typechain/IERC20BuyableFactory";
 
 const DEFAULT_CONFIRMATIONS = 1;
 
@@ -12,18 +18,18 @@ type Signer = ethers.Signer;
 type Contract = ethers.Contract;
 type Provider = ethers.providers.InfuraProvider | ethers.providers.Web3Provider;
 
-export class Contracts {
+export class Contracts implements ContractsInterface {
     signer: Signer | Provider;
-    optionPoolContract: Contract;
-    erc20Contract: Contract;
-    relayContract: Contract;
+    optionPoolContract: OptionPool;
+    erc20Contract: ICollateral;
+    relayContract: IRelay;
 
     constructor(signer: Signer | Provider, optionPoolAddress: string, erc20Address: string, relayAddress: string) {
         this.signer = signer;
 
-        this.optionPoolContract = new ethers.Contract(optionPoolAddress, optionPoolArtifact.abi, signer);
-        this.erc20Contract = new ethers.Contract(erc20Address, erc20Artifact.abi, signer);
-        this.relayContract = new ethers.Contract(relayAddress, relayArtifact.abi, signer);
+        this.optionPoolContract = OptionPoolFactory.connect(optionPoolAddress, signer);
+        this.erc20Contract = ICollateralFactory.connect(erc20Address, signer);
+        this.relayContract = IRelayFactory.connect(relayAddress, signer);
     }
 
     static resolve(network: {chainId: number; name: string;}) {
@@ -32,9 +38,9 @@ export class Contracts {
         let relayAddress = "";
         // Ganache
         if (network.chainId === 2222) {
-            optionPoolAddress = "0x71dBe5Bd681c86d12211629EB19fE836149c6bf8";
-            erc20Address = "0x99a463962829c26Da5357aE84ACAf85A401A7702";
-            relayAddress = "0x151eA753f0aF1634B90e1658054C247eFF1C2464"
+            optionPoolAddress = "0x3E99d12ACe8f4323DCf0f61713788D2d3649b599";
+            erc20Address = "0x151eA753f0aF1634B90e1658054C247eFF1C2464";
+            relayAddress = "0x99a463962829c26Da5357aE84ACAf85A401A7702"
         // Ropsten
         } else if (network.chainId === 3 && network.name === "ropsten") {
             optionPoolAddress = "0x11Bb2d104E82a4DE8e40E9562d17999Ec2E46B8c";
@@ -68,16 +74,17 @@ export class Contracts {
         return this.optionPoolContract.getOptions();
     }
 
-    getUserPurchasedOptions(address: string) {
-        return this.optionPoolContract.getUserPurchasedOptions(address);
+    async getUserPurchasedOptions(address: string) {
+        const {optionContracts, purchasedOptions} = await this.optionPoolContract.getUserPurchasedOptions(address);
+        return {optionContracts, purchasedOptions}
     }
 
     getUserSoldOptions(address: string) {
         return this.optionPoolContract.getUserSoldOptions(address);
     }
 
-    async checkAllowance(amount: number) {
-        let address = this.maybeGetAddress();
+    async checkAllowance(amount: Big) {
+        let address = await this.maybeGetAddress();
         let allowance = await this.erc20Contract.allowance(address, this.optionPoolContract.address);
         if (xutils.newBig(allowance.toString()).lt(amount)) {
             let tx = await this.erc20Contract.approve(this.optionPoolContract.address, ethers.constants.MaxUint256);
@@ -86,13 +93,13 @@ export class Contracts {
     }
 
     async balanceOf() {
-        let address = this.maybeGetAddress();
+        let address = await this.maybeGetAddress();
         let balance = await this.erc20Contract.balanceOf(address);
         return balance;
     }
 
     async mint() {
-        let address = this.maybeGetAddress();
+        let address = await this.maybeGetAddress();
         return this.erc20Contract.mint(address, xutils.daiToWeiDai(xutils.newBig(10_000)).toString());
     }
 
@@ -100,12 +107,12 @@ export class Contracts {
         return new Option(this.signer, address);
     }
 
-    async insureOption(address: string, seller: string, amount: number) {
-        let tx = await this.optionPoolContract.insureOption(address, seller, amount);
+    async insureOption(address: string, seller: string, amount: Big) {
+        let tx = await this.optionPoolContract.insureOption(address, seller, amount.toString());
         await tx.wait(DEFAULT_CONFIRMATIONS);
     }
 
-    async underwriteOption(address: string, amount: number, btcAddressHex: string) {
+    async underwriteOption(address: string, amount: Big, btcAddressHex: string) {
         let btcAddress = ethers.utils.toUtf8Bytes(btcAddressHex);
         let tx = await this.optionPoolContract.underwriteOption(address, amount.toString(), btcAddress);
         await tx.wait(DEFAULT_CONFIRMATIONS);
@@ -125,22 +132,23 @@ export class Contracts {
 export class Option {
     address: string;
     signer: Signer | Provider;
-    sellable: Contract;
+    sellable: IERC20Sellable;
 
     constructor(signer: Signer | Provider, address: string) {
         this.address = address;
         this.signer = signer;
-        this.sellable = new ethers.Contract(address, optionSellableArtifact.abi, signer);
+        this.sellable = IERC20SellableFactory.connect(address, signer);
     }
 
-    getDetails() {
-        return this.sellable.getDetails();
+    async getDetails() {
+        const {0: expiry, 1: premium, 2: strikePrice, 3: total, 4: totalSold, 5: totalUnsold} = await this.sellable.getDetails();
+        return {expiry, premium, strikePrice, total, totalSold, totalUnsold};
     }
 
     async getOptionSellers() {
-        let [sellers, amounts]: [any[], any[]] = await this.sellable.getOptionSellers();
+        let {sellers, options} = await this.sellable.getOptionSellers();
         return sellers.map((seller, i) => {
-            return [seller, amounts[i]];
+            return [seller, options[i]];
         }).filter((value => {
             return xutils.newBig(value[1].toString()).gt(0);
         }));
@@ -155,12 +163,12 @@ export class Option {
     }
 
     async getOptionOwners() {
-        let address = this.maybeGetAddress();
+        let address = await this.maybeGetAddress();
         let buyableAddress = await this.sellable.getBuyable();
-        let buyable = new ethers.Contract(buyableAddress, optionBuyableArtifact.abi, this.signer);
-        let [sellers, amounts]: [any[], any[]] = await buyable.getOptionOwnersFor(address);
+        let buyable = IERC20BuyableFactory.connect(buyableAddress, this.signer);
+        let {sellers, options} = await buyable.getOptionOwnersFor(address);
         return sellers.map((seller, i) => {
-            return [seller, amounts[i]];
+            return [seller, options[i]];
         }).filter((value => {
             return xutils.newBig(value[1].toString()).gt(0);
         }));
@@ -171,6 +179,6 @@ export class Option {
     }
 
     async hasSellers() {
-        return (await this.sellable.totalSupplyUnsold()) > 0;
+        return (await this.sellable.totalSupplyUnsold()).gt(0);
     }
 }

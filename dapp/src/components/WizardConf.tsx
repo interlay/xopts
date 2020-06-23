@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import { ListGroup, ListGroupItem, Form, Modal, FormGroup, Image } from "react-bootstrap";
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
-import { withRouter } from 'react-router-dom';
 import { STABLE_CONFIRMATIONS } from "../controllers/bitcoin-data";
 import { FaTrash, FaChevronRight } from "react-icons/fa";
 import { SpinButton } from "./SpinButton";

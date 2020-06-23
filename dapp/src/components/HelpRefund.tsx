@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Col, Row, Table, Card } from "react-bootstrap";
+import { Col, Row, Table } from "react-bootstrap";
 import refundImage from "../assets/img/process/refund.png";
 
 export default class HelpRefund extends Component {

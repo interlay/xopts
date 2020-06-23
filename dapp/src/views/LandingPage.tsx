@@ -1,10 +1,9 @@
 import React, { Component } from "react";
-import { withRouter, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Image, Container, Button, Col, Row } from "react-bootstrap";
 
 import buysellImg from "../assets/img/icons/buy-sell.png";
 import noncustodialImg from "../assets/img/icons/noncustodial.png";
-import opensourceImg from "../assets/img/icons/open-source.png";
 import paybtcImg from "../assets/img/icons/paybtc.png";
 import permissionlessImg from "../assets/img/icons/permissionless.png";
 import premiumImg from "../assets/img/icons/premium.png";

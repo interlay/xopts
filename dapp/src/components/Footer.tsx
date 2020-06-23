@@ -1,7 +1,6 @@
 import { Container, Image } from "react-bootstrap";
 import React, { Component } from "react";
-import { withRouter } from 'react-router-dom'
-import { FaTelegramPlane, FaMediumM, FaGitlab, FaGithub, FaTwitter, FaLinkedin } from 'react-icons/fa';
+import { FaTelegramPlane, FaMediumM, FaGithub, FaTwitter } from 'react-icons/fa';
 import interlayImg from "../assets/img/interlay.png";
 
 export default class Footer extends Component {

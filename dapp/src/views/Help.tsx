@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { withRouter } from 'react-router-dom';
 import { Table, Container, Row, Col } from "react-bootstrap";
 
 import HelpBuy from '../components/HelpBuy';

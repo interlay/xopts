@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { withRouter } from 'react-router-dom'
 import { Col, Row, Table, Card, Spinner, Modal } from "react-bootstrap";
 import * as utils from '../utils/utils';
 import BuyWizard from "./WizardBuy";
@@ -11,14 +10,24 @@ import { Big } from 'big.js';
 
 interface State {
     loaded: boolean
-    options: any[],
+    options: {
+        expiry: number;
+        premium: Big;
+        strikePrice: Big;
+        totalSupply: Big;
+        totalSupplyLocked: Big;
+        totalSupplyUnlocked: Big;
+        hasSellers: boolean;
+        spotPrice: number;
+        contract: string;    
+    }[],
     totalInsured: Big,
     insuranceAvailable: Big,
     avgPremium: Big,
     showBuy: boolean,
     showSell: boolean,
-    buy: any,
-    sell: any,
+    buy: string,
+    sell: string,
 }
 
 export default class OptionList extends Component<AppProps, State> {
@@ -30,8 +39,8 @@ export default class OptionList extends Component<AppProps, State> {
         avgPremium: utils.newBig(0),
         showBuy: false,
         showSell: false,
-        buy: null,
-        sell: null
+        buy: '',
+        sell: ''
     }
 
     constructor(props: AppProps) {
@@ -61,7 +70,7 @@ export default class OptionList extends Component<AppProps, State> {
         }
     }
 
-    async getOptionDetails(optionContracts: any) {
+    async getOptionDetails(optionContracts: string[]) {
 
         let options = [];
         var index;
@@ -73,12 +82,12 @@ export default class OptionList extends Component<AppProps, State> {
             let optionContract = this.props.contracts.attachOption(addr);
             let optionRes = await optionContract.getDetails();
             let option = {
-                expiry: parseInt(optionRes[0].toString()),
-                premium: utils.weiDaiToBtc(utils.newBig(optionRes[1].toString())),
-                strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes[2].toString())),
-                totalSupply: utils.weiDaiToDai(utils.newBig(optionRes[3].toString())),
-                totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionRes[4].toString())),
-                totalSupplyUnlocked: utils.weiDaiToDai(utils.newBig(optionRes[5].toString())),
+                expiry: parseInt(optionRes.expiry.toString()),
+                premium: utils.weiDaiToBtc(utils.newBig(optionRes.premium.toString())),
+                strikePrice: utils.weiDaiToBtc(utils.newBig(optionRes.strikePrice.toString())),
+                totalSupply: utils.weiDaiToDai(utils.newBig(optionRes.total.toString())),
+                totalSupplyLocked: utils.weiDaiToDai(utils.newBig(optionRes.totalSold.toString())),
+                totalSupplyUnlocked: utils.weiDaiToDai(utils.newBig(optionRes.totalUnsold.toString())),
                 hasSellers: await optionContract.hasSellers(),
                 spotPrice: 0,
                 contract: '',
@@ -140,7 +149,7 @@ export default class OptionList extends Component<AppProps, State> {
                 const id = utils.btcPutOptionId(expiry, strikePrice.toString());
 
                 let percentInsured = utils.newBig(0);
-                if (totalSupply > 0) {
+                if (totalSupply.gt(0)) {
                     percentInsured = (totalSupplyLocked.div(totalSupply)).mul(100);
                 }
                 let currentDate = Math.floor(Date.now() / 1000);

@@ -1,12 +1,11 @@
 import React, { Component } from "react";
-import { withRouter } from 'react-router-dom'
 import { Button, Form } from "react-bootstrap";
 import * as utils from '../utils/utils';
 import { SpinButtonTopbar } from "./SpinButtonTopbar";
 import { showSuccessToast, showFailureToast } from '../controllers/toast';
 import { toast } from 'react-toastify';
 import { Big } from 'big.js';
-import { AppProps } from "../types/App";
+import { AppPropsLoading } from "../types/App";
 
 interface State {
     loaded: boolean,
@@ -14,27 +13,25 @@ interface State {
     balance: Big,
 }
 
-export default class BalanceTopbar extends Component<AppProps, State> {
+export default class BalanceTopbar extends Component<AppPropsLoading, State> {
     state: State = {
         loaded: false,
         spinner: false,
         balance: utils.newBig(0),
     }
 
-    constructor(props: AppProps) {
-        super(props);
-    }
-
     async updateBalance() {
-        let balance = await this.props.contracts.balanceOf();
-        this.setState({
-            loaded: true,
-            balance: utils.weiDaiToDai(utils.newBig(balance.toString())),
-        })
+        if (this.props.contracts) {
+            let balance = await this.props.contracts.balanceOf();
+            this.setState({
+                loaded: true,
+                balance: utils.weiDaiToDai(utils.newBig(balance.toString())),
+            })
+        }
     }
 
     async componentDidUpdate() {
-        if (this.props.signer && !this.state.loaded && this.props.contracts) {
+        if (!this.state.loaded && this.props.contracts) {
             await this.updateBalance();
         }
     }
@@ -43,8 +40,10 @@ export default class BalanceTopbar extends Component<AppProps, State> {
         event.preventDefault();
         this.setState({ spinner: true });
         try {
-            let contracts = this.props.contracts;
-            await contracts.mint();
+            if (this.props.contracts) {
+                let contracts = this.props.contracts;
+                await contracts.mint();
+            }
         } catch (error) {
             console.log(error);
             showFailureToast(toast, 'Something went wrong. We were unable to send you testnet DAI. Please try again later.', 3000);
