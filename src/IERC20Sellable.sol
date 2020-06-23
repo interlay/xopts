@@ -40,7 +40,14 @@ contract IERC20Sellable is IERC20 {
 
     function getOptionSellers() external view returns (address[] memory sellers, uint256[] memory options);
 
-    function getDetails() external view returns (uint, uint, uint, uint, uint, uint);
+    function getDetails() external view returns (
+        uint expiry,
+        uint premium,
+        uint strikePrice,
+        uint total,
+        uint totalSold,
+        uint totalUnsold
+    );
 
     function totalBalanceOf(address account) external view returns (uint256);
 

@@ -199,7 +199,14 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         return (sellers, options);
     }
 
-    function getDetails() external view returns(uint, uint, uint, uint, uint, uint) {
+    function getDetails() external view returns(
+        uint expiry,
+        uint premium,
+        uint strikePrice,
+        uint total,
+        uint totalSold,
+        uint totalUnsold
+    ) {
         return (
             _expiry,
             _premium,
