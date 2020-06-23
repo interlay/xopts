@@ -2,13 +2,13 @@ import React, { Component } from "react";
 import { Col, ListGroup, ListGroupItem, Row, Form, Button, Modal, FormGroup } from "react-bootstrap";
 import { ethers } from 'ethers';
 import QRCode from "react-qr-code";
-import * as utils from '../utils/utils';
-import { showSuccessToast, showFailureToast } from '../controllers/toast';
-import { pollAndUpdateConfirmations } from '../utils/poll';
-import { AppProps } from "../types/App";
+import * as utils from '../../utils/utils';
+import { showSuccessToast, showFailureToast } from '../../controllers/toast';
+import { pollAndUpdateConfirmations } from '../../utils/poll';
+import { AppProps } from "../../types/App";
 import { Big } from 'big.js';
-import { FormControlElement } from "../types/Inputs";
-import { Option } from "../types/Storage";
+import { FormControlElement } from "../../types/Inputs";
+import { Option } from "../../types/Storage";
 
 interface SelectSellerProps extends AppProps {
     step: number

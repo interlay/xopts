@@ -1,11 +1,11 @@
 import React, { Component } from "react";
 import { ListGroup, ListGroupItem, Form, Modal, FormGroup, Image } from "react-bootstrap";
-import { showSuccessToast, showFailureToast } from '../controllers/toast';
-import { STABLE_CONFIRMATIONS } from "../controllers/bitcoin-data";
+import { showSuccessToast, showFailureToast } from '../../controllers/toast';
+import { STABLE_CONFIRMATIONS } from "../../controllers/bitcoin-data";
 import { FaTrash, FaChevronRight } from "react-icons/fa";
-import { SpinButton } from "./SpinButton";
-import blockstreamImg from "../assets/img/blockstream.png";
-import {AppProps} from "../types/App";
+import { SpinButton } from "../SpinButton";
+import blockstreamImg from "../../assets/img/blockstream.png";
+import {AppProps} from "../../types/App";
 
 const Item = ( {active, children}: {active: boolean, children: any} ) => (
     <ListGroup.Item 
