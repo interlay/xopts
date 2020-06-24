@@ -11,6 +11,7 @@ import { IRelay } from "@interlay/xopts/dist/typechain/IRelay";
 import { IERC20SellableFactory } from "@interlay/xopts/dist/typechain/IERC20SellableFactory";
 import { IERC20Sellable } from "@interlay/xopts/dist/typechain/IERC20Sellable";
 import { IERC20BuyableFactory } from "@interlay/xopts/dist/typechain/IERC20BuyableFactory";
+import { BigNumber } from 'ethers/utils';
 
 const DEFAULT_CONFIRMATIONS = 1;
 
@@ -125,6 +126,11 @@ export class Contracts implements ContractsInterface {
 
     async refundOption(address: string) {
         let tx = await this.optionPoolContract.refundOption(address);
+        await tx.wait(DEFAULT_CONFIRMATIONS);
+    }
+
+    async createOption(expiry: number, premium: BigNumber, strikePrice: BigNumber) {
+        let tx = await this.optionPoolContract.createOption(expiry, premium, strikePrice);
         await tx.wait(DEFAULT_CONFIRMATIONS);
     }
 }

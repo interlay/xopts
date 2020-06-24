@@ -1,12 +1,12 @@
 import React, { Component } from "react";
 import { Container, ListGroup, ListGroupItem, Form, FormGroup, FormControl, Modal } from "react-bootstrap";
-import * as utils from '../utils/utils'; 
-import { showSuccessToast, showFailureToast } from '../controllers/toast';
-import { SpinButton } from './SpinButton';
-import {AppProps} from "../types/App";
+import * as utils from '../../utils/utils'; 
+import { showSuccessToast, showFailureToast } from '../../controllers/toast';
+import { SpinButton } from '../SpinButton';
+import {AppProps} from "../../types/App";
 import { Big } from 'big.js';
-import { FormControlElement } from "../types/Inputs";
-import { OptionInterface } from "../types/Contracts";
+import { FormControlElement } from "../../types/Inputs";
+import { OptionInterface } from "../../types/Contracts";
 import { BigNumber } from "ethers/utils";
 
 interface SelectSellerProps {

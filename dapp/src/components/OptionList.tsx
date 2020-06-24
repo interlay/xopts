@@ -1,11 +1,12 @@
 import React, { Component } from "react";
-import { Col, Row, Table, Card, Spinner, Modal } from "react-bootstrap";
+import { Col, Row, Table, Card, Spinner, Modal, Button } from "react-bootstrap";
 import * as utils from '../utils/utils';
-import BuyWizard from "./WizardBuy";
-import SellWizard from "./WizardSell";
+import BuyWizard from './wizards/Buy';
+import SellWizard from './wizards/Sell';
+import CreateWizard from './wizards/Create';
 import { ButtonTool } from "./ButtonTool";
 import { ToastContainer, toast } from 'react-toastify';
-import {AppProps} from "../types/App";
+import { AppProps } from "../types/App";
 import { Big } from 'big.js';
 
 interface State {
@@ -26,6 +27,7 @@ interface State {
     avgPremium: Big,
     showBuy: boolean,
     showSell: boolean,
+    showCreateModal: boolean,
     buy: string,
     sell: string,
 }
@@ -39,6 +41,7 @@ export default class OptionList extends Component<AppProps, State> {
         avgPremium: utils.newBig(0),
         showBuy: false,
         showSell: false,
+        showCreateModal: false,
         buy: '',
         sell: ''
     }
@@ -46,11 +49,15 @@ export default class OptionList extends Component<AppProps, State> {
     constructor(props: AppProps) {
         super(props);
 
-        this.showBuy = this.showBuy.bind(this)
-        this.showSell = this.showSell.bind(this)
+        this.showBuy = this.showBuy.bind(this);
+        this.showSell = this.showSell.bind(this);
+        this.showCreateModal = this.showCreateModal.bind(this);
 
-        this.hideBuy = this.hideBuy.bind(this)
-        this.hideSell = this.hideSell.bind(this)
+        this.hideBuy = this.hideBuy.bind(this);
+        this.hideSell = this.hideSell.bind(this);
+        this.hideCreateModal = this.hideCreateModal.bind(this);
+
+        this.reloadOptions = this.reloadOptions.bind(this);
     }
 
     componentDidUpdate() {
@@ -140,6 +147,22 @@ export default class OptionList extends Component<AppProps, State> {
         this.setState({
             showSell: false,
         })
+    }
+
+    showCreateModal() {
+        this.setState({
+            showCreateModal: true,
+        })
+    }
+
+    hideCreateModal() {
+        this.setState({
+            showCreateModal: false,
+        })
+    }
+
+    reloadOptions() {
+        this.getOptions();
     }
 
     renderTableData() {
@@ -253,6 +276,13 @@ export default class OptionList extends Component<AppProps, State> {
                                 </tbody>
                             </Table>
                         </Row>
+                        <Row className="text-center">
+                            <Col>
+                                <Button className="text-center" variant="success" size="lg" onClick={() => { this.showCreateModal() }}>
+                                    Create
+                                </Button>
+                            </Col>
+                        </Row>
                     </Card.Body>
                 </Card>
                 <Modal
@@ -269,6 +299,13 @@ export default class OptionList extends Component<AppProps, State> {
                     show={this.state.showSell} onHide={() => this.setState({ showSell: false })}>
                     <SellWizard contract={this.state.sell} hide={this.hideSell} toast={toast} {...this.props}></SellWizard>
                 </Modal>
+                <CreateWizard 
+                    toast={toast}
+                    hideModal={this.hideCreateModal}
+                    showModal={this.state.showCreateModal}
+                    reloadOptions={this.reloadOptions}
+                    {...this.props}>
+                </CreateWizard>
             </Col>
         )
     }

@@ -25,6 +25,7 @@ export interface ContractsInterface {
     underwriteOption(address: string, amount: Big, btcAddressHex: string): Promise<void>
     exerciseOption(address: string, seller: string, height: number, index: number, txid: string, proof: string, rawtx: string): Promise<void>
     refundOption(address: string): Promise<void>
+    createOption(expiry: number, premium: BigNumber, strikePrice: BigNumber): Promise<void>
 }
 
 export interface OptionInterface {
