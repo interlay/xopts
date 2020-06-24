@@ -18,13 +18,13 @@ contract OptionPool is Context {
     string constant ERR_ZERO_AMOUNT = "Requires non-zero amount";
 
     // backing asset (eg. Dai or USDC)
-    IERC20 _collateral;
+    IERC20 private _collateral;
 
     // btc relay
-    IRelay _relay;
+    IRelay private _relay;
 
     // tx validation
-    ITxValidator _validator;
+    ITxValidator private _validator;
 
     IterableAddresses.List private _options;
 
@@ -48,7 +48,7 @@ contract OptionPool is Context {
         uint256 _expiry,
         uint256 _premium,
         uint256 _strikePrice
-    ) public returns (address) {
+    ) external {
         ERC20Sellable option = new ERC20Sellable(
             _relay,
             _validator,
@@ -57,7 +57,6 @@ contract OptionPool is Context {
             _strikePrice
         );
         _options.set(address(option));
-        return address(option);
     }
 
     function underwriteOption(address option, uint256 amount, bytes calldata btcAddress) external {

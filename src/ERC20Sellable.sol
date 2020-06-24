@@ -23,11 +23,11 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
     string constant ERR_VERIFY_TX = "Cannot verify tx inclusion";
     string constant ERR_VALIDATE_TX = "Cannot validate tx format";
-    string constant ERR_TRANSFER_EXCEEDS_BALANCE = "ERC20: transfer amount exceeds balance";
-    string constant ERR_APPROVE_TO_ZERO_ADDRESS = "ERC20: approve to the zero address";
-    string constant ERR_TRANSFER_TO_ZERO_ADDRESS = "ERC20: transfer to the zero address";
-    string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "ERC20: approve from the zero address";
-    string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "ERC20: transfer from the zero address";
+    string constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
+    string constant ERR_APPROVE_TO_ZERO_ADDRESS = "Approve to zero address";
+    string constant ERR_TRANSFER_TO_ZERO_ADDRESS = "Transfer to zero address";
+    string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
+    string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
 
     event Underwrite(address indexed minter, uint256 amount);
 
