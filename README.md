@@ -119,10 +119,10 @@ In another terminal, create test data that can be used in the front-end. Execute
 npx buidler run scripts/testdata.ts --network localhost
 ```
 
-### React UI
+### [React UI](https://gitlab.com/interlay/xopts-ui)
 
 ```bash
-cd ./dapp
+git clone git@gitlab.com:interlay/xopts-ui.git
 yarn install
 yarn start
 ```
