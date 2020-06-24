@@ -133,10 +133,13 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 
 ### Gas Costs
 
-| Function       | Gas     |
-|----------------|---------|
-| `constructor`  | 4660827 |
-| `createOption` | 3286583 |
+| Function       	  | Gas     |
+|---------------------|---------|
+| `constructor`  	  | 4660827 |
+| `createOption` 	  | 3286583 |
+| `underwriteOption`  | 282013  |
+| `insureOption`	  | 197852  |
+| `exerciseOption`    | 60716   |
 
 ### Ethereum Ropsten Testnet
 
