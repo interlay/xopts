@@ -16,11 +16,11 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
     using IterableBalances for IterableBalances.Map;
 
     string constant ERR_INSUFFICIENT_BALANCE = "Insufficient balance";
-    string constant ERR_TRANSFER_EXCEEDS_BALANCE = "ERC20: transfer amount exceeds balance";
-    string constant ERR_APPROVE_TO_ZERO_ADDRESS = "ERC20: approve to the zero address";
-    string constant ERR_TRANSFER_TO_ZERO_ADDRESS = "ERC20: transfer to the zero address";
-    string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "ERC20: approve from the zero address";
-    string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "ERC20: transfer from the zero address";
+    string constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
+    string constant ERR_APPROVE_TO_ZERO_ADDRESS = "Approve to zero address";
+    string constant ERR_TRANSFER_TO_ZERO_ADDRESS = "Transfer to zero address";
+    string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
+    string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
 
     event Insure(address indexed account, uint256 amount);
     event Exercise(address indexed account, uint256 amount);
@@ -187,7 +187,7 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
     * @dev Computes the exerise payout from the amount and the strikePrice
     * @param amount: asset to exchange
     */
-    function _calculateExercise(uint256 amount) private view returns (uint256) {
+    function _calculateExercise(uint256 amount) internal view returns (uint256) {
         return amount.div(_strikePrice);
     }
 }

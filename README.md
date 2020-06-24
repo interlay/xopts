@@ -131,6 +131,13 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 
 ## Deployments
 
+### Gas Costs
+
+| Function       | Gas     |
+|----------------|---------|
+| `constructor`  | 4660827 |
+| `createOption` | 3286583 |
+
 ### Ethereum Ropsten Testnet
 
 + Collateral (ERC20): [0x4DfB2bE72b3F2ac346Be86B78491E56f21522fB2](https://ropsten.etherscan.io/address/0x4DfB2bE72b3F2ac346Be86B78491E56f21522fB2)
