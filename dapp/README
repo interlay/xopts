@@ -1,8 +1,0 @@
-* XFLASH GUI
-
-** Run locally
-```
-cd dapp/
-yarn install
-yarn run start
-```
