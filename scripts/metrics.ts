@@ -2,8 +2,11 @@ import { ethers } from "@nomiclabs/buidler";
 import { OptionPool, MockCollateral, MockTxValidator, MockRelay, call, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC, mbtcToSatoshi } from "./contracts";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
+import { Script } from './constants';
+import * as bitcoin from 'bitcoinjs-lib';
 
-let btcAddress = ethers.utils.toUtf8Bytes("tb1q2krsjrpj3z6xm7xvj2xxjy9gcxa755y0exegh6");
+const payment = bitcoin.payments.p2wpkh({address: "tb1q2krsjrpj3z6xm7xvj2xxjy9gcxa755y0exegh6", network: bitcoin.networks.testnet});
+const btcHash = '0x' + payment.hash?.toString('hex');
 
 async function main() {
   let signers = await ethers.signers();
@@ -32,7 +35,7 @@ async function main() {
 
 	await call(collateral, CollateralFactory, alice).mint(bobAddress, daiToWeiDai(100_000));
   await call(collateral, CollateralFactory, bob).approve(contract.address, daiToWeiDai(10_000));
-	tx = await call(contract, OptionPoolFactory, bob).underwriteOption(options[0], daiToWeiDai(5_000), btcAddress);
+	tx = await call(contract, OptionPoolFactory, bob).underwriteOption(options[0], daiToWeiDai(5_000), btcHash, Script.p2wpkh);
   receipt = await tx.wait(0);  
   console.log(`Gas [Underwrite]: ${receipt.gasUsed?.toString()}`);
 

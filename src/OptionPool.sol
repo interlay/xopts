@@ -9,6 +9,7 @@ import {ITxValidator} from "./lib/ITxValidator.sol";
 import {IERC20Buyable} from "./IERC20Buyable.sol";
 import {IERC20Sellable} from "./IERC20Sellable.sol";
 import {ERC20Sellable} from "./ERC20Sellable.sol";
+import {Bitcoin} from "./lib/BitcoinTypes.sol";
 
 contract OptionPool is Context {
     using SafeMath for uint256;
@@ -59,11 +60,11 @@ contract OptionPool is Context {
         _options.set(address(option));
     }
 
-    function underwriteOption(address option, uint256 amount, bytes calldata btcAddress) external {
+    function underwriteOption(address option, uint256 amount, bytes20 btcAddress, Bitcoin.Script script) external {
         require(_options.exists(option), ERR_INVALID_OPTION);
         require(amount > 0, ERR_ZERO_AMOUNT);
         address seller = _msgSender();
-        IERC20Sellable(option).underwriteOption(seller, amount, btcAddress);
+        IERC20Sellable(option).underwriteOption(seller, amount, btcAddress, script);
         _collateral.transferFrom(seller, address(this), amount);
     }
 

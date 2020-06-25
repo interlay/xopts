@@ -1,6 +1,7 @@
 pragma solidity ^0.5.15;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Bitcoin} from "./lib/BitcoinTypes.sol";
 
 contract IERC20Sellable is IERC20 {
 
@@ -8,16 +9,27 @@ contract IERC20Sellable is IERC20 {
 
     function totalSupplyUnsold() external view returns (uint256);
 
-    function setBtcAddress(bytes calldata btcAddress) external;
+    /**
+    * @dev Set the payout address for an account,
+    * @dev facilitates trading underwrite options
+    * @param btcHash: recipient address for exercising
+    * @param format: recipient script format
+    **/
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external;
 
-    function getBtcAddress(address account) external view returns (bytes memory);
+    /**
+    * @dev Get the configured BTC address for an account
+    * @param account: minter address
+    **/
+    function getBtcAddress(address account) external view returns (bytes20, Bitcoin.Script format);
 
     /**
     * @dev Underwrite an option, can be called multiple times
     * @param amount: erc-20 collateral
-    * @param btcAddress: recipient address for exercising
+    * @param btcHash: recipient address for exercising
+    * @param format: recipient script format
     **/
-    function underwriteOption(address account, uint256 amount, bytes calldata btcAddress) external;
+    function underwriteOption(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external;
 
     /**
     * @dev Claim collateral for tokens after expiry

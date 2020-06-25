@@ -1,9 +1,7 @@
 import { ethers } from "@nomiclabs/buidler";
-import { Signer, Wallet, Contract } from "ethers";
+import { Signer, Contract } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { ERC20 } from "../typechain/ERC20";
-import { Collateral } from "../typechain/Collateral";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPool } from "../typechain/OptionPool";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
@@ -11,12 +9,10 @@ import { ERC20BuyableFactory } from "../typechain/ERC20BuyableFactory";
 import { ERC20SellableFactory } from "../typechain/ERC20SellableFactory";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
 import { MockTxValidatorFactory } from "../typechain/MockTxValidatorFactory";
-import config from "../buidler.config";
-import contracts from "../contracts";
+import { contracts } from "../contracts";
 import { legos } from "@studydefi/money-legos";
-import { ERC137Registry } from '../typechain/ERC137Registry';
 import { ErrorCode } from './constants';
-import { fromWei } from './utils';
+import { Script } from '../scripts/constants';
 
 chai.use(solidity);
 const { expect } = chai;
@@ -70,7 +66,7 @@ describe("Options", () => {
   let collateral: Contract;
   let optionPool: OptionPool;
 
-  let btcAddress = "0x66c7060feb882664ae62ffad0051fe843e318e85";
+  let btcAddress = "0x5587090c3288b46df8cc928c6910a8c1bbea508f";
 
   let mockTx = {
     height: 0,
@@ -137,7 +133,7 @@ describe("Options", () => {
 
     // bob should approve collateral transfer and underwrite
     await call(collateral, CollateralFactory, bob).approve(optionPoolAddress, collateralAmount);
-    await call(optionPool, OptionPoolFactory, bob).underwriteOption(optionAddress, collateralAmount, btcAddress);
+    await call(optionPool, OptionPoolFactory, bob).underwriteOption(optionAddress, collateralAmount, btcAddress, Script.p2wpkh);
 
     // balances should be adjusted accordingly
     expect((await collateral.balanceOf(await bob.getAddress())).toNumber()).to.eq(0);
@@ -202,7 +198,7 @@ describe("Options", () => {
     await expect(insureCall).to.be.reverted;
 
     // charlie should set btc payout address
-    await call(sellableContract, ERC20SellableFactory, charlie).setBtcAddress(btcAddress);
+    await call(sellableContract, ERC20SellableFactory, charlie).setBtcAddress(btcAddress, Script.p2wpkh);
 
     // alice now can insure
     await call(optionPool, OptionPoolFactory, alice).insureOption(sellableContract.address, charlieAddress, underlyingAmount);

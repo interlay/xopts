@@ -7,9 +7,12 @@ import {
 } from "./contracts";
 import { Signer } from "ethers";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
+import * as bitcoin from 'bitcoinjs-lib';
+import { Script } from './constants';
 
 // NOTE: following address is owned by @gregdhill
-let btcAddress = ethers.utils.toUtf8Bytes("tb1q2krsjrpj3z6xm7xvj2xxjy9gcxa755y0exegh6");
+const payment = bitcoin.payments.p2wpkh({address: "tb1q2krsjrpj3z6xm7xvj2xxjy9gcxa755y0exegh6", network: bitcoin.networks.testnet});
+const btcHash = '0x' + payment.hash?.toString('hex');
 
 function getBuyable(address: string, signer: Signer) {
 	return attachSellableOption(signer, address).getBuyable();
@@ -57,7 +60,7 @@ async function main() {
 
     console.log("Adding data to option: ", sellableAddress);
 	await call(collateral, CollateralFactory, bob).approve(pool.address, daiToWeiDai(10_000));
-	await call(pool, OptionPoolFactory, bob).underwriteOption(sellableAddress, daiToWeiDai(5_000), btcAddress);
+	await call(pool, OptionPoolFactory, bob).underwriteOption(sellableAddress, daiToWeiDai(5_000), btcHash, Script.p2wpkh);
 
     var details = await attachSellableOption(alice, sellableAddress).getDetails();
     console.log("Option details: ", details.toString());
@@ -81,11 +84,11 @@ async function main() {
 
     console.log("Bob underwriting 9000 Dai");
 	await call(collateral, CollateralFactory, bob).approve(pool.address, daiToWeiDai(9_000));
-	await call(pool, OptionPoolFactory, bob).underwriteOption(sellableAddress, daiToWeiDai(9_000), btcAddress);
+	await call(pool, OptionPoolFactory, bob).underwriteOption(sellableAddress, daiToWeiDai(9_000), btcHash, Script.p2wpkh);
 
     console.log("Charlie underwriting 4000 Dai");
 	await call(collateral, CollateralFactory, charlie).approve(pool.address, daiToWeiDai(4_000));
-	await call(pool, OptionPoolFactory, charlie).underwriteOption(sellableAddress, daiToWeiDai(3_000), btcAddress);
+	await call(pool, OptionPoolFactory, charlie).underwriteOption(sellableAddress, daiToWeiDai(3_000), btcHash, Script.p2wpkh);
 
     details = await attachSellableOption(alice, sellableAddress).getDetails();
     console.log("Option details: ", details.toString());
@@ -101,7 +104,7 @@ async function main() {
     console.log("Adding data to option: ", sellableAddress);
     console.log("Eve underwriting 20.000 Dai");
 	await call(collateral, CollateralFactory, eve).approve(pool.address, daiToWeiDai(20_000));
-	await call(pool, OptionPoolFactory, eve).underwriteOption(sellableAddress, daiToWeiDai(20_000), btcAddress);
+	await call(pool, OptionPoolFactory, eve).underwriteOption(sellableAddress, daiToWeiDai(20_000), btcHash, Script.p2wpkh);
 
     console.log("Dave insuring 1.27 BTC");
 	await call(collateral, CollateralFactory, dave).approve(pool.address, daiToWeiDai(2*17));
