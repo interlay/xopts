@@ -12,6 +12,7 @@ import {ERC20Buyable} from "./ERC20Buyable.sol";
 import {Expirable} from "./Expirable.sol";
 import {IERC20Buyable} from "./IERC20Buyable.sol";
 import {IERC20Sellable} from "./IERC20Sellable.sol";
+import {Bitcoin} from "./lib/BitcoinTypes.sol";
 
 contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     using SafeMath for uint;
@@ -47,7 +48,7 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     IERC20Buyable _buyable;
 
     // payout addresses for underwriters
-    mapping(address => bytes) _btcAddress;
+    mapping(address => Bitcoin.Address) _btcAddresses;
 
     // an accounts sold + unsold balance (for refunds)
     mapping (address => uint256) private _balancesTotal;
@@ -93,9 +94,9 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         return address(_buyable);
     }
 
-    function underwriteOption(address account, uint256 amount, bytes calldata btcAddress) external notExpired onlyOwner {
+    function underwriteOption(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
         _mint(account, amount);
-        _setBtcAddress(account, btcAddress);
+        _setBtcAddress(account, btcHash, format);
         emit Underwrite(account, amount);
     }
 
@@ -108,35 +109,27 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         emit Transfer(address(0), owner, amount);
     }
 
-    function _setBtcAddress(address account, bytes memory btcAddress) internal {
+    function _setBtcAddress(address account, bytes20 btcHash, Bitcoin.Script format) internal {
         require(
-            btcAddress.length > 0,
+            btcHash != 0,
             ERR_NO_BTC_ADDRESS
         );
-        _btcAddress[account] = btcAddress;
+        _btcAddresses[account].btcHash = btcHash;
+        _btcAddresses[account].format = format;
     }
 
-    /**
-    * @dev Set the payout address for an account,
-    * @dev facilitates trading underwrite options
-    * @param btcAddress: recipient address for exercising
-    **/
-    function setBtcAddress(bytes calldata btcAddress) external {
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external {
         address caller = _msgSender();
         require(_balancesTotal[caller] > 0, ERR_INSUFFICIENT_BALANCE);
-        _setBtcAddress(caller, btcAddress);
+        _setBtcAddress(caller, btcHash, format);
     }
 
-    /**
-    * @dev Get the configured BTC address for an account
-    * @param account: minter address
-    **/
-    function getBtcAddress(address account) external view returns (bytes memory) {
-        return _btcAddress[account];
+    function getBtcAddress(address account) external view returns (bytes20 btcHash, Bitcoin.Script format) {
+        return (_btcAddresses[account].btcHash, _btcAddresses[account].format);
     }
 
     function insureOption(address buyer, address seller, uint256 satoshis) external notExpired onlyOwner {
-        require(_btcAddress[seller].length > 0, ERR_NO_BTC_ADDRESS);
+        require(_btcAddresses[seller].btcHash != 0, ERR_NO_BTC_ADDRESS);
         // require the satoshis * strike price
         uint256 options = _calculateInsure(satoshis);
         // lock token from seller
@@ -155,7 +148,7 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         bytes calldata rawtx
     ) external notExpired onlyOwner returns (uint) {
         (uint amount, uint btcAmount) = _buyable.exerciseOption(buyer, seller);
-        bytes memory btcAddress = _btcAddress[seller];
+        bytes20 btcAddress = _btcAddresses[seller].btcHash;
 
         // we currently do not support multiple outputs
         // verify & validate tx, use default confirmations

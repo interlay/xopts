@@ -65,13 +65,13 @@ npm install
 Compile the XOPTS contracts.
 
 ```bash
-npm run compile
+yarn compile
 ```
 
 Deploy the XOPTS contracts.
 
 ```bash
-npm run deploy
+yarn deploy
 ```
 
 ### Development
@@ -79,13 +79,22 @@ npm run deploy
 Compile contracts and create the [TypeChain](https://github.com/ethereum-ts/TypeChain) interfaces.
 
 ```bash
-npm run build
+yarn build
 ```
 
 Run tests.
 
 ```bash
-npm test
+yarn test
+```
+
+### Releasing
+
+```bash
+yarn clean
+yarn build
+yarn tsc
+yarn publish --access public
 ```
 
 #### Bitcoin Testnet
@@ -104,7 +113,7 @@ Make sure ganache or buidlerevm is running in one terminal window.
 **ganache**
 
 ```bash
-npm run ganache
+yarn run ganache
 ```
 
 **buidlerevm**

@@ -9,9 +9,9 @@
     "resolveJsonModule": true
   },
   "include": [
-    "./typechain",
-    "./scripts",
-    "./test"
+    "typechain",
+    "scripts",
+    "test"
   ],
   "files": [
     "./buidler.config.ts",

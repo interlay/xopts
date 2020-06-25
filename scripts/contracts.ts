@@ -3,7 +3,7 @@ import { Signer, Wallet, Contract } from "ethers";
 import { legos } from "@studydefi/money-legos";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
-import contracts from "../contracts";
+import { contracts } from "../contracts";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
 import { MockTxValidatorFactory } from "../typechain/MockTxValidatorFactory";
 import { TxValidatorFactory } from "../typechain/TxValidatorFactory";
@@ -177,4 +177,13 @@ export async function OptionPool(signer: Signer, collateral: string, relay: stri
 	let contract = await factory.deploy(collateral, relay, valid, overrides);
 	console.log("OptionPool contract:", contract.address);
 	return contract.deployed();
+}
+
+export async function getBuyableAndSellable(sellableAddress: string, signer: Signer) {
+    let sellableFactory = new ERC20SellableFactory(signer);
+    let sellableContract = sellableFactory.attach(sellableAddress);
+    let buyableAddress = await sellableContract.getBuyable();
+    let buyableFactory = new ERC20BuyableFactory(signer);
+    let buyableContract = buyableFactory.attach(buyableAddress);
+    return {sellableContract, buyableContract};
 }

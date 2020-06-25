@@ -1,4 +1,4 @@
-const contracts = {
+export const contracts = {
     ropsten: {
       dai: "0x31F42841c2db5173425b5223809CF3A38FEde360",
       proxyRegistry: "0x1b8357eB14Dd29e4D29AC163342Ee838DeEBCC7f",
@@ -14,4 +14,4 @@ const contracts = {
     }
 };
 
-export default contracts;
+export { Script } from './scripts/constants';

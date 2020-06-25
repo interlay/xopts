@@ -1,7 +1,7 @@
 import { ethers } from "@nomiclabs/buidler";
 import { Signer, Wallet, Contract } from "ethers";
 import { BigNumber } from "ethers/utils";
-import contracts from "../contracts";
+import { contracts } from "../contracts";
 import { legos } from "@studydefi/money-legos";
 import { solidity } from "ethereum-waffle";
 import chai from "chai";

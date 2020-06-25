@@ -1,15 +1,19 @@
 import { ethers } from "@nomiclabs/buidler";
-import { ChainId, Token, TokenAmount, Pair } from "@uniswap/sdk";
+// import { ChainId, Token, TokenAmount, Pair } from "@uniswap/sdk";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import {
 	Collateral, MockRelay, MockTxValidator,
-	MockRegistryAndResolver, OptionPool, call, attachOption, mintDai,
+	MockRegistryAndResolver, OptionPool, call, mintDai,
     satoshiToMbtc, mbtcToSatoshi, mdaiToWeiDai, weiDaiToMdai, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC,
-    createUniswapPair, addLiquidity
+    createUniswapPair, addLiquidity, getBuyableAndSellable
 } from "./contracts";
-import contracts from "../contracts";
+import { contracts } from "../contracts";
+import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
+import * as bitcoin from 'bitcoinjs-lib';
+import { Script } from './constants';
 
-let btcAddress = "0x66c7060feb882664ae62ffad0051fe843e318e85";
+const payment = bitcoin.payments.p2wpkh({address: "tb1q2krsjrpj3z6xm7xvj2xxjy9gcxa755y0exegh6", network: bitcoin.networks.testnet});
+const btcHash = '0x' + payment.hash?.toString('hex');
 
 async function main() {
 	let signers = await ethers.signers();
@@ -30,7 +34,7 @@ async function main() {
 	const validator = await MockTxValidator(alice);
 	const registry = await MockRegistryAndResolver(alice);
 
-	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address, registry.address);
+	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address);
 
     console.log("Creating put option contracts");
     // until May 31, 2020
@@ -46,44 +50,46 @@ async function main() {
 	let optionAddress = options[0];
     console.log("Adding data to option: ", optionAddress);
     console.log("Bob underwriting 2,000 Dai");
-	await call(collateral, CollateralFactory, bob).approve(optionAddress, daiToWeiDai(2_000));
-	await attachOption(bob, optionAddress).underwrite(daiToWeiDai(2_000), btcAddress);
+    await call(collateral, CollateralFactory, bob).approve(optionAddress, daiToWeiDai(2_000));
+    await call(pool, OptionPoolFactory, bob).underwriteOption(optionAddress, daiToWeiDai(2_000), btcHash, Script.p2wpkh);
+
     // console.log("Charlie underwriting 7,500 Dai");
 	// await call(collateral, CollateralFactory, charlie).approve(optionAddress, daiToWeiDai(7_500));
 	// await attachOption(charlie, optionAddress).underwrite(daiToWeiDai(7_500), btcAddress);
-    var details = await attachOption(alice, optionAddress).getOptionDetails();
+    let { sellableContract } = await getBuyableAndSellable(optionAddress, alice);
+    let details = await sellableContract.getDetails();
     console.log("Option details: ", details.toString());
 
     console.log("Alice insuring 0.2 BTC");
 	await call(collateral, CollateralFactory, alice).approve(optionAddress, daiToWeiDai(200));
-	await attachOption(alice, optionAddress).insure(mbtcToSatoshi(200), bobAddress);
+    await call(pool, OptionPoolFactory, bob).insureOption(optionAddress, bobAddress, mbtcToSatoshi(200));
 
     // Uniswap
     // get the tokens
-    const collateral_token = new Token(3, collateral.address, 18, 'DAI', 'Dai');
-    const option_token = new Token(3, optionAddress, 18, 'putBTC', 'BTC_put_option');
+    // const collateral_token = new Token(3, collateral.address, 18, 'DAI', 'Dai');
+    // const option_token = new Token(3, optionAddress, 18, 'putBTC', 'BTC_put_option');
 
-    // create a Dai to option token pair with the trading price at the current premium
-    const DAI_putBTC = new Pair(
-        new TokenAmount(collateral_token, daiToWeiDai(2).toString()),
-        new TokenAmount(option_token, mbtcToSatoshi(200).toString())
-    );
+    // // create a Dai to option token pair with the trading price at the current premium
+    // const DAI_putBTC = new Pair(
+    //     new TokenAmount(collateral_token, daiToWeiDai(2).toString()),
+    //     new TokenAmount(option_token, mbtcToSatoshi(200).toString())
+    // );
 
-    const pairAddress = Pair.getAddress(collateral_token, option_token);
-    await createUniswapPair(alice, collateral.address, optionAddress);
+    // const pairAddress = Pair.getAddress(collateral_token, option_token);
+    // await createUniswapPair(alice, collateral.address, optionAddress);
 
-    console.log("Created Uniswap pair address at: ", pairAddress);
+    // console.log("Created Uniswap pair address at: ", pairAddress);
 
-    console.log("Adding liquidity from Alice to Uniswap");
-    console.log("Alice Dai balance: ", (await collateral.balanceOf(aliceAddress)).toString());
-    console.log("Alice Options balance: ", (await attachOption(alice, optionAddress).balanceOf(aliceAddress)).toString());
+    // console.log("Adding liquidity from Alice to Uniswap");
+    // console.log("Alice Dai balance: ", (await collateral.balanceOf(aliceAddress)).toString());
+    // console.log("Alice Options balance: ", (await sellableContract.balanceOf(aliceAddress)).toString());
 
-    const liquidityDai = daiToWeiDai(2).toString();
-    const liquidityOption = mbtcToSatoshi(200).toString();
-    const fromAliceCollateral = collateral.connect(alice);
-    await fromAliceCollateral.approve("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityDai);
-    await attachOption(alice, optionAddress).approve("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityOption);
-    console.log("Creating pair tokens");
+    // const liquidityDai = daiToWeiDai(2).toString();
+    // const liquidityOption = mbtcToSatoshi(200).toString();
+    // const fromAliceCollateral = collateral.connect(alice);
+    // await fromAliceCollateral.approve("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityDai);
+    // await sellableContract.approve("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", liquidityOption);
+    // console.log("Creating pair tokens");
     // await addLiquidity(
     //     alice,
     //     collateral.address,

@@ -1,5 +1,5 @@
 import { BuidlerConfig, usePlugin } from "@nomiclabs/buidler/config";
-import contracts from "./contracts";
+import { contracts } from "./contracts";
 
 // Plugins
 usePlugin("@nomiclabs/buidler-ganache");
