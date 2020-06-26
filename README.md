@@ -2,7 +2,7 @@
 
 <div align="center">
 	<p align="center">
-		<img src="dapp/src/assets/img/xopts.png" alt="logo" width="128" height="128">
+		<img src="media/logos/xopts.png" alt="logo" width="128" height="128">
 	</p>
 	<p>
 		<h3 align="center">XOPTS: Trustless, Non-Custodial Bitcoin Options on Ethereum</h3>
@@ -33,12 +33,14 @@ Finally, options can be exercised once the buyer proves payment to the respectiv
 
 You can find more details on how XOpts works in our [Guides](https://xopts.io/help) (buy, sell, exercise, refund options).
 
-<img src="media/process/overview.png" alt="XOpts system overview" width="700">
+<div align="center">
+    <img src="media/process/overview.png" alt="XOpts system overview" width="700">
+</div>
 
 ### Built with
 
-* [Node]()
-* [Typescript]()
+* [Yarn](https://yarnpkg.com/)
+* [Typescript](https://www.typescriptlang.org/)
 * [Buidler](https://buidler.dev/)
 * [money-legos](https://github.com/studydefi/money-legos)
 
