@@ -150,7 +150,6 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         (uint amount, uint btcAmount) = _buyable.exerciseOption(buyer, seller);
         bytes20 btcAddress = _btcAddresses[seller].btcHash;
 
-        // we currently do not support multiple outputs
         // verify & validate tx, use default confirmations
         require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
         require(_validator.validateTx(rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
