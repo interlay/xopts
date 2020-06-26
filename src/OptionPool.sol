@@ -142,7 +142,6 @@ contract OptionPool is Context {
             address[] memory optionContracts,
             uint256[] memory unsoldOptions,
             uint256[] memory totalOptions
-
         )
     {
         IterableAddresses.List storage list = _options;

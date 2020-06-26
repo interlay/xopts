@@ -79,7 +79,7 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         _premium = premium;
         _strikePrice = strikePrice;
 
-        _buyable = new ERC20Buyable(expiry, strikePrice);
+        _buyable = new ERC20Buyable(expiry);
     }
 
     function totalSupply() external view returns (uint256) {
@@ -147,11 +147,12 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         bytes calldata proof,
         bytes calldata rawtx
     ) external notExpired onlyOwner returns (uint) {
-        (uint amount, uint btcAmount) = _buyable.exerciseOption(buyer, seller);
-        bytes20 btcAddress = _btcAddresses[seller].btcHash;
+        uint amount = _buyable.exerciseOption(buyer, seller);
+        uint btcAmount = _calculateExercise(amount);
 
         // verify & validate tx, use default confirmations
         require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
+        bytes20 btcAddress = _btcAddresses[seller].btcHash;
         require(_validator.validateTx(rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
 
         _balancesTotal[seller] = _balancesTotal[seller].sub(amount);
@@ -273,7 +274,7 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     * @dev Computes the insure payout from the amount and the strikePrice
     * @param amount: asset to exchange
     */
-    function _calculateInsure(uint256 amount) private view returns (uint256) {
+    function _calculateInsure(uint256 amount) internal view returns (uint256) {
         return amount.mul(_strikePrice);
     }
 
@@ -283,5 +284,13 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     */
     function calculatePremium(uint256 amount) external view returns (uint256) {
         return amount.mul(_premium);
+    }
+
+    /**
+    * @dev Computes the exercise payout from the amount and the strikePrice
+    * @param amount: asset to exchange
+    */
+    function _calculateExercise(uint256 amount) internal view returns (uint256) {
+        return amount.div(_strikePrice);
     }
 }
