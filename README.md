@@ -130,6 +130,15 @@ In another terminal, create test data that can be used in the front-end. Execute
 npx buidler run scripts/testdata.ts --network localhost
 ```
 
+### Integrations
+
+#### Uniswap
+
+```bash
+INFURA_ID=***** yarn run ganache
+npx buidler run scripts/uniswap.ts --network localhost
+```
+
 ### [React UI](https://gitlab.com/interlay/xopts-ui)
 
 ```bash
@@ -159,7 +168,7 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 + Interlay's BTC-Relay: [0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb](https://ropsten.etherscan.io/address/0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb)
 
 
-You can interact with Xopts on [xopts.io ](https://xopts.io)or run a locally deployed front-end on [localhost:3000](http://localhost:3000).
+You can interact with Xopts on [xopts.io](https://xopts.io)or run a locally deployed front-end on [localhost:3000](http://localhost:3000).
 
 ## Roadmap
 
