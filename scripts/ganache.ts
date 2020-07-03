@@ -8,7 +8,7 @@ const mnemonic = "-m ".concat(config.networks.ganache.mnemonic);
 const id = "-i ".concat(config.networks.ganache.network_id.toString());
 
 // if infura is available, fork from ropsten
-const INFURA_ID = process.env.INFURA_XFLASH_ID;
+const INFURA_ID = process.env.INFURA_ID;
 
 var fork = "";
 var unlocked = "";
@@ -16,9 +16,9 @@ var unlocked = "";
 if (INFURA_ID) {
     const INFURA_URL = 'https://ropsten.infura.io/v3/'.concat(INFURA_ID.toString());
     fork = "-f ".concat(INFURA_URL.toString());
-    // var dai_account = "--unlock ".concat(contracts.dai_account);
-    // var dai_contract = "--unlock ".concat(contracts.dai);
-    // unlocked = "".concat(dai_account, " ", dai_contract)
+    var dai_account = "--unlock ".concat(contracts.ropsten.dai_account);
+    var dai_contract = "--unlock ".concat(contracts.ropsten.dai);
+    unlocked = "".concat(dai_account, " ", dai_contract)
 }
 
 const ganache_string = ganache_cmd.concat(" ", port, " ", mnemonic, " ", id, " ", fork, " ", unlocked);

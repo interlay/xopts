@@ -16,7 +16,7 @@ var ganache_config = {
 };
 
 // if infura is available, fork from ropsten
-const INFURA_ID = process.env.INFURA_XFLASH_ID;
+const INFURA_ID = process.env.INFURA_ID;
 
 if (INFURA_ID) {
     const INFURA_URL = 'https://ropsten.infura.io/v3/'.concat(INFURA_ID);

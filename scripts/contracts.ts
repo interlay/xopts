@@ -15,6 +15,10 @@ import IUniswapV2Factory from '@uniswap/v2-core/build/IUniswapV2Factory.json'
 import IUniswapV2ERC20 from '@uniswap/v2-core/build/IUniswapV2ERC20.json'
 import IUniswapV2Pair from '@uniswap/v2-core/build/IUniswapV2Pair.json'
 import IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
+import { BigNumber } from "ethers/utils";
+import { IERC20 } from "../typechain/IERC20";
+import { IERC20Buyable } from "../typechain/IERC20Buyable";
+import { Token, Pair, TokenAmount } from "@uniswap/sdk";
 
 let overrides = {
   gasPrice: ethers.utils.parseUnits('20.0', 'gwei'),
@@ -110,28 +114,46 @@ export async function createUniswapPair(signer: Signer, tokenA: string, tokenB: 
 // Uniswap router
 export async function addLiquidity(
     signer: Signer,
-    tokenA: string,
-    tokenB: string,
-    amountADesired: string,
-    amountBDesired: string,
-    amountAMin: string,
-    amountBMin: string,
+    tokenA: IERC20,
+    tokenB: IERC20Buyable,
+    amountADesired: BigNumber,
+    amountBDesired: BigNumber,
+    amountAMin: number,
+    amountBMin: number,
     account: string,
-    deadline: number
+    deadline: number,
+    pairAddress: string,
 ) {
-    const abi = IUniswapV2Router01.abi;
-    const router = await ethers.getContractAt(abi, "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", signer);
-    const routerFromAlice = router.connect(signer);
-    await router.addLiquidity(
-        tokenA,
-        tokenB,
-        amountADesired,
-        amountBDesired,
-        amountAMin,
-        amountBMin,
-        account,
-        deadline
-    );
+    // const abi = IUniswapV2Router01.abi;
+    // const router = await ethers.getContractAt(abi, "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a", signer);
+    // await router.addLiquidity(
+    //     tokenA.address,
+    //     tokenB.address,
+    //     amountADesired,
+    //     amountBDesired,
+    //     amountAMin,
+    //     amountBMin,
+    //     account,
+    //     deadline
+    // );
+
+    await tokenA.transfer(pairAddress, amountADesired);
+    await tokenB.transfer(pairAddress, amountBDesired);
+    const abi = IUniswapV2Pair.abi;
+    const exchange = await ethers.getContractAt(abi, pairAddress, signer);
+    await exchange.mint(account);
+}
+
+export async function fetchData(
+    signer: Signer,
+    tokenA: Token,
+    tokenB: Token,
+    pairAddress: string
+) {
+    const pair = await ethers.getContractAt(IUniswapV2Pair.abi, pairAddress, signer);
+    const [reserves0, reserves1] = await pair.getReserves();
+    const balances = tokenA.sortsBefore(tokenB) ? [reserves0, reserves1] : [reserves1, reserves0]
+    return new Pair(new TokenAmount(tokenA, balances[0]), new TokenAmount(tokenB, balances[1]))
 }
 
 export async function MockCollateral(signer: Signer) {
