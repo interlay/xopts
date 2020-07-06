@@ -153,13 +153,15 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 
 ### Gas Costs
 
-| Function       	  | Gas     |
-|---------------------|---------|
-| `constructor`  	  | 4660827 |
-| `createOption` 	  | 3286583 |
-| `underwriteOption`  | 282013  |
-| `insureOption`	  | 197852  |
-| `exerciseOption`    | 60716   |
+| Function       	  | Gas     | Details				 	  |
+|---------------------|---------|-----------------------------|
+| `constructor`  	  | 4459604 | Deploy Option Factory	 	  |
+| `createOption` 	  | 3099130 | Create Sell & Buy ERC-20    |
+| `underwriteOption`  | 241516  | Deposit Collateral		  |
+| `transfer` 		  | 119209  | Transfer Unsold Options     |
+| `insureOption`	  | 221144  | Buy Options At Premium	  |
+| `transfer` 		  | 117892  | Transfer Sold Options		  |
+| `exerciseOption`    | 59380   | Prove BTC Payment			  |
 
 ### Ethereum Ropsten Testnet
 

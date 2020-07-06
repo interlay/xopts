@@ -20,7 +20,7 @@ contract IERC20Buyable is IERC20 {
     function exerciseOption(
         address buyer,
         address seller
-    ) external returns (uint amount, uint btcAmount);
+    ) external returns (uint);
 
     function getOptionOwnersFor(address account) external view returns (address[] memory sellers, uint256[] memory options);
 

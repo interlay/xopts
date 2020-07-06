@@ -25,11 +25,9 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
     event Insure(address indexed account, uint256 amount);
     event Exercise(address indexed account, uint256 amount);
 
-    // the strike price for one satoshi
-    uint256 public _strikePrice;
-
     // iterable mapping to accounts owed
     mapping (address => IterableBalances.Map) _balances;
+
     // total balances
     mapping (address => uint256) _balancesTotal;
 
@@ -39,9 +37,7 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
     // total number of tokens bought
     uint256 internal _totalSupply;
 
-    constructor(uint256 expiry, uint256 strikePrice) public Expirable(expiry) Ownable() {
-        _strikePrice = strikePrice;
-    }
+    constructor(uint256 expiry) public Expirable(expiry) Ownable() {}
 
     function totalSupply() external view returns (uint256) {
         return _totalSupply;
@@ -67,11 +63,11 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
     function exerciseOption(
         address buyer,
         address seller
-    ) external notExpired onlyOwner returns (uint amount, uint btcAmount) {
-        amount = _burn(buyer, seller);
+    ) external notExpired onlyOwner returns (uint) {
+        uint amount = _burn(buyer, seller);
         require(amount > 0, ERR_INSUFFICIENT_BALANCE);
         emit Exercise(buyer, amount);
-        return (amount, _calculateExercise(amount));
+        return amount;
     }
 
     function _burn(
@@ -99,7 +95,7 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
             address key = map.getKeyAtIndex(i);
             uint value = map.get(key);
             sellers[i] = key;
-            options[i] = _calculateExercise(value);
+            options[i] = value;
         }
 
         return (sellers, options);
@@ -126,14 +122,12 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
         return _balancesTotal[account];
     }
 
-    // Overwrite ERC-20 functionality with expiry
     function transfer(address recipient, uint256 amount) external notExpired returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         emit Transfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    // Overwrite ERC-20 functionality with expiry
     function transferFrom(address sender, address recipient, uint256 amount) external notExpired returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
@@ -181,13 +175,5 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
         }
 
         revert(ERR_TRANSFER_EXCEEDS_BALANCE);
-    }
-
-    /**
-    * @dev Computes the exerise payout from the amount and the strikePrice
-    * @param amount: asset to exchange
-    */
-    function _calculateExercise(uint256 amount) internal view returns (uint256) {
-        return amount.div(_strikePrice);
     }
 }
