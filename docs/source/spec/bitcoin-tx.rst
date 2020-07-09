@@ -5,6 +5,7 @@ Bitcoin Transaction Format
 
 
 ::
+
     OP_DUP
     OP_HASH <pubkey_hash_ALICE>
     OP_EQUALVERIFY

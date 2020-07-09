@@ -1,2 +1,2 @@
 #!/bin/bash
-sphinx-autobuild -p 8000 source build/html
+sphinx-autobuild -W -p 8000 source build/html
