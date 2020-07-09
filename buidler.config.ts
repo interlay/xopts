@@ -5,6 +5,7 @@ import { contracts } from "./contracts";
 usePlugin("@nomiclabs/buidler-ganache");
 usePlugin("@nomiclabs/buidler-waffle");
 usePlugin("buidler-typechain");
+usePlugin('buidler-gas-reporter');
 
 // environment
 var ganache_config = {
@@ -26,6 +27,8 @@ if (INFURA_ID) {
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY || '';
 const ROPSTEN_PRIVATE_KEY = process.env.ROPSTEN_PRIVATE_KEY || '';
+
+const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 const config = {
 	defaultNetwork: "buidlerevm",
@@ -53,6 +56,12 @@ const config = {
         localhost: {
           timeout: 0,
         }
+    },
+    gasReporter: {
+        enabled: (COINMARKETCAP_API_KEY ? true : false),
+        coinmarketcap: COINMARKETCAP_API_KEY,
+        currency: "GBP",
+        src: "./src"
     },
 };
 
