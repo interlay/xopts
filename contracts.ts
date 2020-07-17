@@ -14,4 +14,4 @@ export const contracts = {
     }
 };
 
-export { Script } from './scripts/constants';
+// export { Script } from './scripts/constants';

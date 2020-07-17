@@ -1,3 +1,9 @@
+export enum Script {
+    p2sh,
+    p2pkh,
+    p2wpkh
+}
+
 export const ErrorCode = {
     ERR_INSUFFICIENT_COLLATERAL: "Insufficient collateral",
     ERR_INSUFFICIENT_UNLOCKED: "Insufficient unlocked",

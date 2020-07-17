@@ -2,7 +2,7 @@ import { ethers } from "@nomiclabs/buidler";
 import { OptionPool, MockCollateral, MockTxValidator, MockRelay, call, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC, mbtcToSatoshi, getBuyableAndSellable } from "./contracts";
 import { CollateralFactory } from "../typechain/CollateralFactory";
 import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
-import { Script } from './constants';
+import { Script } from '../lib/constants';
 import * as bitcoin from 'bitcoinjs-lib';
 import { ERC20SellableFactory } from "../typechain/ERC20SellableFactory";
 

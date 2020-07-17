@@ -3,7 +3,7 @@
     "skipLibCheck": true,
     "target": "es5",
     "module": "commonjs",
-    "strict": true,
+    // "strict": true,
     "esModuleInterop": true,
     "outDir": "dist",
     "declaration": true,
@@ -11,7 +11,7 @@
   },
   "include": [
     "typechain",
-    "scripts",
+    "lib",
     "test"
   ],
   "exclude": [

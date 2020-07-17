@@ -2,24 +2,24 @@ import { ethers } from "@nomiclabs/buidler";
 import { Signer } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { TxValidator } from "../typechain/TxValidator";
-import { TxValidatorFactory } from "../typechain/TxValidatorFactory";
+import { MockBTCReferee } from "../typechain/MockBTCReferee";
+import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
 import * as bitcoin from 'bitcoinjs-lib';
-import { btcToSatoshi } from "../scripts/contracts";
-import { ErrorCode } from './constants';
+import { btcToSatoshi } from "../lib/convert";
+import { ErrorCode } from '../lib/constants';
 
 chai.use(solidity);
 const { expect } = chai;
 
-describe("TxValidator", () => {
+describe("Tx Validation", () => {
   let signers: Signer[];
-  let txValidator: TxValidator;
+  let btcReferee: MockBTCReferee;
 
   beforeEach(async () => {
     signers = await ethers.signers();
 
-    let txValidatorFactory = new TxValidatorFactory(signers[0]);
-    txValidator = await txValidatorFactory.deploy();
+    let btcRefereeFactory = new MockBTCRefereeFactory(signers[0]);
+    btcReferee = await btcRefereeFactory.deploy();
   });
 
   const p2shTx = "0x020000000001012be04b0a3994d305b9f55951463efe49de3e9e11055cb804a6ad2310e027a17101" +
@@ -35,14 +35,14 @@ describe("TxValidator", () => {
   it("should successfully validate p2sh", async () => {
     let payment = bitcoin.payments.p2sh({address: "2MsxEm5ugk4hR9naBiA8gNH6syFdAcjALHQ", network: bitcoin.networks.testnet})
 
-    let result = await txValidator.validateTx(p2shTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.38900688));
+    let result = await btcReferee.checkTx(p2shTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.38900688));
     expect(result).to.be.true;
   });
 
   it("should revert on invalid p2sh amount", async () => {
     let payment = bitcoin.payments.p2sh({address: "2MsxEm5ugk4hR9naBiA8gNH6syFdAcjALHQ", network: bitcoin.networks.testnet})
 
-    let result = txValidator.validateTx(p2shTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.4));
+    let result = btcReferee.checkTx(p2shTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.4));
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_AMOUNT);
   });
 
@@ -56,14 +56,14 @@ describe("TxValidator", () => {
   it("should successfully validate p2pkh", async () => { 
     let payment = bitcoin.payments.p2pkh({address: "mpxhLRAzfGc6tH55kzG9NfZ3b2VZdo3Gq9", network: bitcoin.networks.testnet})
 
-    let result = await txValidator.validateTx(p2pkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(1.14883244));
+    let result = await btcReferee.checkTx(p2pkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(1.14883244));
     expect(result).to.be.true;
   });
 
   it("should revert on invalid p2pkh amount", async () => {
     let payment = bitcoin.payments.p2pkh({address: "mpxhLRAzfGc6tH55kzG9NfZ3b2VZdo3Gq9", network: bitcoin.networks.testnet})
 
-    let result = txValidator.validateTx(p2pkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(2));
+    let result = btcReferee.checkTx(p2pkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(2));
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_AMOUNT);
   });
 
@@ -84,14 +84,14 @@ describe("TxValidator", () => {
   it("should successfully validate p2wpkh", async () => {    
     let payment = bitcoin.payments.p2wpkh({address: "tb1q4kspwcf42cqp66hrhw407djna4dgpw9lsnfx5e", network: bitcoin.networks.testnet})
 
-    let result = await txValidator.validateTx(p2wpkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.002));
+    let result = await btcReferee.checkTx(p2wpkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.002));
     expect(result).to.be.true;
   });
 
   it("should revert on invalid p2wpkh amount", async () => {
     let payment = bitcoin.payments.p2wpkh({address: "tb1q4kspwcf42cqp66hrhw407djna4dgpw9lsnfx5e", network: bitcoin.networks.testnet})
 
-    let result = txValidator.validateTx(p2wpkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.02));
+    let result = btcReferee.checkTx(p2wpkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.02));
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_AMOUNT);
   });
 });
