@@ -3,15 +3,28 @@ pragma solidity ^0.5.15;
 import { Bitcoin } from "../Bitcoin.sol";
 
 interface IOption {
-
-    function collateral() external returns (address);
-
-    function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external;
+    /**
+    * @notice Mints option tokens
+    * @dev Can only be called by factory contract before expiry
+    * @param from Origin address
+    * @param to Destination address (i.e. uniswap pool)
+    * @param amount Total credit
+    * @param btcHash Bitcoin hash
+    * @param format Bitcoin script format
+    **/
+    function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external;
 
     /**
-    * @dev Exercise options before expiry
-    * @param buyer: account purchasing insurance
-    * @param seller: account selling insurance
+    * @notice Exercise an option after partial expiry
+    * @dev Can only be called by factory contract during window
+    * @param buyer Account that bought the options
+    * @param seller Account that wrote the options
+    * @param amount Options to burn for collateral
+    * @param height Bitcoin block height
+    * @param index Bitcoin tx index
+    * @param txid Bitcoin transaction id
+    * @param proof Bitcoin inclusion proof
+    * @param rawtx Bitcoin raw tx
     **/
     function exercise(
         address buyer,
@@ -23,4 +36,12 @@ interface IOption {
         bytes calldata proof,
         bytes calldata rawtx
     ) external;
+
+    /**
+    * @notice Refund written collateral after full expiry
+    * @param account Minter address
+    * @param amount Amount of collateral
+    **/
+    function refund(address account, uint amount) external;
+
 }

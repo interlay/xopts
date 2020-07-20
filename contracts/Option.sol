@@ -6,18 +6,17 @@ import { Ownable } from "@openzeppelin/contracts/ownership/Ownable.sol";
 import { Context } from "@openzeppelin/contracts/GSN/Context.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import { IterableBalances } from "./IterableBalances.sol";
 import { Obligation } from "./Obligation.sol";
-
 import { IObligation } from "./interface/IObligation.sol";
 import { IOption } from "./interface/IOption.sol";
-
 import { Expirable } from "./Expirable.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IReferee } from "./interface/IReferee.sol";
 import { Bitcoin } from "./Bitcoin.sol";
 
+/// @title Option-side ERC-20 tokens
+/// @notice Represents unsold and exercisable option tokens
+/// @author Interlay
 contract Option is IOption, IERC20, Context, Expirable, Ownable {
     using SafeMath for uint;
     using IterableBalances for IterableBalances.Map;
@@ -38,7 +37,8 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
 
     // btc relay or oracle
     address public referee;
-    address public collateral;
+    address public treasury;
+    address public obligation;
 
     // total options per account
     mapping (address => uint256) internal _balances;
@@ -54,27 +54,35 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         uint256 window,
         uint256 strikePrice,
         address _referee,
-        address _collateral
+        address _treasury,
+        address _obligation
     ) public Expirable(expiry, window) Ownable() {
         require(strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
 
         _strikePrice = strikePrice;
 
         referee = _referee;
-        collateral = _collateral;
+        treasury = _treasury;
+        obligation = _obligation;
     }
 
+    /// @dev See {IERC20-totalSupply}
     function totalSupply() external view returns (uint256) {
         return _totalSupply;
     }
 
-    function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
+    /// @dev See {IOption-mint}
+    function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
         // insert into the accounts balance
-        _balances[account] = _balances[account].add(amount);
+        _balances[to] = _balances[to].add(amount);
         _totalSupply = _totalSupply.add(amount);
-        emit Transfer(address(0), account, amount);
+        emit Transfer(address(0), to, amount);
+
+        // mint the equivalent obligations
+        IObligation(obligation).mint(from, amount, btcHash, format);
     }
 
+    /// @dev See {IOption-exercise}
     function exercise(
         address buyer,
         address seller,
@@ -85,19 +93,31 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         bytes calldata proof,
         bytes calldata rawtx
     ) external canExercise onlyOwner {
+        uint buyerBalance = _balances[buyer];
+
         // burn buyer's options
         _burn(buyer, amount);
+        // burn seller's obligations
+        IObligation(obligation).exercise(buyer, seller, buyerBalance, amount);
+
         // expected amount of btc
         uint btcAmount = _calculateExercise(amount);
-        // // verify & validate tx, use default confirmations
-        // require(IReferee(referee).verifyTx(
-        //     height,
-        //     index,
-        //     txid,
-        //     proof,
-        //     rawtx,
-        //     btcHash,
-        //     btcAmount), ERR_VALIDATE_TX);
+        (bytes20 btcHash,) = IObligation(obligation).getBtcAddress(seller);
+
+        // verify & validate tx, use default confirmations
+        require(IReferee(referee).verifyTx(
+            height,
+            index,
+            txid,
+            proof,
+            rawtx,
+            btcHash,
+            btcAmount), ERR_VALIDATE_TX);
+    }
+
+    /// @dev See {IOption-refund}
+    function refund(address account, uint amount) external canRefund onlyOwner {
+        IObligation(obligation).refund(account, amount);
     }
 
     function _burn(
@@ -109,10 +129,12 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         emit Transfer(account, address(0), amount);
     }
 
+    /// @dev See {IERC20-allowance}
     function allowance(address owner, address spender) external view returns (uint256) {
         return _allowances[owner][spender];
     }
 
+    /// @dev See {IERC20-approve}
     function approve(address spender, uint256 amount) external notExpired returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
@@ -126,15 +148,18 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         emit Approval(owner, spender, amount);
     }
 
+    /// @dev See {IERC20-balanceOf}
     function balanceOf(address account) external view returns (uint256) {
         return _balances[account];
     }
 
+    /// @dev See {IERC20-transfer}
     function transfer(address recipient, uint256 amount) external notExpired returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
+    /// @dev See {IERC20-transferFrom}
     function transferFrom(address sender, address recipient, uint256 amount) external notExpired returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
@@ -163,7 +188,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
 
     /**
     * @dev Computes the exercise payout from the amount and the strikePrice
-    * @param amount: asset to exchange
+    * @param amount Asset to exchange
     */
     function _calculateExercise(uint256 amount) internal view returns (uint256) {
         return amount.div(_strikePrice);

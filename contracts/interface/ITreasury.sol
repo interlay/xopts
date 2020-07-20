@@ -9,13 +9,10 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 /// @author Interlay
 /// @notice This interface manages locking and unlocking of collateral.
 interface ITreasury {
-    /// Lock collateral for a specific account.
-    /// @param account the Ethereum address that locks collateral
-    /// @param amount the amount to-be-locked
-    function lock(address account, uint amount) external;
 
     /// Unlock collateral for a specific account
     /// @param account the Ethereum address that locks collateral
     /// @param amount the amount to-be-locked
     function unlock(address account, uint amount) external;
+
 }

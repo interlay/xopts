@@ -1,11 +1,11 @@
 pragma solidity ^0.5.15;
 
+import "@nomiclabs/buidler/console.sol";
+
 import { BytesLib } from "@summa-tx/bitcoin-spv-sol/contracts/BytesLib.sol";
 import { Parser } from "@interlay/btc-relay-sol/src/Parser.sol";
 import { Script } from "@interlay/btc-relay-sol/src/Script.sol";
 import { IReferee } from "./interface/IReferee.sol";
-
-import "@nomiclabs/buidler/console.sol";
 
 interface IRelay {
     function verifyTx(
@@ -23,8 +23,8 @@ contract BTCReferee is IReferee {
     using Parser for bytes;
     using Script for bytes;
 
-    string constant ERR_INVALID_HASH = "Invalid output hash";
-    string constant ERR_INVALID_AMOUNT = "Invalid output amount";
+    string constant ERR_INVALID_OUT_HASH = "Invalid output hash";
+    string constant ERR_INVALID_OUT_AMOUNT = "Invalid output amount";
     string constant ERR_VERIFY_TX = "Cannot verify tx inclusion";
 
     address relay;
@@ -65,7 +65,7 @@ contract BTCReferee is IReferee {
             }
 
             if (_btcHash == btcHash) {
-                require(output.extractOutputValue() >= btcAmount, ERR_INVALID_AMOUNT);
+                require(output.extractOutputValue() >= btcAmount, ERR_INVALID_OUT_AMOUNT);
                 return true;
             }
         }
@@ -82,7 +82,7 @@ contract BTCReferee is IReferee {
         bytes20 btcHash,
         uint256 btcAmount
     ) external view returns(bool) {
-        require(btcHash != 0, ERR_INVALID_HASH);
+        require(btcHash != 0, ERR_INVALID_OUT_HASH);
         require(_isIncluded(height, index, txid, proof), ERR_VERIFY_TX);
         require(_isValid(rawTx, btcHash, btcAmount), ERR_VERIFY_TX);
         return true;

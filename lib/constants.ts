@@ -23,7 +23,8 @@ export const ErrorCode = {
     ERR_TRANSFER_TO_ZERO_ADDRESS: "ERC20: transfer to the zero address",
     ERR_APPROVE_FROM_ZERO_ADDRESS: "ERC20: approve from the zero address",
     ERR_TRANSFER_FROM_ZERO_ADDRESS: "ERC20: transfer from the zero address",
+    ERR_INVALID_AMOUNT: "Invalid amount",
 
-    ERR_INVALID_HASH: "Invalid output hash",
-    ERR_INVALID_AMOUNT: "Invalid output amount",
+    ERR_INVALID_OUT_HASH: "Invalid output hash",
+    ERR_INVALID_OUT_AMOUNT: "Invalid output amount",
 }

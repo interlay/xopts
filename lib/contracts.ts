@@ -2,17 +2,16 @@ import { ethers } from "@nomiclabs/buidler";
 import { Signer } from "ethers";
 import { Obligation } from "../typechain/Obligation";
 
-interface Attachable<C> {
-    attach(addr: string): C;
+interface Connectable<C> {
+    connect: (addr: string, signer?: Signer) => C;
 }
 
 interface Callable {
     address: string;
 }
 
-export function reattach<C extends Callable, A extends Attachable<C>>(contract: C, factory: new (from: Signer) => A, signer: Signer): C {
-    let _factory = new factory(signer);
-    return _factory.attach(contract.address);
+export function reconnect<C extends Callable, A extends Connectable<C>>(contract: C, factory: A, signer: Signer): C {
+    return factory.connect(contract.address, signer);
 }
 
 interface Deployable<A, C> {

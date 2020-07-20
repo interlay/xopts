@@ -2,6 +2,11 @@ pragma solidity ^0.5.15;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
+/**
+ * @dev Contract module which provides a timed access control mechanism,
+ * specifically to model a European Option with an expiry and settlement phase.
+ * It must be used through inheritance which provides several modifiers.
+ */
 contract Expirable {
     using SafeMath for uint;
 
@@ -9,7 +14,6 @@ contract Expirable {
     string constant ERR_EXPIRED = "Contract has expired";
     string constant ERR_NOT_EXPIRED = "Contract not expired";
     string constant ERR_WINDOW_ZERO = "Window cannot be zero";
-    string constant ERR_WINDOW_EXPIRED = "Window has expired";
 
     // expiry timestamp
     uint256 internal _expiry;
@@ -30,14 +34,14 @@ contract Expirable {
     }
 
     /**
-    * @dev Get the configured expiry.
+    * @dev Get the configured expiry
     */
     function getExpiry() public view returns (uint256) {
         return _expiry;
     }
 
     /**
-    * @dev Throws if called before the configured timestamp.
+    * @dev Throws if called before the configured timestamp
     */
     modifier hasExpired() {
         require(block.timestamp > _expiry, ERR_NOT_EXPIRED);
@@ -45,7 +49,7 @@ contract Expirable {
     }
 
     /**
-    * @dev Throws if called after the configured timestamp.
+    * @dev Throws if called after the configured timestamp
     */
     modifier notExpired() {
         require(block.timestamp <= _expiry, ERR_EXPIRED);
@@ -57,7 +61,7 @@ contract Expirable {
     */
     modifier canExercise() {
         require(block.timestamp > _expiry, ERR_NOT_EXPIRED);
-        require(block.timestamp <= _expiry.add(_window), ERR_WINDOW_EXPIRED);
+        require(block.timestamp <= _expiry.add(_window), ERR_EXPIRED);
         _;
     }
 
@@ -65,7 +69,7 @@ contract Expirable {
     * @dev Throws if called before the exercise window has expired
     */
     modifier canRefund() {
-        require( block.timestamp > _expiry.add(_window), ERR_WINDOW_EXPIRED);
+        require( block.timestamp > _expiry.add(_window), ERR_NOT_EXPIRED);
         _;
     }
 }

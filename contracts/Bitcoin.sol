@@ -1,5 +1,6 @@
 pragma solidity ^0.5.15;
 
+/// @dev Bitcoin specific types to facilitate settlement
 library Bitcoin {
     enum Script {
         p2sh,

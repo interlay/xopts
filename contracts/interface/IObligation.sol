@@ -5,28 +5,45 @@ import { Bitcoin } from "../Bitcoin.sol";
 interface IObligation {
 
     /**
-    * @dev Underwrite an option, can be called multiple times
+    * @notice Mints obligation tokens
+    * @dev Can only be called by option contract before expiry
+    * @param account Address to credit
+    * @param amount Total credit
+    * @param btcHash Bitcoin hash
+    * @param format Bitcoin script format
     **/
     function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external;
 
-    function exercise(address account, uint amount) external;
-
-    function refund(address account, uint amount) external;
-
-    function getAllObligations() external view returns (address[] memory writers, uint256[] memory tokens);
+    /**
+    * @notice Exercise an option after partial expiry
+    * @dev Can only be called by option contract during window
+    * @param buyer Account that bought the options
+    * @param seller Account that wrote the options
+    * @param total Buyer's total balance
+    * @param amount Buyer's claim
+    **/
+    function exercise(address buyer, address seller, uint total, uint amount) external;
 
     /**
-    * @dev Set the payout address for an account,
-    * @dev facilitates trading underwrite options
+    * @notice Refund written collateral after full expiry
+    * @param account Minter address
+    * @param amount Amount of collateral
+    **/
+    function refund(address account, uint amount) external;
+
+    /**
+    * @notice Set the payout address for an account
     * @param btcHash: recipient address for exercising
     * @param format: recipient script format
     **/
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external;
 
     /**
-    * @dev Get the configured BTC address for an account
-    * @param account: minter address
+    * @notice Get the configured BTC address for an account
+    * @param account Minter address
+    * @return btcHash Address hash
+    * @return format Expected payment format
     **/
-    function getBtcAddress(address account) external view returns (bytes20, Bitcoin.Script format);
+    function getBtcAddress(address account) external view returns (bytes20 btcHash, Bitcoin.Script format);
 
 }
