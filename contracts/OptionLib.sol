@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IUniswapV2Factory } from "./lib/IUniswapV2Factory.sol";
 import { IUniswapV2Pair } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import { IOption } from "./interface/Option.sol";
+import { IOption } from "./interface/IOption.sol";
 
 contract OptionLib {
     using SafeMath for uint256;

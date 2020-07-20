@@ -13,20 +13,20 @@ import "@nomiclabs/buidler/console.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IterableAddresses } from "./IterableAddresses.sol";
-import { IReferee } from "./interface/Referee.sol";
+import { IReferee } from "./interface/IReferee.sol";
 import { Bitcoin } from "./Bitcoin.sol";
 
 import { IUniswapV2Factory } from "./lib/IUniswapV2Factory.sol";
 import { IUniswapV2Pair } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
 import { Option } from "./Option.sol";
-import { IOption } from "./interface/Option.sol";
+import { IOption } from "./interface/IOption.sol";
 
 import { Obligation } from "./Obligation.sol";
-import { IObligation } from "./interface/Obligation.sol";
+import { IObligation } from "./interface/IObligation.sol";
 
 import { Treasury } from "./Treasury.sol";
-import { ITreasury } from "./interface/Treasury.sol";
+import { ITreasury } from "./interface/ITreasury.sol";
 
 // named due to typechain collision
 contract Broker is Context {

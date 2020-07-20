@@ -8,7 +8,7 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IterableBalances } from "./IterableBalances.sol";
 import { Expirable } from "./Expirable.sol";
-import { IObligation } from "./interface/Obligation.sol";
+import { IObligation } from "./interface/IObligation.sol";
 import { Bitcoin } from "./Bitcoin.sol";
 
 contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {

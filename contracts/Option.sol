@@ -10,12 +10,12 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IterableBalances } from "./IterableBalances.sol";
 import { Obligation } from "./Obligation.sol";
 
-import { IObligation } from "./interface/Obligation.sol";
-import { IOption } from "./interface/Option.sol";
+import { IObligation } from "./interface/IObligation.sol";
+import { IOption } from "./interface/IOption.sol";
 
 import { Expirable } from "./Expirable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IReferee } from "./interface/Referee.sol";
+import { IReferee } from "./interface/IReferee.sol";
 import { Bitcoin } from "./Bitcoin.sol";
 
 contract Option is IOption, IERC20, Context, Expirable, Ownable {
