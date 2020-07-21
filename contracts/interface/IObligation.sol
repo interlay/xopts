@@ -4,6 +4,8 @@ import { Bitcoin } from "../Bitcoin.sol";
 
 interface IObligation {
 
+    function treasury() external returns (address);
+
     /**
     * @notice Mints obligation tokens
     * @dev Can only be called by option contract before expiry

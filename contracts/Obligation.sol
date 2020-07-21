@@ -10,6 +10,7 @@ import { IterableBalances } from "./IterableBalances.sol";
 import { Expirable } from "./Expirable.sol";
 import { IObligation } from "./interface/IObligation.sol";
 import { Bitcoin } from "./Bitcoin.sol";
+import { ITreasury } from "./interface/ITreasury.sol";
 
 /// @title Obligation-side ERC-20 tokens
 /// @notice Represents written options
@@ -26,6 +27,8 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
     string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
+
+    address public treasury;
 
     struct Request {
         bool exists;
@@ -57,8 +60,11 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
 
     constructor(
         uint256 expiry,
-        uint256 window
-    ) public Expirable(expiry, window) Ownable() {}
+        uint256 window,
+        address _treasury
+    ) public Expirable(expiry, window) Ownable() {
+        treasury = _treasury;
+    }
 
     /// @dev See {IERC20-totalSupply}
     function totalSupply() external view returns (uint256) {
@@ -71,6 +77,10 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         _balances.set(account, _balances.get(account).add(amount));
         _totalSupply = _totalSupply.add(amount);
         _setBtcAddress(account, btcHash, format);
+
+        // check treasury has enough locked
+        ITreasury(treasury).lock(account, amount);
+
         emit Transfer(address(0), account, amount);
     }
 
@@ -84,10 +94,8 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IObligation-setBtcAddress}
-    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external {
-        address sender = _msgSender();
-        require(_balances.get(sender) > 0, ERR_INSUFFICIENT_BALANCE);
-        _setBtcAddress(sender, btcHash, format);
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external notExpired {
+        _setBtcAddress(_msgSender(), btcHash, format);
     }
 
     /// @dev See {IObligation-getBtcAddress}
@@ -107,9 +115,19 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
             // initialize request (lock amounts)
             _requests[buyer].exists = true;
             for (uint i = 0; i < _balances.size(); i++) {
-                address key = _balances.getKeyAtIndex(i);
-                uint256 value = _balances.get(key);
-                _requests[buyer].sellers[key] = value.mul(total).div(_totalSupply);
+                address owner0 = _balances.getKeyAtIndex(i);
+                uint256 value0 = _balances.get(owner0);
+                if (_pools[owner0].totalSupply > 0) {
+                    Pool storage pool = _pools[owner0];
+                    // we may have multiple pools (e.g. in uniswap)
+                    for (uint j = 0; j < pool.balances.size(); j++) {
+                        address owner1 = pool.balances.getKeyAtIndex(i);
+                        uint256 value1 = pool.balances.get(owner1);
+                        _requests[buyer].sellers[owner1] = value1.mul(total).div(_totalSupply);
+                    }
+                } else {
+                    _requests[buyer].sellers[owner0] = value0.mul(total).div(_totalSupply);
+                }
             }
         }
 
@@ -136,6 +154,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         writers = new address[](length);
         tokens = new uint256[](length);
 
+        // TODO: this is not accurate since pools are sub-mapped
         for (uint i = 0; i < length; i++) {
             address key = _balances.getKeyAtIndex(i);
             uint256 value = _balances.get(key);
@@ -206,31 +225,27 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
             pool.set(sender, pool.get(sender).add(amount));
             _pools[recipient].totalSupply = _pools[recipient].totalSupply.add(amount);
         } else {
-            require(_payouts[recipient].btcHash != 0, ERR_NO_BTC_ADDRESS);
-            // TODO: check sufficient collateral
-
-            IterableBalances.Map storage pool = _pools[sender].balances;
-
             // buying obligations from pool
-            for (uint i = 0; i < pool.size(); i++) {
-                address owner = pool.getKeyAtIndex(i);
-                uint256 value = pool.get(owner);
-                uint256 total = _pools[recipient].totalSupply;
+            require(_payouts[recipient].btcHash != 0, ERR_NO_BTC_ADDRESS);
+            // call to treasury should revert if insufficient locked
+            ITreasury(treasury).lock(recipient, amount);
+            Pool storage pool = _pools[sender];
+
+            // should take proportional ownership
+            for (uint i = 0; i < pool.balances.size(); i++) {
+                address owner = pool.balances.getKeyAtIndex(i);
+                uint256 value = pool.balances.get(owner);
+                uint256 total = pool.totalSupply;
                 uint256 take = value.mul(amount).div(total);
-                pool.set(owner, pool.get(owner).sub(take));
-                _pools[recipient].totalSupply = total.sub(take);
+
+                // enables withdrawals
+                ITreasury(treasury).unlock(owner, take);
+                pool.balances.set(owner, pool.balances.get(owner).sub(take));
+                pool.totalSupply = total.sub(take);
             }
         }
 
         emit Transfer(sender, recipient, amount);
     }
-
-    // /**
-    // * @dev Computes the insure payout from the amount and the strikePrice
-    // * @param amount: asset to exchange
-    // */
-    // function _calculateInsure(uint256 amount) internal view returns (uint256) {
-    //     return amount.mul(_strikePrice);
-    // }
 
 }

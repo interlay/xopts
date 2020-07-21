@@ -16,12 +16,13 @@ import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
 import { Option } from "../typechain/Option";
 import { OptionPairFactory } from "../typechain/OptionPairFactory";
 import { ObligationFactory } from "../typechain/ObligationFactory";
-import { deployUniswapFactory, createUniswapPair } from "../lib/uniswap";
+import { deployUniswapFactory, createUniswapPair, estimateInput, getUniswapPair } from "../lib/uniswap";
 import { IERC20 } from "../typechain/IERC20";
 import { IERC20Factory } from "../typechain/IERC20Factory";
 import { Obligation } from "../typechain/Obligation";
 import { Treasury } from "../typechain/Treasury";
 import { TreasuryFactory } from "../typechain/TreasuryFactory";
+import { IUniswapV2Factory } from "../typechain/IUniswapV2Factory";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -38,7 +39,7 @@ type Accounts = {
 }
 
 type Contracts = {
-  uniswapFactory: Contract;
+  uniswapFactory: IUniswapV2Factory;
   collateral: Collateral;
   optionFactory: OptionPairFactory;
   optionLib: OptionLib;
@@ -60,12 +61,16 @@ async function loadAccounts(): Promise<Accounts> {
 async function loadContracts(signer: Signer): Promise<Contracts> {
   // charlie creates everything
   const address = await signer.getAddress();
-  const uniswapFactory = await deployUniswapFactory(signer, address);
+  const uniswapFactory = await deployUniswapFactory(signer, address) as IUniswapV2Factory;
+  const optionPairFactory = await deploy<{}, OptionPairFactory, OptionPairFactoryFactory>(signer, OptionPairFactoryFactory);
+  const optionLibFactory = new OptionLibFactory(signer);
+  const optionLib = await optionLibFactory.deploy(uniswapFactory.address, optionPairFactory.address);
+
   return {
     uniswapFactory: uniswapFactory,
     collateral: await deploy(signer, CollateralFactory),
-    optionFactory: await deploy(signer, OptionPairFactoryFactory, uniswapFactory.address),
-    optionLib: await deploy(signer, OptionLibFactory, uniswapFactory.address),
+    optionFactory: optionPairFactory,
+    optionLib: optionLib,
     btcReferee: await deploy(signer, MockBTCRefereeFactory),
   }
 }
@@ -90,7 +95,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
   let charlieAddress: string;
   let eveAddress: string;
 
-  let uniswapFactory: Contract;
+  let uniswapFactory: IUniswapV2Factory;
   let collateral: Collateral;
   let optionFactory: OptionPairFactory;
   let optionLib: OptionLib;
@@ -135,22 +140,22 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
 
   it("alice should underwrite put options", async () => {
     await mint(collateral, alice, aliceAddress, premiumAmount + collateralAmount);
-    await approve(collateral, alice, optionFactory.address, premiumAmount + collateralAmount);
+    await approve(collateral, alice, optionLib.address, premiumAmount + collateralAmount);
 
-    await reconnect(optionFactory, OptionPairFactoryFactory, alice)
-      .writeOption(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
-    const pairAddress: string = await uniswapFactory.getPair(collateral.address, option.address)
+    await reconnect(optionLib, OptionLibFactory, alice)
+      .lockAndWrite(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
+    const pairAddress = await uniswapFactory.getPair(collateral.address, option.address)
     const optionBalance = (await option.balanceOf(pairAddress)).toNumber();
     expect(optionBalance).to.eq(collateralAmount);
   });
 
   it("eve should underwrite put options", async () => {
     await mint(collateral, eve, eveAddress, premiumAmount + collateralAmount);
-    await approve(collateral, eve, optionFactory.address, premiumAmount + collateralAmount);
+    await approve(collateral, eve, optionLib.address, premiumAmount + collateralAmount);
 
-    await reconnect(optionFactory, OptionPairFactoryFactory, eve)
-      .writeOption(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
-    const pairAddress: string = await uniswapFactory.getPair(collateral.address, option.address)
+    await reconnect(optionLib, OptionLibFactory, eve)
+      .lockAndWrite(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
+    const pairAddress = await uniswapFactory.getPair(collateral.address, option.address)
     const optionBalance = (await option.balanceOf(pairAddress)).toNumber();
     expect(optionBalance).to.eq(collateralAmount * 2);
   });
@@ -164,8 +169,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
         amountOut,
         amountInMax,
         collateral.address,
-        option.address,
-        bobAddress);
+        option.address);
 
     const optionBalance = (await option.balanceOf(bobAddress)).toNumber();
     expect(optionBalance).to.eq(amountOut);
@@ -247,7 +251,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
   let charlieAddress: string;
   let eveAddress: string;
 
-  let uniswapFactory: Contract;
+  let uniswapFactory: IUniswapV2Factory;
   let collateral: Collateral;
   let optionFactory: OptionPairFactory;
   let optionLib: OptionLib;
@@ -281,10 +285,10 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
 
   it("alice should underwrite put options", async () => {
     await mint(collateral, alice, aliceAddress, premiumAmount + collateralAmount);
-    await approve(collateral, alice, optionFactory.address, premiumAmount + collateralAmount);
+    await approve(collateral, alice, optionLib.address, premiumAmount + collateralAmount);
 
-    await reconnect(optionFactory, OptionPairFactoryFactory, alice)
-      .writeOption(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
+    await reconnect(optionLib, OptionLibFactory, alice)
+      .lockAndWrite(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
     const pairAddress: string = await uniswapFactory.getPair(collateral.address, option.address)
     const optionBalance = (await option.balanceOf(pairAddress)).toNumber();
     expect(optionBalance).to.eq(collateralAmount);
@@ -299,8 +303,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
         amountOut,
         amountInMax,
         collateral.address,
-        option.address,
-        bobAddress);
+        option.address);
 
     const optionBalance = (await option.balanceOf(bobAddress)).toNumber();
     expect(optionBalance).to.eq(amountOut);
@@ -330,7 +333,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
   });
 });
 
-describe("Put Option (2 Writers) - Sell / Buy Obligations", () => {
+describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
   let alice: Signer;
   let bob: Signer;
   let charlie: Signer;
@@ -341,7 +344,7 @@ describe("Put Option (2 Writers) - Sell / Buy Obligations", () => {
   let charlieAddress: string;
   let eveAddress: string;
 
-  let uniswapFactory: Contract;
+  let uniswapFactory: IUniswapV2Factory;
   let collateral: Collateral;
   let optionFactory: OptionPairFactory;
   let optionLib: OptionLib;
@@ -356,6 +359,8 @@ describe("Put Option (2 Writers) - Sell / Buy Obligations", () => {
   const collateralAmount = 50_000;
   const amountInMax = 2000;
   const amountOut = 3200;
+  const collateralPremium = 15_000;
+  const obligationAmount = 30_000;
 
   before(async () => {
     const accounts = await loadAccounts();
@@ -378,10 +383,10 @@ describe("Put Option (2 Writers) - Sell / Buy Obligations", () => {
 
   it("alice should underwrite options", async () => {
     await mint(collateral, alice, aliceAddress, premiumAmount + collateralAmount);
-    await approve(collateral, alice, optionFactory.address, premiumAmount + collateralAmount);
+    await approve(collateral, alice, optionLib.address, premiumAmount + collateralAmount);
 
-    await reconnect(optionFactory, OptionPairFactoryFactory, alice)
-      .writeOption(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
+    await reconnect(optionLib, OptionLibFactory, alice)
+      .lockAndWrite(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
 
     const obligationBalance = (await obligation.balanceOf(aliceAddress)).toNumber();
     expect(obligationBalance).to.eq(collateralAmount);  
@@ -392,34 +397,200 @@ describe("Put Option (2 Writers) - Sell / Buy Obligations", () => {
   });
 
   it("alice should sell obligations", async () => {
-    const collateralPremium = 15_000;
-    const obligationAmount = 30_000;
-
     await mint(collateral, alice, aliceAddress, collateralPremium);
     await approve(collateral, alice, optionLib.address, collateralPremium);
     await approve(obligation, alice, optionLib.address, obligationAmount);
 
-    const obligationBalance = (await obligation.balanceOf(aliceAddress)).toNumber();
-    console.log(obligationBalance);
-    const collateralBalance = (await collateral.balanceOf(aliceAddress)).toNumber();
-    console.log(collateralBalance);
-
     await reconnect(optionLib, OptionLibFactory, alice)
-      .initObligationPool(collateral.address, obligation.address, collateralPremium, obligationAmount);
+      .addLiquidity(collateral.address, obligation.address, collateralPremium, obligationAmount, collateralPremium, obligationAmount);
+
+    const obligationBalance = (await obligation.balanceOf(aliceAddress)).toNumber();
+    expect(obligationBalance).to.eq(collateralAmount - obligationAmount);
+    const collateralBalance = (await collateral.balanceOf(aliceAddress)).toNumber();
+    expect(collateralBalance).to.eq(0);
   });
 
   it("eve can't buy obligations without collateral / btc address", async () => {
-    await mint(collateral, eve, eveAddress, amountInMax);
-    await approve(collateral, eve, optionLib.address, amountInMax);
-
     let result = reconnect(optionLib, OptionLibFactory, eve)
       .swapTokensForExactTokens(
         amountOut,
         amountInMax,
         collateral.address,
-        obligation.address,
-        bobAddress);
+        obligation.address);
     await expect(result).to.be.reverted;
   });
 
+  it("eve should set btc address and buy obligations", async () => {
+    await mint(collateral, eve, eveAddress, amountInMax + amountOut);
+    await approve(collateral, eve, optionLib.address, amountInMax + amountOut);
+
+    const pairAddress = await uniswapFactory.getPair(collateral.address, obligation.address)
+    const input = await estimateInput(pairAddress, collateral, obligation, amountOut);
+    const estimatedInput = input.toNumber();
+
+    await reconnect(obligation, ObligationFactory, eve).setBtcAddress(btcHash, Script.p2sh);
+    await reconnect(optionLib, OptionLibFactory, eve)
+      .lockAndBuy(
+        obligation.address,
+        amountOut,
+        amountInMax);
+
+    const obligationBalance = (await obligation.balanceOf(eveAddress)).toNumber();
+    expect(obligationBalance).to.eq(amountOut);
+    const collateralBalance = (await collateral.balanceOf(eveAddress)).toNumber();
+    expect(collateralBalance).to.eq(amountInMax - estimatedInput);
+  });
+
+  it("alice should withdraw collateral from treasury", async () => {
+    const initialBalance = (await collateral.balanceOf(aliceAddress)).toNumber();
+
+    await reconnect(treasury, TreasuryFactory, alice)
+      .withdraw(
+        obligation.address,
+        amountOut);
+
+    const collateralBalance = (await collateral.balanceOf(aliceAddress)).toNumber();
+    expect(collateralBalance).to.eq(initialBalance + amountOut);
+  });
+
+  it("alice can't withdraw more from treasury (until sold)", async () => {
+    let result = reconnect(treasury, TreasuryFactory, alice)
+      .withdraw(
+        obligation.address,
+        amountOut);
+    expect(result).to.be.reverted;
+  });
+});
+
+describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations", () => {
+  let alice: Signer;
+  let bob: Signer;
+  let charlie: Signer;
+  let eve: Signer;
+
+  let aliceAddress: string;
+  let bobAddress: string;
+  let charlieAddress: string;
+  let eveAddress: string;
+
+  let uniswapFactory: IUniswapV2Factory;
+  let collateral: Collateral;
+  let optionFactory: OptionPairFactory;
+  let optionLib: OptionLib;
+  let btcReferee: MockBTCReferee;
+
+  let option: Option;
+  let obligation: Obligation;
+  let treasury: Treasury;
+
+  const init = getTimeNow();
+  const premiumAmount = 543;
+  const collateralAmount = 43_100;
+  const amountInMax = 2000;
+  const amountOut = 3200;
+  const collateralPremium = 113;
+  const obligationAmount = 30_000;
+
+  before(async () => {
+    const accounts = await loadAccounts();
+    ({ alice, bob, eve, charlie } = accounts);
+    ({ btcReferee, optionFactory, collateral, uniswapFactory, optionLib } = await loadContracts(charlie));
+    aliceAddress = await alice.getAddress();
+    bobAddress = await bob.getAddress();
+    eveAddress = await eve.getAddress();
+  });
+
+  it("should create option contract", async () => {
+    await optionFactory.createOption(init + 1000, 1000, 9000, btcReferee.address, collateral.address);
+    const optionAddress = await optionFactory.options(0);
+    option = OptionFactory.connect(optionAddress, alice);
+
+    const obligationAddress = await optionFactory.getObligation(option.address);
+    obligation = ObligationFactory.connect(obligationAddress, alice);
+
+    const treasuryAddress = await optionFactory.getTreasury(collateral.address);
+    treasury = TreasuryFactory.connect(treasuryAddress, alice);
+  });
+
+  it("alice and eve should underwrite options", async () => {
+    const pairAddress = await uniswapFactory.getPair(collateral.address, option.address);
+
+    const underwrite = async (signer: Signer, address: string) => {
+      await mint(collateral, signer, address, premiumAmount + collateralAmount);
+      await approve(collateral, signer, optionLib.address, premiumAmount + collateralAmount);
+  
+      // const initialOptionBalance = (await option.balanceOf(pairAddress)).toNumber();
+
+      await reconnect(optionLib, OptionLibFactory, signer)
+        .lockAndWrite(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
+  
+      const obligationBalance = (await obligation.balanceOf(address)).toNumber();
+      expect(obligationBalance).to.eq(collateralAmount);
+      
+      // const optionBalance = (await option.balanceOf(pairAddress)).toNumber();
+      // expect(optionBalance).to.eq(initialOptionBalance + collateralAmount);  
+    };
+
+    await underwrite(alice, aliceAddress);
+    await underwrite(eve, eveAddress);
+  });
+
+  it("alice and eve should sell obligations", async () => {
+    await uniswapFactory.createPair(collateral.address, obligation.address);
+    const pairAddress = await uniswapFactory.getPair(collateral.address, obligation.address);
+
+    const addLiquidity = async (signer: Signer, address: string) => {
+      await mint(collateral, signer, address, collateralPremium);
+      await approve(collateral, signer, optionLib.address, collateralPremium);
+      await approve(obligation, signer, optionLib.address, obligationAmount);
+  
+      const initialObligationBalance = (await obligation.balanceOf(pairAddress)).toNumber();
+
+      await reconnect(optionLib, OptionLibFactory, signer)
+        .addLiquidity(collateral.address, obligation.address, collateralPremium, obligationAmount, collateralPremium, obligationAmount);
+
+      const obligationBalance = (await obligation.balanceOf(pairAddress)).toNumber();
+      expect(obligationBalance).to.eq(initialObligationBalance + obligationAmount);  
+    };
+
+    await addLiquidity(alice, aliceAddress);
+    await addLiquidity(eve, eveAddress);
+  });
+
+  it("bob should buy obligations from the pool", async () => {
+    await mint(collateral, bob, bobAddress, amountInMax + amountOut);
+    await approve(collateral, bob, optionLib.address, amountInMax + amountOut);
+
+    const pairAddress: string = await uniswapFactory.getPair(collateral.address, obligation.address)
+    const input = await estimateInput(pairAddress, collateral, obligation, amountOut);
+    const estimatedInput = input.toNumber();
+
+    await reconnect(obligation, ObligationFactory, bob).setBtcAddress(btcHash, Script.p2sh);
+    await reconnect(optionLib, OptionLibFactory, bob)
+      .lockAndBuy(
+        obligation.address,
+        amountOut,
+        amountInMax);
+
+    const obligationBalance = (await obligation.balanceOf(bobAddress)).toNumber();
+    expect(obligationBalance).to.eq(amountOut);
+    const collateralBalance = (await collateral.balanceOf(bobAddress)).toNumber();
+    expect(collateralBalance).to.eq(amountInMax - estimatedInput);    
+  });
+
+  it("alice and eve should withdraw collateral from treasury (proportionally)", async () => {
+    const withdraw = async (signer: Signer, address: string) => {
+      const initialBalance = (await collateral.balanceOf(address)).toNumber();
+      await reconnect(treasury, TreasuryFactory, signer)
+        .withdraw(
+          obligation.address,
+          amountOut / 2);
+
+      const collateralBalance = (await collateral.balanceOf(address)).toNumber();
+      expect(collateralBalance).to.eq(initialBalance + (amountOut / 2));
+    };
+
+    await withdraw(alice, aliceAddress);
+    await withdraw(eve, eveAddress);
+  });
 });

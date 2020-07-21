@@ -16,10 +16,11 @@ import { Obligation } from "./Obligation.sol";
 import { IObligation } from "./interface/IObligation.sol";
 import { Treasury } from "./Treasury.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
+import { IOptionPairFactory } from "./interface/IOptionPairFactory.sol";
 
 /// @title Parent option factory
 /// @author Interlay
-contract OptionPairFactory is Context {
+contract OptionPairFactory is IOptionPairFactory, Context {
     using SafeMath for uint256;
 
     string constant ERR_INVALID_OPTION = "Option does not exist";
@@ -29,11 +30,8 @@ contract OptionPairFactory is Context {
     mapping(address => address) public getTreasury;
     mapping(address => address) public getCollateral;
     address[] public options;
-    address internal _uniswap;
 
-    constructor(address uniswap) public {
-        _uniswap = uniswap;
-    }
+    constructor() public {}
 
     /**
     * @notice Create an option pair
@@ -55,7 +53,11 @@ contract OptionPairFactory is Context {
             treasury = address(new Treasury(collateral));
         }
 
-        address obligation = address(new Obligation(expiry, window));
+        address obligation = address(new Obligation(
+            expiry,
+            window,
+            treasury
+        ));
         address option = address(new Option(
             expiry,
             window,
@@ -75,34 +77,22 @@ contract OptionPairFactory is Context {
     /**
     * @notice Underwrite an option pair
     * @param option Option contract address
-    * @param premium Initial exchange input
+    * @param from Address of input account
+    * @param to Address of output account
     * @param amount Collateral amount
     * @param btcHash Bitcoin address hash
     * @param format Bitcoin script format
     **/
-    function writeOption(address option, uint256 premium, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external returns (uint) {
-        require(getObligation[option] != address(0), ERR_INVALID_OPTION);
-        require(premium > 0 && amount > 0, ERR_ZERO_AMOUNT);
+    function writeOption(address option, address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external {
+        // obligation is responsible for locking with treasury
+        address obligation = getObligation[option];
+        require(obligation != address(0), ERR_INVALID_OPTION);
+        require(amount > 0, ERR_ZERO_AMOUNT);
 
-        address writer = _msgSender();
-        address collateral = getCollateral[option];
-
-        address pair = IUniswapV2Factory(_uniswap).getPair(option, collateral);
-        if (pair == address(0)) {
-            pair = IUniswapV2Factory(_uniswap).createPair(option, collateral);
-        }
-
-        // TODO: safety checks
-
-        // lock collateral for exercising
-        IERC20(collateral).transferFrom(writer, getTreasury[collateral], amount);
+        // TODO: check preferred btc address
 
         // collateral:options are 1:1
-        IOption(option).mint(writer, pair, amount, btcHash, format);
-
-        // send premium to uniswap pair
-        IERC20(collateral).transferFrom(writer, pair, premium);
-        return IUniswapV2Pair(pair).mint(writer);
+        IOption(option).mint(from, to, amount, btcHash, format);
     }
 
     /**
@@ -126,14 +116,17 @@ contract OptionPairFactory is Context {
         bytes calldata proof,
         bytes calldata rawtx
     ) external {
-        require(getObligation[option] != address(0), ERR_INVALID_OPTION);
+        address obligation = getObligation[option];
+        require(obligation != address(0), ERR_INVALID_OPTION);
         address buyer = _msgSender();
 
+        // validate tx and burn options
         IOption(option).exercise(
             buyer, seller, amount, height, index, txid, proof, rawtx
         );
+
         // transfers from the treasury to the buyer
-        ITreasury(getTreasury[getCollateral[option]]).unlock(buyer, amount);
+        ITreasury(getTreasury[getCollateral[option]]).release(obligation, seller, buyer, amount);
     }
 
     /**
@@ -142,14 +135,16 @@ contract OptionPairFactory is Context {
     * @param amount Options to burn for collateral
     **/
     function refundOption(address option, uint amount) external {
-        require(getObligation[option] != address(0), ERR_INVALID_OPTION);
+        address obligation = getObligation[option];
+        require(obligation != address(0), ERR_INVALID_OPTION);
 
         address writer = _msgSender();
 
         // burn writer's obligations
+        // should revert if not expired
         IOption(option).refund(writer, amount);
 
-        ITreasury(getTreasury[getCollateral[option]]).unlock(writer, amount);
+        ITreasury(getTreasury[getCollateral[option]]).release(obligation, writer, writer, amount);
     }
 
 }

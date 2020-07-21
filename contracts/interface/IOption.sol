@@ -3,6 +3,13 @@ pragma solidity ^0.5.15;
 import { Bitcoin } from "../Bitcoin.sol";
 
 interface IOption {
+
+    function referee() external returns (address);
+
+    function treasury() external returns (address);
+
+    function obligation() external returns (address);
+
     /**
     * @notice Mints option tokens
     * @dev Can only be called by factory contract before expiry

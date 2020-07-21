@@ -27,7 +27,6 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
     string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
     string constant ERR_VALIDATE_TX = "Cannot validate tx format";
-
     string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
 
     // event Insure(address indexed account, uint256 amount);
