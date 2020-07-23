@@ -56,26 +56,27 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     mapping (address => mapping (address => uint)) internal _allowances;
 
     // total number of tokens minted
-    uint256 internal _totalSupply;
+    uint256 public totalSupply;
 
+    /**
+    * @notice Create Obligation ERC20
+    * @param _expiryTime Unix expiry date
+    * @param _windowSize Settlement window
+    * @param _treasury Backing currency
+    **/
     constructor(
-        uint256 expiry,
-        uint256 window,
+        uint256 _expiryTime,
+        uint256 _windowSize,
         address _treasury
-    ) public Expirable(expiry, window) Ownable() {
+    ) public Expirable(_expiryTime, _windowSize) Ownable() {
         treasury = _treasury;
-    }
-
-    /// @dev See {IERC20-totalSupply}
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
     }
 
     /// @dev See {IObligation-mint}
     function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
         // insert into the accounts balance
         _balances.set(account, _balances.get(account).add(amount));
-        _totalSupply = _totalSupply.add(amount);
+        totalSupply = totalSupply.add(amount);
         _setBtcAddress(account, btcHash, format);
 
         // check treasury has enough locked
@@ -105,7 +106,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
 
     function _burn(address account, uint amount) internal onlyOwner {
         _balances.set(account, _balances.get(account).sub(amount));
-        _totalSupply = _totalSupply.sub(amount);
+        totalSupply = totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
 
@@ -123,10 +124,10 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
                     for (uint j = 0; j < pool.balances.size(); j++) {
                         address owner1 = pool.balances.getKeyAtIndex(i);
                         uint256 value1 = pool.balances.get(owner1);
-                        _requests[buyer].sellers[owner1] = value1.mul(total).div(_totalSupply);
+                        _requests[buyer].sellers[owner1] = value1.mul(total).div(totalSupply);
                     }
                 } else {
-                    _requests[buyer].sellers[owner0] = value0.mul(total).div(_totalSupply);
+                    _requests[buyer].sellers[owner0] = value0.mul(total).div(totalSupply);
                 }
             }
         }
@@ -137,32 +138,64 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         _requests[buyer].sellers[seller] = owed.sub(amount);
 
         _burn(seller, amount);
+
+        // transfers from the treasury to the buyer
+        ITreasury(treasury).release(seller, buyer, amount);
     }
 
     /// @dev See {IObligation-refund}
     function refund(address account, uint amount) external canRefund {
         _burn(account, amount);
+
+        // transfers from the treasury to the writer
+        ITreasury(treasury).release(account, account, amount);
     }
 
     /**
-    * @notice Fetch all writers and amounts
-    * @return writers Underwriters
-    * @return tokens Backed collateral
+    * @notice Fetch all acounts
+    * @return accounts Addresses
+    * @return balances Obligations
+    * @return pools Address
     **/
-    function getAllObligations() external view returns (address[] memory writers, uint256[] memory tokens) {
+    function getAccounts() external view returns (address[] memory accounts, uint256[] memory balances, bool[] memory pools) {
         uint length = _balances.size();
-        writers = new address[](length);
-        tokens = new uint256[](length);
+        accounts = new address[](length);
+        balances = new uint256[](length);
+        pools = new bool[](length);
 
-        // TODO: this is not accurate since pools are sub-mapped
         for (uint i = 0; i < length; i++) {
-            address key = _balances.getKeyAtIndex(i);
-            uint256 value = _balances.get(key);
-            writers[i] = key;
-            tokens[i] = value;
+            address owner = _balances.getKeyAtIndex(i);
+            uint256 value = _balances.get(owner);
+            accounts[i] = owner;
+            balances[i] = value;
+            if (_pools[owner].totalSupply > 0) {
+                pools[i] = true;
+            }
         }
 
-        return (writers, tokens);
+        return (accounts, balances, pools);
+    }
+
+    /**
+    * @notice Fetch all writers and amounts in pool
+    * @return writers Original writers
+    * @return tokens Backed collateral
+    **/
+    function getPool(address account) external view returns (address[] memory accounts, uint256[] memory balances) {
+        Pool storage pool = _pools[account];
+
+        uint length = pool.balances.size();
+        accounts = new address[](length);
+        balances = new uint256[](length);
+
+        for (uint i = 0; i < length; i++) {
+            address owner = pool.balances.getKeyAtIndex(i);
+            uint256 value = pool.balances.get(owner);
+            accounts[i] = owner;
+            balances[i] = value;
+        }
+
+        return (accounts, balances);
     }
 
     /// @dev See {IERC20-allowance}
@@ -219,7 +252,17 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         _balances.set(sender, _balances.get(sender).sub(amount));
         _balances.set(recipient, _balances.get(recipient).add(amount));
 
-        if (_payouts[sender].btcHash != 0) {
+        if (_balances.get(sender) == 0) {
+            // save gas by deleting entry
+            _balances.remove(sender);
+        }
+
+        if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash != 0) {
+            // simple transfer, lock recipient collateral
+            // Note: the market must have 'unlocked' funds
+            ITreasury(treasury).lock(recipient, amount);
+            ITreasury(treasury).unlock(sender, amount);
+        } else if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash == 0) {
             // selling obligations to a pool
             IterableBalances.Map storage pool = _pools[recipient].balances;
             pool.set(sender, pool.get(sender).add(amount));
@@ -230,18 +273,19 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
             // call to treasury should revert if insufficient locked
             ITreasury(treasury).lock(recipient, amount);
             Pool storage pool = _pools[sender];
+            IterableBalances.Map storage balances = pool.balances;
 
             // should take proportional ownership
-            for (uint i = 0; i < pool.balances.size(); i++) {
-                address owner = pool.balances.getKeyAtIndex(i);
-                uint256 value = pool.balances.get(owner);
-                uint256 total = pool.totalSupply;
-                uint256 take = value.mul(amount).div(total);
+            for (uint i = 0; i < balances.size(); i++) {
+                address owner = balances.getKeyAtIndex(i);
+                uint256 value = balances.get(owner);
+                uint256 take = value.mul(amount).div(pool.totalSupply);
 
                 // enables withdrawals
                 ITreasury(treasury).unlock(owner, take);
-                pool.balances.set(owner, pool.balances.get(owner).sub(take));
-                pool.totalSupply = total.sub(take);
+                balances.set(owner, balances.get(owner).sub(take));
+                // TODO: delete pool entry if zero
+                pool.totalSupply = pool.totalSupply.sub(take);
             }
         }
 

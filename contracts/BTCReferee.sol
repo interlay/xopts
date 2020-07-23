@@ -6,17 +6,7 @@ import { BytesLib } from "@summa-tx/bitcoin-spv-sol/contracts/BytesLib.sol";
 import { Parser } from "@interlay/btc-relay-sol/src/Parser.sol";
 import { Script } from "@interlay/btc-relay-sol/src/Script.sol";
 import { IReferee } from "./interface/IReferee.sol";
-
-interface IRelay {
-    function verifyTx(
-        uint256 height,
-        uint256 index,
-        bytes32 txid,
-        bytes calldata proof,
-        uint256 confirmations,
-        bool insecure
-    ) external view returns(bool);
-}
+import { IRelay } from "./interface/IRelay.sol";
 
 contract BTCReferee is IReferee {
     using BytesLib for bytes;
@@ -85,30 +75,6 @@ contract BTCReferee is IReferee {
         require(btcHash != 0, ERR_INVALID_OUT_HASH);
         require(_isIncluded(height, index, txid, proof), ERR_VERIFY_TX);
         require(_isValid(rawTx, btcHash, btcAmount), ERR_VERIFY_TX);
-        return true;
-    }
-}
-
-contract MockBTCReferee is BTCReferee {
-    constructor () public BTCReferee(address(0)) {}
-
-    function checkTx(
-        bytes calldata rawTx,
-        bytes20 btcHash,
-        uint256 btcAmount
-    ) external pure returns(bool) {
-        return _isValid(rawTx, btcHash, btcAmount);
-    }
-
-    function verifyTx(
-        uint256 height,
-        uint256 index,
-        bytes32 txid,
-        bytes calldata proof,
-        bytes calldata rawTx,
-        bytes20 btcHash,
-        uint256 btcAmount
-    ) external view returns(bool) {
         return true;
     }
 }

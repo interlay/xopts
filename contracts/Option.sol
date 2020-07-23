@@ -32,7 +32,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     // event Insure(address indexed account, uint256 amount);
     // event Exercise(address indexed account, uint256 amount);
 
-    uint256 internal _strikePrice;
+    uint256 public strikePrice;
 
     // btc relay or oracle
     address public referee;
@@ -42,39 +42,41 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     // total options per account
     mapping (address => uint256) internal _balances;
 
-    // total number of options available
-    uint256 internal _totalSupply;
-
     // accounts that can spend an owners funds
     mapping (address => mapping (address => uint256)) internal _allowances;
 
+    // total number of options available
+    uint256 public totalSupply;
+
+    /**
+    * @notice Create Option ERC20
+    * @param _expiryTime Unix expiry date
+    * @param _windowSize Settlement window
+    * @param _strikePrice Strike price
+    * @param _referee Inclusion verifier
+    * @param _treasury Backing currency
+    * @param _obligation Obligation ERC20
+    **/
     constructor(
-        uint256 expiry,
-        uint256 window,
-        uint256 strikePrice,
+        uint256 _expiryTime,
+        uint256 _windowSize,
+        uint256 _strikePrice,
         address _referee,
         address _treasury,
         address _obligation
-    ) public Expirable(expiry, window) Ownable() {
-        require(strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
-
-        _strikePrice = strikePrice;
-
+    ) public Expirable(_expiryTime, _windowSize) Ownable() {
+        require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
+        strikePrice = _strikePrice;
         referee = _referee;
         treasury = _treasury;
         obligation = _obligation;
-    }
-
-    /// @dev See {IERC20-totalSupply}
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
     }
 
     /// @dev See {IOption-mint}
     function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
         // insert into the accounts balance
         _balances[to] = _balances[to].add(amount);
-        _totalSupply = _totalSupply.add(amount);
+        totalSupply = totalSupply.add(amount);
         emit Transfer(address(0), to, amount);
 
         // mint the equivalent obligations
@@ -92,12 +94,12 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         bytes calldata proof,
         bytes calldata rawtx
     ) external canExercise onlyOwner {
-        uint buyerBalance = _balances[buyer];
+        uint balance = _balances[buyer];
 
         // burn buyer's options
         _burn(buyer, amount);
         // burn seller's obligations
-        IObligation(obligation).exercise(buyer, seller, buyerBalance, amount);
+        IObligation(obligation).exercise(buyer, seller, balance, amount);
 
         // expected amount of btc
         uint btcAmount = _calculateExercise(amount);
@@ -116,6 +118,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
 
     /// @dev See {IOption-refund}
     function refund(address account, uint amount) external canRefund onlyOwner {
+        // nothing to do here, forward
         IObligation(obligation).refund(account, amount);
     }
 
@@ -124,7 +127,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         uint256 amount
     ) internal {
         _balances[account] = _balances[account].sub(amount);
-        _totalSupply = _totalSupply.sub(amount);
+        totalSupply = totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
 
@@ -190,6 +193,6 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     * @param amount Asset to exchange
     */
     function _calculateExercise(uint256 amount) internal view returns (uint256) {
-        return amount.div(_strikePrice);
+        return amount.div(strikePrice);
     }
 }

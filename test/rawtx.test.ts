@@ -5,7 +5,7 @@ import { solidity } from "ethereum-waffle";
 import { MockBTCReferee } from "../typechain/MockBTCReferee";
 import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
 import * as bitcoin from 'bitcoinjs-lib';
-import { btcToSatoshi } from "../lib/convert";
+import { btcToSatoshi } from "../lib/conversion";
 import { ErrorCode } from '../lib/constants';
 
 chai.use(solidity);
@@ -43,7 +43,7 @@ describe("Tx Validation", () => {
     let payment = bitcoin.payments.p2sh({address: "2MsxEm5ugk4hR9naBiA8gNH6syFdAcjALHQ", network: bitcoin.networks.testnet})
 
     let result = btcReferee.checkTx(p2shTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.4));
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_AMOUNT);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUT_AMOUNT);
   });
 
   const p2pkhTx = "0x0200000001f76fec5260faa8f39fbd8f17f5acb2bd50260fa715347201657fceaefc14a102" +
@@ -64,7 +64,7 @@ describe("Tx Validation", () => {
     let payment = bitcoin.payments.p2pkh({address: "mpxhLRAzfGc6tH55kzG9NfZ3b2VZdo3Gq9", network: bitcoin.networks.testnet})
 
     let result = btcReferee.checkTx(p2pkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(2));
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_AMOUNT);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUT_AMOUNT);
   });
 
   const p2wpkhTx = "0x02000000000103adbd70d005de0da198443510bf9ebee467430a52b32dcefab6cd30439792ca7301" +
@@ -92,6 +92,6 @@ describe("Tx Validation", () => {
     let payment = bitcoin.payments.p2wpkh({address: "tb1q4kspwcf42cqp66hrhw407djna4dgpw9lsnfx5e", network: bitcoin.networks.testnet})
 
     let result = btcReferee.checkTx(p2wpkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.02));
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_AMOUNT);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUT_AMOUNT);
   });
 });

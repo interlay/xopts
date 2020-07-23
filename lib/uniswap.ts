@@ -1,16 +1,17 @@
 import UniswapV2Factory from '@uniswap/v2-core/build/UniswapV2Factory.json';
-import UniswapV2Pair from '@uniswap/v2-core/build/UniswapV2Pair.json';
 import { deployContract } from 'ethereum-waffle';
 import { Wallet, Signer, Contract } from 'ethers';
 import { ethers } from "@nomiclabs/buidler";
 import { TransactionResponse } from 'ethers/providers';
 import { IUniswapV2PairFactory } from '../typechain/IUniswapV2PairFactory';
 import { IUniswapV2Pair } from '../typechain/IUniswapV2Pair';
-import { IERC20 } from '../typechain/IERC20';
 import { BigNumber } from 'ethers/utils';
+import { IUniswapV2Factory } from '../typechain/IUniswapV2Factory';
+import { IUniswapV2FactoryFactory } from '../typechain/IUniswapV2FactoryFactory';
 
-export function deployUniswapFactory(signer: Signer, feeToSetter: string) {
-    return deployContract(<Wallet>signer, UniswapV2Factory, [feeToSetter]);
+export async function deployUniswapFactory(signer: Signer, feeToSetter: string): Promise<IUniswapV2Factory> {
+    const contract = await deployContract(<Wallet>signer, UniswapV2Factory, [feeToSetter]);
+    return IUniswapV2FactoryFactory.connect(contract.address, signer);
 }
 
 export async function createUniswapPair(factory: Contract, tokenA: string, tokenB: string): Promise<string> {
@@ -24,6 +25,10 @@ export async function createUniswapPair(factory: Contract, tokenA: string, token
 
 export function getUniswapPair(signer: Signer, pairAddress: string): IUniswapV2Pair {
     return IUniswapV2PairFactory.connect(pairAddress, signer);
+}
+
+interface IERC20 {
+    balanceOf(address: string): Promise<BigNumber>;
 }
 
 // https://uniswap.org/docs/v1/frontend-integration/trade-tokens/#amount-sold-buy-order

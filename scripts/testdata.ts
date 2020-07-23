@@ -1,117 +1,151 @@
 import { ethers } from "@nomiclabs/buidler";
 import { CollateralFactory } from "../typechain/CollateralFactory";
-import {
-	MockCollateral, MockRelay, MockTxValidator,
-	MockRegistryAndResolver, OptionPool, call, attachSellableOption, attachBuyableOption,
-    satoshiToMbtc, mbtcToSatoshi, mdaiToWeiDai, weiDaiToMdai, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC, TxValidator
-} from "./contracts";
 import { Signer } from "ethers";
-import { OptionPoolFactory } from "../typechain/OptionPoolFactory";
 import * as bitcoin from 'bitcoinjs-lib';
-import { Script } from './constants';
+import { deploy0, reconnect, deploy2, createOption } from "../lib/contracts";
+import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
+import { daiToWeiDai, strikePriceInDaiForOneBTC, premiumInDaiForOneBTC } from "../lib/conversion";
+import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
+import { OptionFactory } from "../typechain/OptionFactory";
+import { deployUniswapFactory } from "../lib/uniswap";
+import { OptionLibFactory } from "../typechain/OptionLibFactory";
+import { Script } from "../lib/constants";
+import { OptionPairFactory } from "../typechain/OptionPairFactory";
+import { BigNumberish, BigNumber } from "ethers/utils";
+import { Collateral } from "../typechain/Collateral";
+import { BTCReferee } from "../typechain/BTCReferee";
+import { OptionLib } from "../typechain/OptionLib";
 
 // NOTE: following address is owned by @gregdhill
-const payment = bitcoin.payments.p2wpkh({address: "tb1q2krsjrpj3z6xm7xvj2xxjy9gcxa755y0exegh6", network: bitcoin.networks.testnet});
+
+const keyPair = bitcoin.ECPair.makeRandom();
+const payment = bitcoin.payments.p2pkh({pubkey: keyPair.publicKey, network: bitcoin.networks.testnet});
 const btcHash = '0x' + payment.hash?.toString('hex');
 
-function getBuyable(address: string, signer: Signer) {
-	return attachSellableOption(signer, address).getBuyable();
+async function createAndLockAndWrite(
+	signer: Signer,
+	optionLib: OptionLib,
+	optionFactory: OptionPairFactory,
+	expiryTime: BigNumberish,
+	windowSize: BigNumberish,
+	strikePrice: BigNumberish,
+	collateral: Collateral,
+	referee: BTCReferee,
+	premium: BigNumber,
+	amount: BigNumber,
+) {
+	const optionAddress = await createOption(optionFactory, expiryTime, windowSize, strikePrice, collateral.address, referee.address);
+	const option = OptionFactory.connect(optionAddress, signer)
+
+    console.log("Adding data to option: ", optionAddress);
+	await reconnect(collateral, CollateralFactory, signer).approve(optionLib.address, amount.add(premium));
+
+	await reconnect(optionLib, OptionLibFactory, signer)
+		.lockAndWrite(option.address, premium, amount, btcHash, Script.p2pkh);
+
+	return optionAddress;
 }
 
 async function main() {
-	let signers = await ethers.signers();
+	const signers = await ethers.signers();
 
-	let alice = signers[0];
-	let bob = signers[1];
-	let charlie = signers[2];
-	let eve = signers[3];
-	let dave = signers[4];
+	const alice = signers[0];
+	const bob = signers[1];
+	const charlie = signers[2];
+	const eve = signers[3];
+	const dave = signers[4];
 
-	let aliceAddress = await alice.getAddress();
-	let bobAddress = await bob.getAddress();
-	let charlieAddress = await charlie.getAddress();
-	let eveAddress = await eve.getAddress();
-	let daveAddress = await dave.getAddress();
+	const aliceAddress = await alice.getAddress();
+	const bobAddress = await bob.getAddress();
+	const charlieAddress = await charlie.getAddress();
+	const eveAddress = await eve.getAddress();
+	const daveAddress = await dave.getAddress();
 
-	const collateral = await MockCollateral(alice);
-	const relay = await MockRelay(alice);
-	const validator = await MockTxValidator(alice);
-
+	const collateral = await deploy0(alice, CollateralFactory);
+	const referee = await deploy0(alice, MockBTCRefereeFactory);
+	const uniswap = await deployUniswapFactory(alice, await alice.getAddress());
+  
 	// 0x151eA753f0aF1634B90e1658054C247eFF1C2464
-	let pool = await OptionPool(alice, collateral.address, relay.address, validator.address);
+	const optionFactory = await deploy0(alice, OptionPairFactoryFactory);
+	const optionLib = await deploy2(alice, OptionLibFactory, uniswap.address, optionFactory.address);
 
     // get collateral for everyone
-	await call(collateral, CollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
-	await call(collateral, CollateralFactory, alice).mint(bobAddress, daiToWeiDai(100_000));
-	await call(collateral, CollateralFactory, alice).mint(charlieAddress, daiToWeiDai(100_000));
-	await call(collateral, CollateralFactory, alice).mint(eveAddress, daiToWeiDai(100_000));
-	await call(collateral, CollateralFactory, alice).mint(daveAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, CollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, CollateralFactory, alice).mint(bobAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, CollateralFactory, alice).mint(charlieAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, CollateralFactory, alice).mint(eveAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, CollateralFactory, alice).mint(daveAddress, daiToWeiDai(100_000));
 
 	console.log("Generating expired option");
 	// get the current time
-	let current_time = Math.round(new Date().getTime()/1000);
+	const current_time = Math.round(new Date().getTime()/1000);
 	// generate and underwrite option that expires in 60 secs
-	let expiry = current_time + 60;
-	await pool.createOption(expiry, premiumInDaiForOneBTC(10), strikePriceInDaiForOneBTC(9_200));
-	let options = await pool.getOptions();
+	const inSixtySeconds = current_time + 60;
 
-	let sellableAddress = options[0];
-	let buyableAddress = await getBuyable(sellableAddress, bob)
+	await createAndLockAndWrite(
+		bob,
+		optionLib,
+		optionFactory,
+		inSixtySeconds,
+		2000,
+		strikePriceInDaiForOneBTC(9_200),
+		collateral,
+		referee,
+		premiumInDaiForOneBTC(10),
+		daiToWeiDai(5_000)
+	);
 
-    console.log("Adding data to option: ", sellableAddress);
-	await call(collateral, CollateralFactory, bob).approve(pool.address, daiToWeiDai(10_000));
-	await call(pool, OptionPoolFactory, bob).underwriteOption(sellableAddress, daiToWeiDai(5_000), btcHash, Script.p2wpkh);
-
-    var details = await attachSellableOption(alice, sellableAddress).getDetails();
-    console.log("Option details: ", details.toString());
-
-    console.log("Generating options with testdata");
     // generate the other options
-    let inAWeek = current_time + (60 * 60 * 24 * 7);
-    let inTwoWeeks = current_time + (60 * 60 * 24 * 14);
-    // until May 31, 2020
-	await pool.createOption(inAWeek, premiumInDaiForOneBTC(11), strikePriceInDaiForOneBTC(9000));
-    // until June 7, 2020
-	await pool.createOption(inTwoWeeks, premiumInDaiForOneBTC(15), strikePriceInDaiForOneBTC(9050));
-	await pool.createOption(inTwoWeeks, premiumInDaiForOneBTC(17), strikePriceInDaiForOneBTC(8950));
+    const inAWeek = current_time + (60 * 60 * 24 * 7);
+	const inTwoWeeks = current_time + (60 * 60 * 24 * 14);
+	
+	console.log("Bob underwriting 9000 Dai");
+	await createAndLockAndWrite(
+		bob,
+		optionLib,
+		optionFactory,
+		inAWeek,
+		2000,
+		strikePriceInDaiForOneBTC(9000),
+		collateral,
+		referee,
+		premiumInDaiForOneBTC(11),
+		daiToWeiDai(9_000)
+	);
+	
+	console.log("Charlie underwriting 4000 Dai");
+	await createAndLockAndWrite(
+		bob,
+		optionLib,
+		optionFactory,
+		inTwoWeeks,
+		2000,
+		strikePriceInDaiForOneBTC(9050),
+		collateral,
+		referee,
+		premiumInDaiForOneBTC(15),
+		daiToWeiDai(4_000)
+	);
 
-	options = await pool.getOptions();
+    // console.log("Alice insuring 0.8 BTC");
+    // console.log(strikePriceInDaiForOneBTC(9000).mul(mbtcToSatoshi(800)).toString());
+	// await call(collateral, CollateralFactory, alice).approve(pool.address, daiToWeiDai(200));
+	// await call(pool, OptionPoolFactory, alice).insureOption(sellableAddress, bobAddress, mbtcToSatoshi(800));
 
-	sellableAddress = options[1];
-	buyableAddress = await getBuyable(sellableAddress, bob)
+	// sellableAddress = options[3];
+	// buyableAddress = await getBuyable(sellableAddress, bob)
 
-	console.log("Adding data to option: ", sellableAddress);
+    // console.log("Adding data to option: ", sellableAddress);
+    // console.log("Eve underwriting 20.000 Dai");
+	// await call(collateral, CollateralFactory, eve).approve(pool.address, daiToWeiDai(20_000));
+	// await call(pool, OptionPoolFactory, eve).underwriteOption(sellableAddress, daiToWeiDai(20_000), btcHash, Script.p2wpkh);
 
-    console.log("Bob underwriting 9000 Dai");
-	await call(collateral, CollateralFactory, bob).approve(pool.address, daiToWeiDai(9_000));
-	await call(pool, OptionPoolFactory, bob).underwriteOption(sellableAddress, daiToWeiDai(9_000), btcHash, Script.p2wpkh);
+    // console.log("Dave insuring 1.27 BTC");
+	// await call(collateral, CollateralFactory, dave).approve(pool.address, daiToWeiDai(2*17));
+	// await call(pool, OptionPoolFactory, dave).insureOption(sellableAddress, eveAddress, mbtcToSatoshi(1270));
 
-    console.log("Charlie underwriting 4000 Dai");
-	await call(collateral, CollateralFactory, charlie).approve(pool.address, daiToWeiDai(4_000));
-	await call(pool, OptionPoolFactory, charlie).underwriteOption(sellableAddress, daiToWeiDai(3_000), btcHash, Script.p2wpkh);
-
-    details = await attachSellableOption(alice, sellableAddress).getDetails();
-    console.log("Option details: ", details.toString());
-
-    console.log("Alice insuring 0.8 BTC");
-    console.log(strikePriceInDaiForOneBTC(9000).mul(mbtcToSatoshi(800)).toString());
-	await call(collateral, CollateralFactory, alice).approve(pool.address, daiToWeiDai(200));
-	await call(pool, OptionPoolFactory, alice).insureOption(sellableAddress, bobAddress, mbtcToSatoshi(800));
-
-	sellableAddress = options[3];
-	buyableAddress = await getBuyable(sellableAddress, bob)
-
-    console.log("Adding data to option: ", sellableAddress);
-    console.log("Eve underwriting 20.000 Dai");
-	await call(collateral, CollateralFactory, eve).approve(pool.address, daiToWeiDai(20_000));
-	await call(pool, OptionPoolFactory, eve).underwriteOption(sellableAddress, daiToWeiDai(20_000), btcHash, Script.p2wpkh);
-
-    console.log("Dave insuring 1.27 BTC");
-	await call(collateral, CollateralFactory, dave).approve(pool.address, daiToWeiDai(2*17));
-	await call(pool, OptionPoolFactory, dave).insureOption(sellableAddress, eveAddress, mbtcToSatoshi(1270));
-
-	details = await attachSellableOption(alice, sellableAddress).getDetails();
-    console.log("Option details: ", details.toString());
+	// details = await attachSellableOption(alice, sellableAddress).getDetails();
+    // console.log("Option details: ", details.toString());
 }
 
 main()

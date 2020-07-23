@@ -3,14 +3,14 @@ pragma solidity ^0.5.15;
 import "@nomiclabs/buidler/console.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Ownable } from "@openzeppelin/contracts/ownership/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
 
 /// @title A treasury contract per ERC20
+/// @dev This should not be ownable since it may be shared across factories
 /// @author Interlay
 /// @notice This contract manages locking and unlocking of collateral.
-contract Treasury is ITreasury, Ownable {
+contract Treasury is ITreasury {
     using SafeMath for uint256;
 
     string constant ERR_INSUFFICIENT_INPUT = "Insufficient input amount";
@@ -29,15 +29,15 @@ contract Treasury is ITreasury, Ownable {
     /// @param _collateral address of the ERC20
     constructor(
         address _collateral
-    ) public Ownable() {
+    ) public {
         collateral = _collateral;
     }
 
-    function balanceUnlocked(address market, address account) external returns (uint) {
+    function balanceUnlocked(address market, address account) external view returns (uint) {
         return _unlocked[market][account];
     }
 
-    function balanceLocked(address market, address account) external returns (uint) {
+    function balanceLocked(address market, address account) external view returns (uint) {
         return _locked[market][account];
     }
 
@@ -79,13 +79,11 @@ contract Treasury is ITreasury, Ownable {
     }
 
     /// @notice Release collateral for a specific account
-    /// @dev Only callable by the option factory
-    /// @param market The obligation token
     /// @param from Ethereum address that locked collateral
     /// @param to Ethereum address to receive collateral
     /// @param amount The amount to be unlocked
-    function release(address market, address from, address to, uint amount) external onlyOwner {
-        _locked[market][from] = _locked[market][from].sub(amount);
+    function release(address from, address to, uint amount) external {
+        _locked[msg.sender][from] = _locked[msg.sender][from].sub(amount);
         IERC20(collateral).transfer(to, amount);
         _totalSupply = _totalSupply.sub(amount);
     }

@@ -16,35 +16,28 @@ contract Expirable {
     string constant ERR_WINDOW_ZERO = "Window cannot be zero";
 
     // expiry timestamp
-    uint256 internal _expiry;
+    uint256 public expiryTime;
 
     // window post expiry
-    uint256 internal _window;
+    uint256 public windowSize;
 
     /**
      * @dev Initializes the contract with an expiry time and exercise window
-     * @param expiry Unix time for expiry
-     * @param window Non-zero window for exercises post-expiry
+     * @param _expiryTime Unix time for expiry
+     * @param _windowSize Non-zero window for exercises post-expiry
      */
-    constructor (uint expiry, uint window) internal {
-        require(expiry > block.timestamp, ERR_INIT_EXPIRED);
-        require(window > 0, ERR_WINDOW_ZERO);
-        _expiry = expiry;
-        _window = window;
-    }
-
-    /**
-    * @dev Get the configured expiry
-    */
-    function getExpiry() public view returns (uint256) {
-        return _expiry;
+    constructor (uint _expiryTime, uint _windowSize) internal {
+        require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
+        require(_windowSize > 0, ERR_WINDOW_ZERO);
+        expiryTime = _expiryTime;
+        windowSize = _windowSize;
     }
 
     /**
     * @dev Throws if called before the configured timestamp
     */
     modifier hasExpired() {
-        require(block.timestamp > _expiry, ERR_NOT_EXPIRED);
+        require(block.timestamp > expiryTime, ERR_NOT_EXPIRED);
         _;
     }
 
@@ -52,7 +45,7 @@ contract Expirable {
     * @dev Throws if called after the configured timestamp
     */
     modifier notExpired() {
-        require(block.timestamp <= _expiry, ERR_EXPIRED);
+        require(block.timestamp <= expiryTime, ERR_EXPIRED);
         _;
     }
 
@@ -60,8 +53,8 @@ contract Expirable {
     * @dev Throws if called after the exercise window has expired
     */
     modifier canExercise() {
-        require(block.timestamp > _expiry, ERR_NOT_EXPIRED);
-        require(block.timestamp <= _expiry.add(_window), ERR_EXPIRED);
+        require(block.timestamp > expiryTime, ERR_NOT_EXPIRED);
+        require(block.timestamp <= expiryTime.add(windowSize), ERR_EXPIRED);
         _;
     }
 
@@ -69,7 +62,7 @@ contract Expirable {
     * @dev Throws if called before the exercise window has expired
     */
     modifier canRefund() {
-        require( block.timestamp > _expiry.add(_window), ERR_NOT_EXPIRED);
+        require( block.timestamp > expiryTime.add(windowSize), ERR_NOT_EXPIRED);
         _;
     }
 }

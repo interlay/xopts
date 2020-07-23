@@ -26,6 +26,8 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     string constant ERR_INVALID_OPTION = "Option does not exist";
     string constant ERR_ZERO_AMOUNT = "Requires non-zero amount";
 
+    event Create(address indexed option, uint256 expiryTime, uint256 windowSize, uint256 strikePrice);
+
     mapping(address => address) public getObligation;
     mapping(address => address) public getTreasury;
     mapping(address => address) public getCollateral;
@@ -35,18 +37,18 @@ contract OptionPairFactory is IOptionPairFactory, Context {
 
     /**
     * @notice Create an option pair
-    * @param expiry Unix expiry date
-    * @param window Settlement window
+    * @param expiryTime Unix expiry date
+    * @param windowSize Settlement window
     * @param strikePrice Strike price
-    * @param referee Underlying settlement
     * @param collateral Backing currency
+    * @param referee Underlying settlement
     **/
     function createOption(
-        uint256 expiry,
-        uint256 window,
+        uint256 expiryTime,
+        uint256 windowSize,
         uint256 strikePrice,
-        address referee,
-        address collateral
+        address collateral,
+        address referee
     ) external {
         address treasury = getTreasury[collateral];
         if (treasury == address(0)) {
@@ -54,13 +56,13 @@ contract OptionPairFactory is IOptionPairFactory, Context {
         }
 
         address obligation = address(new Obligation(
-            expiry,
-            window,
+            expiryTime,
+            windowSize,
             treasury
         ));
         address option = address(new Option(
-            expiry,
-            window,
+            expiryTime,
+            windowSize,
             strikePrice,
             referee,
             treasury,
@@ -72,6 +74,8 @@ contract OptionPairFactory is IOptionPairFactory, Context {
         getTreasury[collateral] = treasury;
         getCollateral[option] = collateral;
         options.push(option);
+
+        emit Create(option, expiryTime, windowSize, strikePrice);
     }
 
     /**
@@ -124,9 +128,6 @@ contract OptionPairFactory is IOptionPairFactory, Context {
         IOption(option).exercise(
             buyer, seller, amount, height, index, txid, proof, rawtx
         );
-
-        // transfers from the treasury to the buyer
-        ITreasury(getTreasury[getCollateral[option]]).release(obligation, seller, buyer, amount);
     }
 
     /**
@@ -143,8 +144,6 @@ contract OptionPairFactory is IOptionPairFactory, Context {
         // burn writer's obligations
         // should revert if not expired
         IOption(option).refund(writer, amount);
-
-        ITreasury(getTreasury[getCollateral[option]]).release(obligation, writer, writer, amount);
     }
 
 }

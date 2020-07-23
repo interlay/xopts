@@ -1,8 +1,8 @@
 {
   "name": "@interlay/xopts",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Bitcoin-backed put options on Ethereum.",
-  "main": "dist/contracts.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "npm run compile && npx buidler typechain",
     "compile": "npx buidler compile",
@@ -27,7 +27,7 @@
     "url": "https://gitlab.com/interlay/xopts/issues"
   },
   "files": [
-    "src/",
+    "contracts/",
     "dist/"
   ],
   "homepage": "https://gitlab.com/interlay/xopts#readme",
