@@ -402,13 +402,18 @@
     "@ethersproject/properties" ">=5.0.0-beta.140"
     "@ethersproject/strings" ">=5.0.0-beta.136"
 
-"@interlay/btc-relay-sol@0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.3.0.tgz#66ad38e015d6cebf8134387a0662f170a651440e"
-  integrity sha512-vOcsAdb/+1EVu6bWqqgD1wCjoeNjRp79R9FHmL3098ggq22m0HxBN3tyVh+5uqoTSSzG4LOo07Y0bRPRaK+biA==
+"@interlay/bitcoin-spv-sol@3.2.1":
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/@interlay/bitcoin-spv-sol/-/bitcoin-spv-sol-3.2.1.tgz#ce6ffa5f271d07d8f4a8e3234d9063ce1b7bbee2"
+  integrity sha512-VwG9xZ+PCeoR82+FDW6M0qOQa1nAapDBKhsiRy8UwiDTd5ZfvO/mbrhoPXB2WGtqodtt3GRjX1AtOjtQI8JElg==
+
+"@interlay/btc-relay-sol@0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.3.2.tgz#eea2fed47254f2c2fc02e795661ac826888d6afc"
+  integrity sha512-N3y9gSiznII1x+3CxogH5zN7keaLo/CAHNRaUksUKPiuPlEUzrbr0U4lDp+zAJFRFqT+5DLhe93hoEzapWKzOA==
   dependencies:
-    "@summa-tx/bitcoin-spv-sol" "3.0.0"
-    bech32 "^1.1.4"
+    "@interlay/bitcoin-spv-sol" "3.2.1"
+    "@openzeppelin/contracts" "3.1.0"
     bitcoinjs-lib "^5.1.7"
 
 "@nomiclabs/buidler-ethers@^1.3.0":
@@ -501,10 +506,10 @@
     safe-buffer "^5.1.1"
     util.promisify "^1.0.0"
 
-"@openzeppelin/contracts@2.4.0":
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-2.4.0.tgz#7270f79ed1463370fe6e664d36a779aa4d3ee896"
-  integrity sha512-xeKP59REgow5TPBJh3S9BRIm7DDG+Rz3Nt4ANWGUkjk4305DHpyUD5CyMJ6nd2JMmZuFyx4mjvvlCtSJLRnN6w==
+"@openzeppelin/contracts@3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.1.0.tgz#bcea457ef89069fbe5a617f50b25b6a8272895d5"
+  integrity sha512-dVXDnUKxrAKLzPdCRkz+N8qsVkK1XxJ6kk3zuI6zaQmcKxN7CkizoDP7lXxcs/Mi2I0mxceTRjJBqlzFffLJrQ==
 
 "@openzeppelin/contracts@^2.5.0":
   version "2.5.1"
@@ -569,11 +574,6 @@
   integrity sha512-6I8V3P2uFDxW9dXoq8O91JQS6YRZ2OmduJzD+grkpAnkXocT7eu4t26zCDwBFRD2bHLlEZyopWZ87GNuO8Mf8w==
   dependencies:
     "@openzeppelin/contracts" "^2.5.0"
-
-"@summa-tx/bitcoin-spv-sol@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@summa-tx/bitcoin-spv-sol/-/bitcoin-spv-sol-3.0.0.tgz#bab13e0bbc222c0123b2efb489c6c26f131a594e"
-  integrity sha512-zyY0o1i5wGdaM8yK6JYlaUzNmZSdsGipXeEQpM7bNDW5d9/CzVOvbP1pOT97wOok2QYJG6f4oU8vf18OWzxkgQ==
 
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"
@@ -1764,7 +1764,7 @@ bcrypt-pbkdf@^1.0.0:
   dependencies:
     tweetnacl "^0.14.3"
 
-bech32@^1.1.2, bech32@^1.1.4:
+bech32@^1.1.2:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/bech32/-/bech32-1.1.4.tgz#e38c9f37bf179b8eb16ae3a772b40c356d4832e9"
   integrity sha512-s0IrSOzLlbvX7yp4WBfPITzpAU8sqQcpsmwXDiKwrG4r491vwCO/XpejasRNl0piBMe/DvP4Tz0mIS/X1DPJBQ==

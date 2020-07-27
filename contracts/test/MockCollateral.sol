@@ -1,14 +1,16 @@
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract IMockCollateral is IERC20 {
-    function mint(address account, uint256 amount) external returns (bool);
-}
-
 // NOTE: Wrapper for testing, do not use.
-contract MockCollateral is IMockCollateral, ERC20 {
+contract MockCollateral is ERC20 {
+
+    constructor() ERC20("Collateral", "COL") public {
+    }
+
     function mint(address account, uint256 amount) external returns (bool) {
         _mint(account, amount);
         return true;

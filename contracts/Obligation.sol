@@ -1,8 +1,10 @@
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
 
-import { Ownable } from "@openzeppelin/contracts/ownership/Ownable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Context } from "@openzeppelin/contracts/GSN/Context.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -28,7 +30,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     string constant ERR_INVALID_EXERCISE_AMOUNT = "Invalid exercise amount";
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
 
-    address public treasury;
+    address public override treasury;
 
     struct Request {
         bool exists;
@@ -89,17 +91,17 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IObligation-setBtcAddress}
-    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external notExpired {
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external override notExpired {
         _setBtcAddress(_msgSender(), btcHash, format);
     }
 
     /// @dev See {IObligation-getBtcAddress}
-    function getBtcAddress(address account) external view returns (bytes20 btcHash, Bitcoin.Script format) {
+    function getBtcAddress(address account) external view override returns (bytes20 btcHash, Bitcoin.Script format) {
         return (_payouts[account].btcHash, _payouts[account].format);
     }
 
     /// @dev See {IObligation-mint}
-    function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
+    function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override notExpired onlyOwner {
         // insert into the accounts balance
         _balancesAvailable[account] = _balancesAvailable[account].add(amount);
         _balancesRemaining[account] = _balancesRemaining[account].add(amount);
@@ -129,7 +131,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IObligation-exercise}
-    function exercise(address buyer, address seller, uint options, uint amount) external onlyOwner canExercise {
+    function exercise(address buyer, address seller, uint options, uint amount) external override onlyOwner canExercise {
         if (!_requests[buyer].exists) {
             // initialize request (lock amounts)
             _requests[buyer].exists = true;
@@ -160,7 +162,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IObligation-refund}
-    function refund(address seller, uint amount) external onlyOwner canRefund {
+    function refund(address seller, uint amount) external override onlyOwner canRefund {
         _burn(seller, amount);
 
         // transfers from the treasury to the seller
@@ -168,12 +170,12 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IObligation-getAmountPaid}
-    function getAmountPaid(address seller) external view returns (uint) {
+    function getAmountPaid(address seller) external override view returns (uint) {
         return _requests[_msgSender()].paid[seller];
     }
 
     /// @dev See {IObligation-getWriters}
-    function getWriters() external view returns (address[] memory writers, uint256[] memory written) {
+    function getWriters() external override view returns (address[] memory writers, uint256[] memory written) {
         uint length = _balancesWritten.size();
         writers = new address[](length);
         written = new uint256[](length);
@@ -189,17 +191,17 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IERC20-totalSupply}
-    function totalSupply() external view returns (uint256) {
+    function totalSupply() external override view returns (uint256) {
         return _totalSupply[address(this)];
     }
 
     /// @dev See {IERC20-allowance}
-    function allowance(address owner, address spender) external view returns (uint256) {
+    function allowance(address owner, address spender) external override view returns (uint256) {
         return _allowances[owner][spender];
     }
 
     /// @dev See {IERC20-approve}
-    function approve(address spender, uint256 amount) external returns (bool) {
+    function approve(address spender, uint256 amount) external override returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -213,20 +215,20 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IERC20-balanceOf}
-    function balanceOf(address account) external view returns (uint256) {
+    function balanceOf(address account) external override view returns (uint256) {
         // must show immediate balance (not written / remaining)
         // required by uniswap to mint
         return _balancesAvailable[account];
     }
 
     /// @dev See {IERC20-transfer}
-    function transfer(address recipient, uint256 amount) external notExpired returns (bool) {
+    function transfer(address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
     /// @dev See {IERC20-transferFrom}
-    function transferFrom(address sender, address recipient, uint256 amount) external notExpired returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         return true;

@@ -1,8 +1,10 @@
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
 
-import { Ownable } from "@openzeppelin/contracts/ownership/Ownable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Context } from "@openzeppelin/contracts/GSN/Context.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -46,12 +48,12 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     }
 
     /// @dev See {IOptionPairFactory-setBtcAddress}
-    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external {
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external override {
         _setBtcAddress(_msgSender(), btcHash, format);
     }
 
     /// @dev See {IOptionPairFactory-getBtcAddress}
-    function getBtcAddress() external view returns (bytes20 btcHash, Bitcoin.Script format) {
+    function getBtcAddress() external override view returns (bytes20 btcHash, Bitcoin.Script format) {
         return (_btcAddresses[_msgSender()].btcHash, _btcAddresses[_msgSender()].format);
     }
 
@@ -69,7 +71,7 @@ contract OptionPairFactory is IOptionPairFactory, Context {
         uint256 strikePrice,
         address collateral,
         address referee
-    ) external {
+    ) external override {
         address treasury = getTreasury[collateral];
         if (treasury == address(0)) {
             treasury = address(new Treasury(collateral));
@@ -107,7 +109,7 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     * @param btcHash Bitcoin address hash
     * @param format Bitcoin script format
     **/
-    function writeOption(address option, address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external {
+    function writeOption(address option, address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override {
         // obligation is responsible for locking with treasury
         address obligation = getObligation[option];
         require(obligation != address(0), ERR_INVALID_OPTION);
@@ -139,7 +141,7 @@ contract OptionPairFactory is IOptionPairFactory, Context {
         bytes32 txid,
         bytes calldata proof,
         bytes calldata rawtx
-    ) external {
+    ) external override {
         address obligation = getObligation[option];
         require(obligation != address(0), ERR_INVALID_OPTION);
         address buyer = _msgSender();
@@ -155,7 +157,7 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     * @param option Option contract address
     * @param amount Options to burn for collateral
     **/
-    function refundOption(address option, uint amount) external {
+    function refundOption(address option, uint amount) external override {
         address obligation = getObligation[option];
         require(obligation != address(0), ERR_INVALID_OPTION);
 

@@ -1,8 +1,10 @@
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
 
-import { Ownable } from "@openzeppelin/contracts/ownership/Ownable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Context } from "@openzeppelin/contracts/GSN/Context.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -36,9 +38,9 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     uint256 public strikePrice;
 
     // btc relay or oracle
-    address public referee;
-    address public treasury;
-    address public obligation;
+    address public override referee;
+    address public override treasury;
+    address public override obligation;
 
     // burnable options (exercisable)
     mapping (address => uint256) internal _balancesPostExpiry;
@@ -49,7 +51,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     mapping (address => mapping (address => uint256)) internal _allowances;
 
     // total number of options available
-    uint256 public totalSupply;
+    uint256 public override totalSupply;
 
     /**
     * @notice Create Option ERC20
@@ -76,7 +78,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IOption-mint}
-    function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
+    function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override notExpired onlyOwner {
         // insert into the accounts balance
         _balancesPostExpiry[to] = _balancesPostExpiry[to].add(amount);
         _balancesPreExpiry[to] = _balancesPreExpiry[to].add(amount);
@@ -106,7 +108,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         bytes32 txid,
         bytes calldata proof,
         bytes calldata rawtx
-    ) external canExercise onlyOwner {
+    ) external override canExercise onlyOwner {
         uint balance = _balancesPostExpiry[buyer];
 
         // burn buyer's options
@@ -130,22 +132,22 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IOption-refund}
-    function refund(address account, uint amount) external canRefund onlyOwner {
+    function refund(address account, uint amount) external override canRefund onlyOwner {
         // nothing to do here, forward
         IObligation(obligation).refund(account, amount);
     }
 
-    function getBalancePreExpiry() external view returns (uint256) {
+    function getBalancePreExpiry() external override view returns (uint256) {
         return _balancesPreExpiry[_msgSender()];
     }
 
     /// @dev See {IERC20-allowance}
-    function allowance(address owner, address spender) external view returns (uint256) {
+    function allowance(address owner, address spender) external override view returns (uint256) {
         return _allowances[owner][spender];
     }
 
     /// @dev See {IERC20-approve}
-    function approve(address spender, uint256 amount) external notExpired returns (bool) {
+    function approve(address spender, uint256 amount) external override notExpired returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -159,18 +161,18 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IERC20-balanceOf}
-    function balanceOf(address account) external view returns (uint256) {
+    function balanceOf(address account) external override view returns (uint256) {
         return _balancesPostExpiry[account];
     }
 
     /// @dev See {IERC20-transfer}
-    function transfer(address recipient, uint256 amount) external notExpired returns (bool) {
+    function transfer(address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
     /// @dev See {IERC20-transferFrom}
-    function transferFrom(address sender, address recipient, uint256 amount) external notExpired returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         return true;

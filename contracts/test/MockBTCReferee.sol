@@ -1,4 +1,6 @@
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import { BTCReferee } from "../BTCReferee.sol";
 
@@ -21,7 +23,7 @@ contract MockBTCReferee is BTCReferee {
         bytes calldata rawTx,
         bytes20 btcHash,
         uint256 btcAmount
-    ) external view returns(bool) {
+    ) external override view returns(bool) {
         return true;
     }
 }

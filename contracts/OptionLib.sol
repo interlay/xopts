@@ -1,6 +1,9 @@
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
+
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IUniswapV2Factory } from "./lib/IUniswapV2Factory.sol";
@@ -80,14 +83,18 @@ contract OptionLib {
     }
 
     /**
-     * @notice Add liquidity to a pool
-     * @dev Requires pre-approval for input coins
-     * @param tokenA ECR-20 contract address
-     * @param tokenB ERC-20 contract address
-     * @param amountA Initial token
-     * @param amountB Initial token
-     * @return Liquidity
-     */
+    * @notice Add liquidity to a pool
+    * @dev Requires pre-approval for input coins
+    * @param tokenA ECR-20 contract address
+    * @param tokenB ERC-20 contract address
+    * @param amountADesired Initial token
+    * @param amountBDesired Initial token
+    * @param amountAMin Initial token
+    * @param amountBMin Initial token
+    * @return amountA Final
+    * @return amountB Final
+    * @return liquidity Final
+    */
     function addLiquidity(
         address tokenA,
         address tokenB,

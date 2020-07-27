@@ -1,4 +1,6 @@
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
 
@@ -20,7 +22,7 @@ contract Treasury is ITreasury {
 
     /// @notice The address of the collateral ERC20
     /// @return address of the ERC20 contract
-    address public collateral;
+    address public override collateral;
 
     uint internal reserve;
 
@@ -36,7 +38,7 @@ contract Treasury is ITreasury {
         collateral = _collateral;
     }
 
-    function balanceOf(address market, address account) external view returns (uint) {
+    function balanceOf(address market, address account) external override view returns (uint) {
         return _locked[market][account];
     }
 
@@ -44,7 +46,7 @@ contract Treasury is ITreasury {
     /// @dev Separate transfer required
     /// @param market Address of the obligation contract
     /// @param account Address of the supplier
-    function deposit(address market, address account) external {
+    function deposit(address market, address account) external override {
         uint balance = IERC20(collateral).balanceOf(address(this));
         uint amount = balance.sub(reserve);
         require(amount > 0, ERR_INSUFFICIENT_DEPOSIT);
@@ -56,7 +58,7 @@ contract Treasury is ITreasury {
     /// @dev Reverts if market account has insufficient balance
     /// @param account Ethereum address that locks collateral
     /// @param amount The amount to be locked
-    function lock(address account, uint amount) external {
+    function lock(address account, uint amount) external override {
         _unlocked[msg.sender][account] = _unlocked[msg.sender][account].sub(amount, ERR_INSUFFICIENT_UNLOCKED);
         _locked[msg.sender][account] = _locked[msg.sender][account].add(amount);
     }
@@ -65,7 +67,7 @@ contract Treasury is ITreasury {
     /// @param from Ethereum address that locked collateral
     /// @param to Ethereum address to receive collateral
     /// @param amount The amount to be unlocked
-    function release(address from, address to, uint amount) external {
+    function release(address from, address to, uint amount) external override {
         _locked[msg.sender][from] = _locked[msg.sender][from].sub(amount, ERR_INSUFFICIENT_LOCKED);
         IERC20(collateral).transfer(to, amount);
         reserve = IERC20(collateral).balanceOf(address(this));

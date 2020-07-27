@@ -1,9 +1,6 @@
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: Apache-2.0
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/GSN/Context.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-
+pragma solidity ^0.6.0;
 
 /// @title An interface for a treasury contract per ERC20
 /// @author Interlay
