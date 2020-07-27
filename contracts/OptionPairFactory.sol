@@ -25,6 +25,7 @@ contract OptionPairFactory is IOptionPairFactory, Context {
 
     string constant ERR_INVALID_OPTION = "Option does not exist";
     string constant ERR_ZERO_AMOUNT = "Requires non-zero amount";
+    string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
 
     event Create(address indexed option, uint256 expiryTime, uint256 windowSize, uint256 strikePrice);
 
@@ -33,7 +34,26 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     mapping(address => address) public getCollateral;
     address[] public options;
 
-    constructor() public {}
+    mapping (address => Bitcoin.Address) internal _btcAddresses;
+
+    function _setBtcAddress(address account, bytes20 btcHash, Bitcoin.Script format) internal {
+        require(
+            btcHash != 0,
+            ERR_NO_BTC_ADDRESS
+        );
+        _btcAddresses[account].btcHash = btcHash;
+        _btcAddresses[account].format = format;
+    }
+
+    /// @dev See {IOptionPairFactory-setBtcAddress}
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external {
+        _setBtcAddress(_msgSender(), btcHash, format);
+    }
+
+    /// @dev See {IOptionPairFactory-getBtcAddress}
+    function getBtcAddress() external view returns (bytes20 btcHash, Bitcoin.Script format) {
+        return (_btcAddresses[_msgSender()].btcHash, _btcAddresses[_msgSender()].format);
+    }
 
     /**
     * @notice Create an option pair
@@ -93,9 +113,9 @@ contract OptionPairFactory is IOptionPairFactory, Context {
         require(obligation != address(0), ERR_INVALID_OPTION);
         require(amount > 0, ERR_ZERO_AMOUNT);
 
-        // TODO: check preferred btc address
+        _setBtcAddress(from, btcHash, format);
 
-        // collateral:options are 1:1
+        // collateral:(options/obligations) are 1:1
         IOption(option).mint(from, to, amount, btcHash, format);
     }
 

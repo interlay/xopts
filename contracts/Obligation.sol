@@ -19,20 +19,21 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     using SafeMath for uint;
     using IterableBalances for IterableBalances.Map;
 
-    string constant ERR_INSUFFICIENT_BALANCE = "Insufficient balance";
-    string constant ERR_INVALID_AMOUNT = "Invalid amount";
     string constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
     string constant ERR_APPROVE_TO_ZERO_ADDRESS = "Approve to zero address";
     string constant ERR_TRANSFER_TO_ZERO_ADDRESS = "Transfer to zero address";
     string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
     string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
+
+    string constant ERR_INVALID_EXERCISE_AMOUNT = "Invalid exercise amount";
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
 
     address public treasury;
 
     struct Request {
         bool exists;
-        mapping (address => uint) sellers;
+        mapping (address => uint) owed;
+        mapping (address => uint) paid;
     }
 
     // accounting to track and ensure proportional payouts
@@ -41,22 +42,28 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     // payout addresses for underwriters
     mapping (address => Bitcoin.Address) _payouts;
 
-    // total obligations per account
-    IterableBalances.Map internal _balances;
+    // obligations writers (exc. pools)
+    // read-only after expiry for payout calculation
+    IterableBalances.Map internal _balancesWritten;
 
-    struct Pool {
-        uint256 totalSupply;
-        IterableBalances.Map balances;
-    }
+    // like _balancesWritten, but burnt if exercised
+    // allows refunds if credited
+    mapping (address => uint) internal _balancesRemaining;
+
+    // total obligations per account (inc. pools)
+    mapping (address => uint) internal _balancesAvailable;
+
+    // required to calculate proportional purchases
+    mapping (address => uint) internal _totalSupply;
+
+    // when exercising we need a final count
+    uint internal _finalSupply;
 
     // model trading pools to enable proportional purchases
-    mapping (address => Pool) internal _pools;
+    mapping (address => IterableBalances.Map) internal _pools;
 
     // accounts that can spend an owners funds
     mapping (address => mapping (address => uint)) internal _allowances;
-
-    // total number of tokens minted
-    uint256 public totalSupply;
 
     /**
     * @notice Create Obligation ERC20
@@ -70,19 +77,6 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         address _treasury
     ) public Expirable(_expiryTime, _windowSize) Ownable() {
         treasury = _treasury;
-    }
-
-    /// @dev See {IObligation-mint}
-    function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
-        // insert into the accounts balance
-        _balances.set(account, _balances.get(account).add(amount));
-        totalSupply = totalSupply.add(amount);
-        _setBtcAddress(account, btcHash, format);
-
-        // check treasury has enough locked
-        ITreasury(treasury).lock(account, amount);
-
-        emit Transfer(address(0), account, amount);
     }
 
     function _setBtcAddress(address account, bytes20 btcHash, Bitcoin.Script format) internal {
@@ -104,39 +98,61 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         return (_payouts[account].btcHash, _payouts[account].format);
     }
 
+    /// @dev See {IObligation-mint}
+    function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
+        // insert into the accounts balance
+        _balancesAvailable[account] = _balancesAvailable[account].add(amount);
+        _balancesRemaining[account] = _balancesRemaining[account].add(amount);
+        _balancesWritten.set(account, _balancesWritten.get(account).add(amount));
+
+        _totalSupply[address(this)] = _totalSupply[address(this)].add(amount);
+        _finalSupply = _finalSupply.add(amount);
+
+        _setBtcAddress(account, btcHash, format);
+
+        // check treasury has enough locked
+        ITreasury(treasury).lock(account, amount);
+
+        emit Transfer(address(0), account, amount);
+    }
+
     function _burn(address account, uint amount) internal onlyOwner {
-        _balances.set(account, _balances.get(account).sub(amount));
-        totalSupply = totalSupply.sub(amount);
+        if (_balancesAvailable[account] == _balancesRemaining[account]) {
+            // TODO: is there a better way to adjust this?
+            _balancesAvailable[account] = _balancesAvailable[account].sub(amount);
+        }
+        // we only allow the owner to withdraw
+        _balancesRemaining[account] = _balancesRemaining[account].sub(amount);
+
+        _totalSupply[address(this)] = _totalSupply[address(this)].sub(amount);
         emit Transfer(account, address(0), amount);
     }
 
     /// @dev See {IObligation-exercise}
-    function exercise(address buyer, address seller, uint total, uint amount) external canExercise {
+    function exercise(address buyer, address seller, uint options, uint amount) external onlyOwner canExercise {
         if (!_requests[buyer].exists) {
             // initialize request (lock amounts)
             _requests[buyer].exists = true;
-            for (uint i = 0; i < _balances.size(); i++) {
-                address owner0 = _balances.getKeyAtIndex(i);
-                uint256 value0 = _balances.get(owner0);
-                if (_pools[owner0].totalSupply > 0) {
-                    Pool storage pool = _pools[owner0];
-                    // we may have multiple pools (e.g. in uniswap)
-                    for (uint j = 0; j < pool.balances.size(); j++) {
-                        address owner1 = pool.balances.getKeyAtIndex(i);
-                        uint256 value1 = pool.balances.get(owner1);
-                        _requests[buyer].sellers[owner1] = value1.mul(total).div(totalSupply);
-                    }
-                } else {
-                    _requests[buyer].sellers[owner0] = value0.mul(total).div(totalSupply);
-                }
+            // after expiry we do not want to alter the authorship
+            // since the balances / totalSupply must be unchanged
+            // for later participants
+            for (uint i = 0; i < _balancesWritten.size(); i = i.add(1)) {
+                address owner = _balancesWritten.getKeyAtIndex(i);
+                uint256 value = _balancesWritten.get(owner);
+                _requests[buyer].owed[owner] = value.mul(options).div(_finalSupply);
             }
         }
 
         // once locked, buyer has to payout equally
-        uint owed = _requests[buyer].sellers[seller];
-        require(amount <= owed, ERR_INVALID_AMOUNT);
-        _requests[buyer].sellers[seller] = owed.sub(amount);
+        uint owed = _requests[buyer].owed[seller];
+        require(amount <= owed, ERR_INVALID_EXERCISE_AMOUNT);
+        _requests[buyer].owed[seller] = owed.sub(amount);
 
+        // track total paid to simplify payout calculation
+        uint paid = _requests[buyer].paid[seller];
+        _requests[buyer].paid[seller] = paid.add(amount);
+
+        // remove seller's obligations to prevent refunds
         _burn(seller, amount);
 
         // transfers from the treasury to the buyer
@@ -144,58 +160,37 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /// @dev See {IObligation-refund}
-    function refund(address account, uint amount) external canRefund {
-        _burn(account, amount);
+    function refund(address seller, uint amount) external onlyOwner canRefund {
+        _burn(seller, amount);
 
-        // transfers from the treasury to the writer
-        ITreasury(treasury).release(account, account, amount);
+        // transfers from the treasury to the seller
+        ITreasury(treasury).release(seller, seller, amount);
     }
 
-    /**
-    * @notice Fetch all acounts
-    * @return accounts Addresses
-    * @return balances Obligations
-    * @return pools Address
-    **/
-    function getAccounts() external view returns (address[] memory accounts, uint256[] memory balances, bool[] memory pools) {
-        uint length = _balances.size();
-        accounts = new address[](length);
-        balances = new uint256[](length);
-        pools = new bool[](length);
-
-        for (uint i = 0; i < length; i++) {
-            address owner = _balances.getKeyAtIndex(i);
-            uint256 value = _balances.get(owner);
-            accounts[i] = owner;
-            balances[i] = value;
-            if (_pools[owner].totalSupply > 0) {
-                pools[i] = true;
-            }
-        }
-
-        return (accounts, balances, pools);
+    /// @dev See {IObligation-getAmountPaid}
+    function getAmountPaid(address seller) external view returns (uint) {
+        return _requests[_msgSender()].paid[seller];
     }
 
-    /**
-    * @notice Fetch all writers and amounts in pool
-    * @return writers Original writers
-    * @return tokens Backed collateral
-    **/
-    function getPool(address account) external view returns (address[] memory accounts, uint256[] memory balances) {
-        Pool storage pool = _pools[account];
-
-        uint length = pool.balances.size();
-        accounts = new address[](length);
-        balances = new uint256[](length);
+    /// @dev See {IObligation-getWriters}
+    function getWriters() external view returns (address[] memory writers, uint256[] memory written) {
+        uint length = _balancesWritten.size();
+        writers = new address[](length);
+        written = new uint256[](length);
 
         for (uint i = 0; i < length; i++) {
-            address owner = pool.balances.getKeyAtIndex(i);
-            uint256 value = pool.balances.get(owner);
-            accounts[i] = owner;
-            balances[i] = value;
+            address owner = _balancesWritten.getKeyAtIndex(i);
+            uint256 value = _balancesWritten.get(owner);
+            writers[i] = owner;
+            written[i] = value;
         }
 
-        return (accounts, balances);
+        return (writers, written);
+    }
+
+    /// @dev See {IERC20-totalSupply}
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply[address(this)];
     }
 
     /// @dev See {IERC20-allowance}
@@ -219,7 +214,9 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
 
     /// @dev See {IERC20-balanceOf}
     function balanceOf(address account) external view returns (uint256) {
-        return _balances.get(account);
+        // must show immediate balance (not written / remaining)
+        // required by uniswap to mint
+        return _balancesAvailable[account];
     }
 
     /// @dev See {IERC20-transfer}
@@ -249,44 +246,47 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         require(sender != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
         require(recipient != address(0), ERR_TRANSFER_TO_ZERO_ADDRESS);
 
-        _balances.set(sender, _balances.get(sender).sub(amount));
-        _balances.set(recipient, _balances.get(recipient).add(amount));
-
-        if (_balances.get(sender) == 0) {
-            // save gas by deleting entry
-            _balances.remove(sender);
-        }
+        _balancesAvailable[sender] = _balancesAvailable[sender].sub(amount);
+        _balancesAvailable[recipient] = _balancesAvailable[recipient].add(amount);
 
         if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash != 0) {
             // simple transfer, lock recipient collateral
             // Note: the market must have 'unlocked' funds
             ITreasury(treasury).lock(recipient, amount);
-            ITreasury(treasury).unlock(sender, amount);
+            ITreasury(treasury).release(sender, sender, amount);
+            // transfer ownership and authorship
+            _balancesRemaining[sender] = _balancesRemaining[sender].sub(amount);
+            _balancesRemaining[recipient] = _balancesRemaining[recipient].add(amount);
+            _balancesWritten.set(sender, _balancesWritten.get(sender).sub(amount));
+            _balancesWritten.set(recipient, _balancesWritten.get(recipient).add(amount));
         } else if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash == 0) {
             // selling obligations to a pool
-            IterableBalances.Map storage pool = _pools[recipient].balances;
-            pool.set(sender, pool.get(sender).add(amount));
-            _pools[recipient].totalSupply = _pools[recipient].totalSupply.add(amount);
+            _pools[recipient].set(sender, _pools[recipient].get(sender).add(amount));
+            _totalSupply[recipient] = _totalSupply[recipient].add(amount);
         } else {
-            // buying obligations from pool
+            // buying obligations from a pool
             require(_payouts[recipient].btcHash != 0, ERR_NO_BTC_ADDRESS);
             // call to treasury should revert if insufficient locked
             ITreasury(treasury).lock(recipient, amount);
-            Pool storage pool = _pools[sender];
-            IterableBalances.Map storage balances = pool.balances;
 
             // should take proportional ownership
-            for (uint i = 0; i < balances.size(); i++) {
+            IterableBalances.Map storage balances = _pools[sender];
+            for (uint i = 0; i < balances.size(); i = i.add(1)) {
                 address owner = balances.getKeyAtIndex(i);
                 uint256 value = balances.get(owner);
-                uint256 take = value.mul(amount).div(pool.totalSupply);
+                uint256 take = value.mul(amount).div(_totalSupply[sender]);
 
-                // enables withdrawals
-                ITreasury(treasury).unlock(owner, take);
+                // release previously locked collateral
+                ITreasury(treasury).release(owner, owner, take);
                 balances.set(owner, balances.get(owner).sub(take));
-                // TODO: delete pool entry if zero
-                pool.totalSupply = pool.totalSupply.sub(take);
+
+                // ownership has now changed
+                _balancesRemaining[owner] = _balancesRemaining[owner].sub(take);
+                _balancesWritten.set(owner, _balancesWritten.get(owner).sub(amount));
             }
+            _balancesRemaining[recipient] = _balancesRemaining[recipient].add(amount);
+            _balancesWritten.set(recipient, _balancesWritten.get(recipient).add(amount));
+            _totalSupply[sender] = _totalSupply[sender].sub(amount);
         }
 
         emit Transfer(sender, recipient, amount);

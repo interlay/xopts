@@ -51,4 +51,9 @@ interface IOption {
     **/
     function refund(address account, uint amount) external;
 
+    /**
+    * @notice Gets the balance of an account before expiry
+    * @return Caller's balance before exercise / refund
+    **/
+    function getBalancePreExpiry() external view returns (uint256);
 }

@@ -143,7 +143,7 @@ contract OptionLib {
         // lock collateral for exercising
         IERC20(collateral).transferFrom(msg.sender, treasury, amount);
         // deposit 'unlocked' balance for writing
-        ITreasury(treasury).deposit(obligation, msg.sender, amount);
+        ITreasury(treasury).deposit(obligation, msg.sender);
         // mint options and obligations - locking collateral
         IOptionPairFactory(_optionFactory).writeOption(option, msg.sender, pair, amount, btcHash, format);
 
@@ -160,7 +160,7 @@ contract OptionLib {
         address treasury = IObligation(obligation).treasury();
         address collateral = ITreasury(treasury).collateral();
         IERC20(collateral).transferFrom(msg.sender, treasury, amountOut);
-        ITreasury(treasury).deposit(obligation, msg.sender, amountOut);
+        ITreasury(treasury).deposit(obligation, msg.sender);
         swapTokensForExactTokens(amountOut, amountInMax, collateral, obligation);
     }
 

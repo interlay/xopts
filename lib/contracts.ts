@@ -18,6 +18,8 @@ import { IRefereeFactory } from "../typechain/IRefereeFactory";
 import { ITreasury } from "../typechain/ITreasury";
 import { ITreasuryFactory } from "../typechain/ITreasuryFactory";
 import { ObligationFactory } from "../typechain/ObligationFactory";
+import * as bitcoin from 'bitcoinjs-lib';
+import { encodeBtcAddress } from "./address";
 
 interface Connectable<C> {
     connect: (addr: string, signer?: Signer) => C;
@@ -44,34 +46,18 @@ export function deploy2<A extends Callable, B, C>(signer: Signer, factory: new (
 }
 
 // fetches writers (including those in pools) and calculates the amount owed
-export async function calculatePayouts(obligation: Obligation, options: number) {
-    const { accounts, balances, pools } = await obligation.getAccounts();
-    const total = balances.reduce((prev, curr) => prev.add(curr));
-
-    const owned = accounts.filter((acc, i) => !pools[i]).map((acc, i) => {
+export async function calculatePayouts(option: Option, obligation: Obligation): Promise<{
+    account: string;
+    options: BigNumber;
+}[]> {
+    const options = await option.getBalancePreExpiry();
+    const { writers, written } = await obligation.getWriters();
+    const total = written.reduce((prev, curr) => prev.add(curr));
+    return Promise.all(writers.map(async (acc, i) => {
+        const paid = await obligation.getAmountPaid(acc);
         return {
             account: acc,
-            balance: balances[i],
-        }
-    });
-
-    const pooled = accounts.filter((acc, i) => pools[i]);
-    return Promise.all(pooled.map(acc => obligation.getPool(acc))).then(res => {
-        return res.reduce((prev, curr) => {
-            const { accounts, balances } = curr;
-            prev.push(...accounts.map((acc, i) => {
-                return {
-                    account: acc,
-                    balance: balances[i],
-                }
-            }));
-            return prev;
-        }, owned)
-        
-    }).then(res => res.map(acc => {
-        return {
-            account: acc.account,
-            options: acc.balance.mul(options).div(total),
+            options: written[i].mul(options).div(total).sub(paid),
         };
     }));
 }
@@ -112,12 +98,13 @@ export interface IContracts {
         strikePrice: BigNumberish,
     ): Promise<IOptionPair>;
 
+    getBtcAddress(): Promise<BtcAddress>;
+
     writeOption(
         option: string,
         premium: BigNumberish,
         amount: BigNumberish,
-        btcHash: Arrayish,
-        format: Script
+        btcAddress?: BtcAddress,
     ): Promise<void>;
 
     buyOption(
@@ -141,6 +128,11 @@ export interface IContracts {
         option: string,
         amount: BigNumberish,
     ): Promise<void>;
+}
+
+type BtcAddress = {
+    btcHash: Arrayish,
+    format: Script,
 }
 
 export class Contracts implements IContracts {
@@ -232,17 +224,22 @@ export class Contracts implements IContracts {
         return new OptionPair(optionAddress, obligationAddress, this.treasury, this.signer, this.account);
     }
 
+    // persistent btcAddress across options
+    async getBtcAddress(): Promise<BtcAddress> {
+        const { btcHash, format } = await this.optionFactory.getBtcAddress();
+        return { btcHash, format };
+    }
+
     // back options with the default collateral
     // this also adds liquidity to the uniswap pool
     async writeOption(
         option: string,
         premium: BigNumberish,
         amount: BigNumberish,
-        btcHash: Arrayish,
-        format: Script
+        btcAddress: BtcAddress,
     ): Promise<void> {
         await this.optionLib.lockAndWrite(
-            option, premium, amount, btcHash, format
+            option, premium, amount, btcAddress.btcHash, btcAddress.format
         ).then(tx => tx.wait(this.confirmations));
     }
     
@@ -260,7 +257,7 @@ export class Contracts implements IContracts {
         ).then(tx => tx.wait(this.confirmations));
     }
 
-    // prove inclusion proof and claim collateral
+    // prove inclusion and claim collateral
     async exerciseOption(
         option: string,
         seller: string,
@@ -293,17 +290,14 @@ export interface IOptionPair {
         strikePrice: BigNumber,
     }>;
 
-    getPayouts(options: number): Promise<{
+    getBtcAddress(account: string, network: bitcoin.Network): Promise<string>;
+
+    getPayouts(): Promise<{
         account: string,
         options: BigNumber,
     }[]>;
 
-    balance(obligation: string): Promise<{
-        available: BigNumber;
-        locked: BigNumber;
-    }>;
-
-    withdraw(amount: BigNumberish): Promise<ContractTransaction>;
+    balance(obligation: string): Promise<BigNumber>;
 }
 
 export class OptionPair implements IOptionPair {
@@ -336,28 +330,18 @@ export class OptionPair implements IOptionPair {
         return ({ expiryTime, windowSize, strikePrice });
     }
 
+    async getBtcAddress(account: string, network: bitcoin.Network): Promise<string> {
+        const { btcHash, format } = await this.obligation.getBtcAddress(account);
+        return encodeBtcAddress(btcHash.substr(2), format, network);
+    }
+
     // calculate amounts owed to each writer
-    async getPayouts(options: number) {
-        return calculatePayouts(this.obligation, options);
+    async getPayouts() {
+        return calculatePayouts(this.option, this.obligation);
     }
 
-    // gets the (un)locked collateral for a pair
+    // gets the locked collateral for a pair
     async balance() {
-        const [locked, unlocked] = await Promise.all([
-            this.treasury.balanceLocked(this.obligation.address, this.account),
-            this.treasury.balanceUnlocked(this.obligation.address, this.account),
-        ]);
-        return ({
-            // collateral available to withdraw
-            available: unlocked,
-            // collateral backing obligations
-            locked: locked,
-        });
-    }
-
-    // use this to withdraw collateral for sold obligations
-    // i.e. if call above returns available, use this to recover funds
-    withdraw(amount: BigNumberish) {
-        return this.treasury.withdraw(this.obligation.address, amount);
+        return this.treasury.balanceOf(this.obligation.address, this.account)
     }
 }

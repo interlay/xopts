@@ -26,7 +26,8 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     string constant ERR_TRANSFER_TO_ZERO_ADDRESS = "Transfer to zero address";
     string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
     string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
-    string constant ERR_VALIDATE_TX = "Cannot validate tx format";
+
+    string constant ERR_VALIDATE_TX = "Cannot validate tx";
     string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
 
     // event Insure(address indexed account, uint256 amount);
@@ -39,8 +40,10 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     address public treasury;
     address public obligation;
 
-    // total options per account
-    mapping (address => uint256) internal _balances;
+    // burnable options (exercisable)
+    mapping (address => uint256) internal _balancesPostExpiry;
+    // append only options (used for payout calculation)
+    mapping (address => uint256) internal _balancesPreExpiry;
 
     // accounts that can spend an owners funds
     mapping (address => mapping (address => uint256)) internal _allowances;
@@ -75,12 +78,22 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     /// @dev See {IOption-mint}
     function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
         // insert into the accounts balance
-        _balances[to] = _balances[to].add(amount);
+        _balancesPostExpiry[to] = _balancesPostExpiry[to].add(amount);
+        _balancesPreExpiry[to] = _balancesPreExpiry[to].add(amount);
         totalSupply = totalSupply.add(amount);
         emit Transfer(address(0), to, amount);
 
         // mint the equivalent obligations
         IObligation(obligation).mint(from, amount, btcHash, format);
+    }
+
+    function _burn(
+        address account,
+        uint256 amount
+    ) internal {
+        _balancesPostExpiry[account] = _balancesPostExpiry[account].sub(amount);
+        totalSupply = totalSupply.sub(amount);
+        emit Transfer(account, address(0), amount);
     }
 
     /// @dev See {IOption-exercise}
@@ -94,7 +107,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         bytes calldata proof,
         bytes calldata rawtx
     ) external canExercise onlyOwner {
-        uint balance = _balances[buyer];
+        uint balance = _balancesPostExpiry[buyer];
 
         // burn buyer's options
         _burn(buyer, amount);
@@ -122,13 +135,8 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         IObligation(obligation).refund(account, amount);
     }
 
-    function _burn(
-        address account,
-        uint256 amount
-    ) internal {
-        _balances[account] = _balances[account].sub(amount);
-        totalSupply = totalSupply.sub(amount);
-        emit Transfer(account, address(0), amount);
+    function getBalancePreExpiry() external view returns (uint256) {
+        return _balancesPreExpiry[_msgSender()];
     }
 
     /// @dev See {IERC20-allowance}
@@ -152,7 +160,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
 
     /// @dev See {IERC20-balanceOf}
     function balanceOf(address account) external view returns (uint256) {
-        return _balances[account];
+        return _balancesPostExpiry[account];
     }
 
     /// @dev See {IERC20-transfer}
@@ -182,8 +190,10 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         require(sender != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
         require(recipient != address(0), ERR_TRANSFER_TO_ZERO_ADDRESS);
 
-        _balances[sender] = _balances[sender].sub(amount);
-        _balances[recipient] = _balances[recipient].add(amount);
+        _balancesPostExpiry[sender] = _balancesPostExpiry[sender].sub(amount);
+        _balancesPostExpiry[recipient] = _balancesPostExpiry[recipient].add(amount);
+        _balancesPreExpiry[sender] = _balancesPreExpiry[sender].sub(amount);
+        _balancesPreExpiry[recipient] = _balancesPreExpiry[recipient].add(amount);
 
         emit Transfer(sender, recipient, amount);
     }

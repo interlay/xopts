@@ -2,11 +2,11 @@ import { ethers } from "@nomiclabs/buidler";
 import { Signer } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { CollateralFactory } from "../typechain/CollateralFactory";
+import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { OptionFactory } from "../typechain/OptionFactory";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
 import { ErrorCode, Script } from '../lib/constants';
-import { Collateral } from "../typechain/Collateral";
+import { MockCollateral } from "../typechain/MockCollateral";
 import { OptionLibFactory } from "../typechain/OptionLibFactory";
 import { OptionLib } from "../typechain/OptionLib";
 import { calculatePayouts, deploy0, reconnect, evmSnapFastForward } from "../lib/contracts";
@@ -39,7 +39,7 @@ type Accounts = {
 
 type Contracts = {
   uniswapFactory: IUniswapV2Factory;
-  collateral: Collateral;
+  collateral: MockCollateral;
   optionFactory: OptionPairFactory;
   optionLib: OptionLib;
   btcReferee: MockBTCReferee;
@@ -67,15 +67,22 @@ async function loadContracts(signer: Signer): Promise<Contracts> {
 
   return {
     uniswapFactory: uniswapFactory,
-    collateral: await deploy0(signer, CollateralFactory),
+    collateral: await deploy0(signer, MockCollateralFactory),
     optionFactory: optionPairFactory,
     optionLib: optionLib,
     btcReferee: await deploy0(signer, MockBTCRefereeFactory),
   }
 }
 
-const mint = async function(collateral: Collateral, signer: Signer, address: string, amount: number) {
-  await reconnect(collateral, CollateralFactory, signer).mint(address, amount);
+function getPayoutsFor(signer: Signer, option: Option, obligation: Obligation) {
+  return calculatePayouts(
+    reconnect(option, OptionFactory, signer),
+    reconnect(obligation, ObligationFactory, signer)
+  );
+}
+
+const mint = async function(collateral: MockCollateral, signer: Signer, address: string, amount: number) {
+  await reconnect(collateral, MockCollateralFactory, signer).mint(address, amount);
   expect((await collateral.balanceOf(address)).toNumber()).to.eq(amount);
 };
 
@@ -95,7 +102,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
   let eveAddress: string;
 
   let uniswapFactory: IUniswapV2Factory;
-  let collateral: Collateral;
+  let collateral: MockCollateral;
   let optionFactory: OptionPairFactory;
   let optionLib: OptionLib;
   let btcReferee: MockBTCReferee;
@@ -178,7 +185,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
     // bob should owe alice and eve equally
     const obligationAddress = await optionFactory.getObligation(option.address);
     const obligation = ObligationFactory.connect(obligationAddress, bob);
-    const payouts = await calculatePayouts(obligation, optionBalance)
+    const payouts = await getPayoutsFor(bob, option, obligation);
     expect(payouts.length).to.eq(2);
     expect(payouts[0].account).to.eq(aliceAddress);
     expect(payouts[0].options.toNumber()).to.eq(amountOut / 2);
@@ -212,7 +219,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
           Buffer.alloc(32, 0),
           Buffer.alloc(32, 0),
           Buffer.alloc(32, 0));
-      await expect(result, "payout should be split").to.be.revertedWith(ErrorCode.ERR_INVALID_AMOUNT);
+      await expect(result, "payout should be split").to.be.revertedWith(ErrorCode.ERR_INVALID_EXERCISE_AMOUNT);
 
       const aliceAmountOut = amountOut / 2;
       await reconnect(optionFactory, OptionPairFactoryFactory, bob)
@@ -251,7 +258,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
   let eveAddress: string;
 
   let uniswapFactory: IUniswapV2Factory;
-  let collateral: Collateral;
+  let collateral: MockCollateral;
   let optionFactory: OptionPairFactory;
   let optionLib: OptionLib;
   let btcReferee: MockBTCReferee;
@@ -312,7 +319,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
     // bob should owe alice only
     const obligationAddress = await optionFactory.getObligation(option.address);
     const obligation = ObligationFactory.connect(obligationAddress, bob);
-    const payouts = await calculatePayouts(obligation, optionBalance)
+    const payouts = await getPayoutsFor(bob, option, obligation);
     expect(payouts.length).to.eq(1);
     expect(payouts[0].account).to.eq(aliceAddress);
     expect(payouts[0].options.toNumber()).to.eq(amountOut);
@@ -344,7 +351,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
   let eveAddress: string;
 
   let uniswapFactory: IUniswapV2Factory;
-  let collateral: Collateral;
+  let collateral: MockCollateral;
   let optionFactory: OptionPairFactory;
   let optionLib: OptionLib;
   let btcReferee: MockBTCReferee;
@@ -420,6 +427,8 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
   });
 
   it("eve should set btc address and buy obligations", async () => {
+    const aliceCollateral0 = (await collateral.balanceOf(aliceAddress)).toNumber();
+
     await mint(collateral, eve, eveAddress, amountInMax + amountOut);
     await approve(collateral, eve, optionLib.address, amountInMax + amountOut);
 
@@ -438,26 +447,10 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
     expect(obligationBalance).to.eq(amountOut);
     const collateralBalance = (await collateral.balanceOf(eveAddress)).toNumber();
     expect(collateralBalance).to.eq(amountInMax - estimatedInput);
-  });
 
-  it("alice should withdraw collateral from treasury", async () => {
-    const initialBalance = (await collateral.balanceOf(aliceAddress)).toNumber();
-
-    await reconnect(treasury, TreasuryFactory, alice)
-      .withdraw(
-        obligation.address,
-        amountOut);
-
-    const collateralBalance = (await collateral.balanceOf(aliceAddress)).toNumber();
-    expect(collateralBalance).to.eq(initialBalance + amountOut);
-  });
-
-  it("alice can't withdraw more from treasury (until sold)", async () => {
-    let result = reconnect(treasury, TreasuryFactory, alice)
-      .withdraw(
-        obligation.address,
-        amountOut);
-    expect(result).to.be.reverted;
+    // alice should have collateral back
+    const aliceCollateral1 = (await collateral.balanceOf(aliceAddress)).toNumber();
+    expect(aliceCollateral1).to.eq(aliceCollateral0 + amountOut);
   });
 });
 
@@ -473,7 +466,7 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations", () => {
   let eveAddress: string;
 
   let uniswapFactory: IUniswapV2Factory;
-  let collateral: Collateral;
+  let collateral: MockCollateral;
   let optionFactory: OptionPairFactory;
   let optionLib: OptionLib;
   let btcReferee: MockBTCReferee;
@@ -557,10 +550,13 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations", () => {
   });
 
   it("bob should buy obligations from the pool", async () => {
+    const aliceCollateral0 = (await collateral.balanceOf(aliceAddress)).toNumber();
+    const eveCollateral0 = (await collateral.balanceOf(eveAddress)).toNumber();
+
     await mint(collateral, bob, bobAddress, amountInMax + amountOut);
     await approve(collateral, bob, optionLib.address, amountInMax + amountOut);
 
-    const pairAddress: string = await uniswapFactory.getPair(collateral.address, obligation.address)
+    const pairAddress = await uniswapFactory.getPair(collateral.address, obligation.address);
     const input = await estimateInput(pairAddress, collateral, obligation, amountOut);
     const estimatedInput = input.toNumber();
 
@@ -574,22 +570,143 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations", () => {
     const obligationBalance = (await obligation.balanceOf(bobAddress)).toNumber();
     expect(obligationBalance).to.eq(amountOut);
     const collateralBalance = (await collateral.balanceOf(bobAddress)).toNumber();
-    expect(collateralBalance).to.eq(amountInMax - estimatedInput);    
+    expect(collateralBalance).to.eq(amountInMax - estimatedInput);
+
+    // alice and eve should have collateral back
+    const aliceCollateral1 = (await collateral.balanceOf(aliceAddress)).toNumber();
+    expect(aliceCollateral1).to.eq(aliceCollateral0 + (amountOut/2));
+    const eveCollateral1 = (await collateral.balanceOf(eveAddress)).toNumber();
+    expect(eveCollateral1).to.eq(eveCollateral0 + (amountOut/2));
+  });
+});
+
+describe("Put Option (5 Writers, 2 Buyers)", () => {
+  let signers: Signer[];
+  let addresses: string[];
+  
+  let collateral: MockCollateral;
+  let optionFactory: OptionPairFactory;
+  let optionLib: OptionLib;
+  let btcReferee: MockBTCReferee;
+
+  let option: Option;
+  let obligation: Obligation;
+  let treasury: Treasury;
+
+  const init = getTimeNow();
+
+  const premiumAmounts = [
+    234, 124, 235, 756, 567
+  ];
+
+  const collateralAmounts = [
+    12_381, 10_239, 15_239, 19_042, 9000
+  ];
+
+  const amountInMax7 = 3123;
+  const amountOut7 = 615;
+
+  const amountInMax8 = 2344;
+  const amountOut8 = 300;
+
+  before(async () => {
+    signers = await ethers.signers();
+
+    addresses = await Promise.all([
+      signers[0].getAddress(),
+      // sellers
+      signers[1].getAddress(),
+      signers[2].getAddress(),
+      signers[3].getAddress(),
+      signers[4].getAddress(),
+      signers[5].getAddress(),
+      signers[6].getAddress(),
+      // buyers
+      signers[7].getAddress(),
+      signers[8].getAddress(),
+    ]);
+
+    ({ btcReferee, optionFactory, collateral, optionLib } = await loadContracts(signers[0]));
   });
 
-  it("alice and eve should withdraw collateral from treasury (proportionally)", async () => {
-    const withdraw = async (signer: Signer, address: string) => {
-      const initialBalance = (await collateral.balanceOf(address)).toNumber();
-      await reconnect(treasury, TreasuryFactory, signer)
-        .withdraw(
-          obligation.address,
-          amountOut / 2);
+  it("should create option contract", async () => {
+    await optionFactory.createOption(init + 1000, 1000, 9000, collateral.address, btcReferee.address);
+    const optionAddress = await optionFactory.options(0);
+    option = OptionFactory.connect(optionAddress, signers[0]);
 
-      const collateralBalance = (await collateral.balanceOf(address)).toNumber();
-      expect(collateralBalance).to.eq(initialBalance + (amountOut / 2));
-    };
+    const obligationAddress = await optionFactory.getObligation(option.address);
+    obligation = ObligationFactory.connect(obligationAddress, signers[0]);
 
-    await withdraw(alice, aliceAddress);
-    await withdraw(eve, eveAddress);
+    const treasuryAddress = await optionFactory.getTreasury(collateral.address);
+    treasury = TreasuryFactory.connect(treasuryAddress, signers[0]);
+  });
+
+  const underwrite = async (signer: Signer, premiumAmount: number, collateralAmount: number) => {
+    const address = await signer.getAddress();
+    await mint(collateral, signer, address, premiumAmount + collateralAmount);
+    await approve(collateral, signer, optionLib.address, premiumAmount + collateralAmount);
+
+    await reconnect(optionLib, OptionLibFactory, signer)
+      .lockAndWrite(option.address, premiumAmount, collateralAmount, btcHash, Script.p2sh);
+
+    const obligationBalance = (await obligation.balanceOf(address)).toNumber();
+    expect(obligationBalance).to.eq(collateralAmount);
+  };
+
+  it("should write options", async () => {
+    await Promise.all(signers.slice(1, 6).map((signer, i) => 
+      underwrite(signer, premiumAmounts[i], collateralAmounts[i])));
+  });
+
+  const buy = async (signer: Signer, amountOut: number, amountInMax: number) => {
+    const address = await signer.getAddress();
+    await mint(collateral, signer, address, amountInMax);
+    await approve(collateral, signer, optionLib.address, amountInMax);
+
+    await reconnect(optionLib, OptionLibFactory, signer)
+      .swapTokensForExactTokens(
+        amountOut,
+        amountInMax,
+        collateral.address,
+        option.address);
+
+    const optionBalance = (await option.balanceOf(address)).toNumber();
+    expect(optionBalance).to.eq(amountOut);
+  };
+
+  it("should buy options", async () => {
+    await buy(signers[7], amountOut7, amountInMax7);
+    await buy(signers[8], amountOut8, amountInMax8);
+  });
+
+  it("should exercise options after expiry", async () => {
+    await evmSnapFastForward(1000, async () => {
+
+      // TODO: check repeated call fails
+      await reconnect(optionFactory, OptionPairFactoryFactory, signers[7])
+        .exerciseOption(
+          option.address,
+          addresses[1],
+          115,
+          0,
+          0,
+          Buffer.alloc(32, 0),
+          Buffer.alloc(32, 0),
+          Buffer.alloc(32, 0));
+
+      const obligationBalance1 = (await obligation.balanceOf(addresses[1])).toNumber();
+      expect(obligationBalance1).to.eq(collateralAmounts[0] - 115);
+
+      const obligationBalance2 = (await obligation.balanceOf(addresses[2])).toNumber();
+      expect(obligationBalance2).to.eq(collateralAmounts[1]);
+
+      const payouts7 = await getPayoutsFor(signers[7], option, obligation)
+        .then(out => out.map(res => res.options.toNumber()));
+      expect(payouts7).to.deep.eq([ 0, 95, 142, 177, 83 ]);
+
+      const payouts8 = await getPayoutsFor(signers[8], option, obligation)
+        .then(out => out.map(res => res.options.toNumber()));
+      expect(payouts8).to.deep.eq([ 56, 46, 69, 86, 40 ]);
+    });
   });
 });

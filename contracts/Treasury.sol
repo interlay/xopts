@@ -8,18 +8,21 @@ import { ITreasury } from "./interface/ITreasury.sol";
 
 /// @title A treasury contract per ERC20
 /// @dev This should not be ownable since it may be shared across factories
+/// @dev All operations MUST be called atomically to prevent misappropriation
 /// @author Interlay
 /// @notice This contract manages locking and unlocking of collateral.
 contract Treasury is ITreasury {
     using SafeMath for uint256;
 
-    string constant ERR_INSUFFICIENT_INPUT = "Insufficient input amount";
+    string constant ERR_INSUFFICIENT_DEPOSIT = "Insufficient deposit amount";
+    string constant ERR_INSUFFICIENT_LOCKED = "Insufficient collateral locked";
+    string constant ERR_INSUFFICIENT_UNLOCKED = "Insufficient collateral unlocked";
 
     /// @notice The address of the collateral ERC20
     /// @return address of the ERC20 contract
     address public collateral;
 
-    uint internal _totalSupply;
+    uint internal reserve;
 
     // obligation -> user -> amount
     mapping (address => mapping (address => uint)) internal _locked;
@@ -33,31 +36,20 @@ contract Treasury is ITreasury {
         collateral = _collateral;
     }
 
-    function balanceUnlocked(address market, address account) external view returns (uint) {
-        return _unlocked[market][account];
-    }
-
-    function balanceLocked(address market, address account) external view returns (uint) {
+    function balanceOf(address market, address account) external view returns (uint) {
         return _locked[market][account];
     }
 
     /// @notice Deposit collateral in a given market
+    /// @dev Separate transfer required
     /// @param market Address of the obligation contract
     /// @param account Address of the supplier
-    /// @param amount Amount of collateral
-    function deposit(address market, address account, uint amount) external {
-        require(IERC20(collateral).balanceOf(address(this)) == _totalSupply.add(amount), ERR_INSUFFICIENT_INPUT);
+    function deposit(address market, address account) external {
+        uint balance = IERC20(collateral).balanceOf(address(this));
+        uint amount = balance.sub(reserve);
+        require(amount > 0, ERR_INSUFFICIENT_DEPOSIT);
         _unlocked[market][account] = _unlocked[market][account].add(amount);
-        _totalSupply = _totalSupply.add(amount);
-    }
-
-    /// @notice Withdraw collateral from a given market
-    /// @param market Address of the obligation contract
-    /// @param amount Amount of collateral
-    function withdraw(address market, uint amount) external {
-        _unlocked[market][msg.sender] = _unlocked[market][msg.sender].sub(amount);
-        IERC20(collateral).transfer(msg.sender, amount);
-        _totalSupply = _totalSupply.sub(amount);
+        reserve = balance;
     }
 
     /// @notice Lock collateral for a specific market
@@ -65,17 +57,8 @@ contract Treasury is ITreasury {
     /// @param account Ethereum address that locks collateral
     /// @param amount The amount to be locked
     function lock(address account, uint amount) external {
-        _unlocked[msg.sender][account] = _unlocked[msg.sender][account].sub(amount);
+        _unlocked[msg.sender][account] = _unlocked[msg.sender][account].sub(amount, ERR_INSUFFICIENT_UNLOCKED);
         _locked[msg.sender][account] = _locked[msg.sender][account].add(amount);
-    }
-
-    /// @notice Unlock collateral for a specific market
-    /// @dev Reverts if market account has insufficient balance
-    /// @param account Ethereum address that locks collateral
-    /// @param amount The amount to be unlocked
-    function unlock(address account, uint amount) external {
-        _locked[msg.sender][account] = _locked[msg.sender][account].sub(amount);
-        _unlocked[msg.sender][account] = _unlocked[msg.sender][account].add(amount);
     }
 
     /// @notice Release collateral for a specific account
@@ -83,9 +66,9 @@ contract Treasury is ITreasury {
     /// @param to Ethereum address to receive collateral
     /// @param amount The amount to be unlocked
     function release(address from, address to, uint amount) external {
-        _locked[msg.sender][from] = _locked[msg.sender][from].sub(amount);
+        _locked[msg.sender][from] = _locked[msg.sender][from].sub(amount, ERR_INSUFFICIENT_LOCKED);
         IERC20(collateral).transfer(to, amount);
-        _totalSupply = _totalSupply.sub(amount);
+        reserve = IERC20(collateral).balanceOf(address(this));
     }
 
 }

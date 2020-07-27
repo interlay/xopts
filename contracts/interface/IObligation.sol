@@ -34,6 +34,21 @@ interface IObligation {
     function refund(address account, uint amount) external;
 
     /**
+    * @notice Get the amount paid to a seller
+    * @dev Caller is buyer
+    * @return Amount of obligations burnt
+    **/
+    function getAmountPaid(address seller) external view returns (uint);
+
+    /**
+    * @notice Fetch all accounts backing options
+    * @dev Useful for calculating payouts
+    * @return writers Addresses
+    * @return written Obligations
+    **/
+    function getWriters() external view returns (address[] memory writers, uint256[] memory written);
+
+    /**
     * @notice Set the payout address for an account
     * @param btcHash: recipient address for exercising
     * @param format: recipient script format
