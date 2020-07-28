@@ -2,9 +2,6 @@
 
 pragma solidity ^0.6.0;
 
-/// @title An interface for a treasury contract per ERC20
-/// @author Interlay
-/// @notice This interface manages locking and unlocking of collateral.
 interface ITreasury {
 
     function collateral() external returns (address);

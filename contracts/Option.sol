@@ -16,9 +16,10 @@ import { Expirable } from "./Expirable.sol";
 import { IReferee } from "./interface/IReferee.sol";
 import { Bitcoin } from "./Bitcoin.sol";
 
-/// @title Option-side ERC-20 tokens
-/// @notice Represents unsold and exercisable option tokens
+/// @title Option ERC20
 /// @author Interlay
+/// @notice Represents options that may be exercised for the
+/// backing currency in exchange for the underlying BTC.
 contract Option is IOption, IERC20, Context, Expirable, Ownable {
     using SafeMath for uint;
     using IterableBalances for IterableBalances.Map;
@@ -54,7 +55,8 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     uint256 public override totalSupply;
 
     /**
-    * @notice Create Option ERC20
+    * @notice Initializes the option-side contract with the
+    * expected parameters.
     * @param _expiryTime Unix expiry date
     * @param _windowSize Settlement window
     * @param _strikePrice Strike price
@@ -77,7 +79,18 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         obligation = _obligation;
     }
 
-    /// @dev See {IOption-mint}
+    /**
+    * @notice Mints option tokens `from` a writer and transfers them `to` a
+    * participant - designed to immediately add liquidity to a pool. This contract
+    * will then call the owned Obligation contract to mint the `from` tokens.
+    * @dev Can only be called by the parent factory contract.
+    * @dev Once the expiry date has lapsed this function is no longer valid.
+    * @param from Origin address
+    * @param to Destination address (i.e. uniswap pool)
+    * @param amount Total credit
+    * @param btcHash Bitcoin hash
+    * @param format Bitcoin script format
+    **/
     function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override notExpired onlyOwner {
         // insert into the accounts balance
         _balancesPostExpiry[to] = _balancesPostExpiry[to].add(amount);
@@ -98,7 +111,18 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         emit Transfer(account, address(0), amount);
     }
 
-    /// @dev See {IOption-exercise}
+    /**
+    * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`. 
+    * @dev Can only be called by the parent factory contract.
+    * @param buyer Account that bought the options
+    * @param seller Account that wrote the options
+    * @param amount Options to burn for collateral
+    * @param height Bitcoin block height
+    * @param index Bitcoin tx index
+    * @param txid Bitcoin transaction id
+    * @param proof Bitcoin inclusion proof
+    * @param rawtx Bitcoin raw tx
+    **/
     function exercise(
         address buyer,
         address seller,
@@ -131,12 +155,21 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
             btcAmount), ERR_VALIDATE_TX);
     }
 
-    /// @dev See {IOption-refund}
-    function refund(address account, uint amount) external override canRefund onlyOwner {
+    /**
+    * @notice Refund written collateral after `expiryTime + windowSize`.
+    * @dev Can only be called by the parent factory contract.
+    * @param seller Minter address
+    * @param amount Amount of collateral
+    **/
+    function refund(address seller, uint amount) external override canRefund onlyOwner {
         // nothing to do here, forward
-        IObligation(obligation).refund(account, amount);
+        IObligation(obligation).refund(seller, amount);
     }
 
+    /**
+    * @notice Gets the balance of an account before expiry
+    * @return Caller's balance before exercise / refund
+    **/
     function getBalancePreExpiry() external override view returns (uint256) {
         return _balancesPreExpiry[_msgSender()];
     }

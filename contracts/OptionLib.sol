@@ -14,6 +14,10 @@ import { ITreasury } from "./interface/ITreasury.sol";
 import { IOptionPairFactory } from "./interface/IOptionPairFactory.sol";
 import { Bitcoin } from "./Bitcoin.sol";
 
+/// @title OptionLib Helper
+/// @author Interlay
+/// @notice Helper contract to facilitate atomic option writing
+/// and obligation purchases (as we require buyer collateralization).
 contract OptionLib {
     using SafeMath for uint256;
 

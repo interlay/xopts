@@ -20,8 +20,9 @@ import { Treasury } from "./Treasury.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
 import { IOptionPairFactory } from "./interface/IOptionPairFactory.sol";
 
-/// @title Parent option factory
+/// @title Parent Factory
 /// @author Interlay
+/// @notice Tracks and manages ERC20 Option pairs.
 contract OptionPairFactory is IOptionPairFactory, Context {
     using SafeMath for uint256;
 
@@ -29,6 +30,7 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     string constant ERR_ZERO_AMOUNT = "Requires non-zero amount";
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
 
+    /// @notice Emitted whenever this factory creates a new option pair.
     event Create(address indexed option, uint256 expiryTime, uint256 windowSize, uint256 strikePrice);
 
     mapping(address => address) public getObligation;
@@ -47,18 +49,33 @@ contract OptionPairFactory is IOptionPairFactory, Context {
         _btcAddresses[account].format = format;
     }
 
-    /// @dev See {IOptionPairFactory-setBtcAddress}
+    /**
+    * @notice Sets the preferred payout address for the caller.
+    *
+    * The script format is defined by the `Bitcoin.Script` enum which describes
+    * the expected output format (P2SH, P2PKH, P2WPKH).
+    *
+    * @param btcHash Address hash
+    * @param format Payment format
+    **/
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external override {
         _setBtcAddress(_msgSender(), btcHash, format);
     }
 
-    /// @dev See {IOptionPairFactory-getBtcAddress}
+    /**
+    * @notice Get the preferred BTC address for the caller.
+    * @return btcHash Address hash
+    * @return format Payment format
+    **/
     function getBtcAddress() external override view returns (bytes20 btcHash, Bitcoin.Script format) {
         return (_btcAddresses[_msgSender()].btcHash, _btcAddresses[_msgSender()].format);
     }
 
     /**
-    * @notice Create an option pair
+    * @notice Creates a new option pair with the given parameters. If no
+    * treasury contract exists for the associated collateral address a new one
+    * is made and registered. The ownership of the obligation-side contract is
+    * immediately transferred to the option-side contract.
     * @param expiryTime Unix expiry date
     * @param windowSize Settlement window
     * @param strikePrice Strike price
@@ -101,7 +118,11 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     }
 
     /**
-    * @notice Underwrite an option pair
+    * @notice Underwrite an option pair using unlocked collateral
+    * in the respective treasury. To prevent misappropriation of funds
+    * we expect this function to be called atomically after depositing.
+    * The `OptionLib` contract should provide helpers to facilitate this.
+    *
     * @param option Option contract address
     * @param from Address of input account
     * @param to Address of output account
@@ -122,7 +143,9 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     }
 
     /**
-    * @notice Exercise bought option tokens
+    * @notice Exercise bought option tokens by providing a transaction
+    * inclusion proof which is verified by our chain relay.
+    *
     * @param option Option contract address
     * @param seller Account to settle against
     * @param amount Options to burn for collateral
@@ -153,7 +176,12 @@ contract OptionPairFactory is IOptionPairFactory, Context {
     }
 
     /**
-    * @notice Refund expired options
+    * @notice Refund unsold collateral from the treasury to the caller
+    * after `expiryTime + windowSize`.
+    *
+    * @dev Please note that this does not release premium paid through
+    * a liquidity pool (i.e. Uniswap).
+    *
     * @param option Option contract address
     * @param amount Options to burn for collateral
     **/

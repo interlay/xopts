@@ -36,18 +36,8 @@ interface IOptionPairFactory {
 
     function refundOption(address option, uint amount) external;
 
-    /**
-    * @notice Set the payout address for the caller
-    * @param btcHash Address hash
-    * @param format Payment format
-    **/
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external;
 
-    /**
-    * @notice Get the preferred BTC address for the caller
-    * @return btcHash Address hash
-    * @return format Payment format
-    **/
     function getBtcAddress() external view returns (bytes20 btcHash, Bitcoin.Script format);
 
 }

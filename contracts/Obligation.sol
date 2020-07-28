@@ -14,8 +14,10 @@ import { IObligation } from "./interface/IObligation.sol";
 import { Bitcoin } from "./Bitcoin.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
 
-/// @title Obligation-side ERC-20 tokens
-/// @notice Represents written options
+/// @title Obligation ERC20
+/// @notice Represents a writer's obligation to sell the 
+/// supported collateral backing currency in return for
+/// the underlying currency - in this case BTC.
 /// @author Interlay
 contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     using SafeMath for uint;
@@ -90,17 +92,33 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         _payouts[account].format = format;
     }
 
-    /// @dev See {IObligation-setBtcAddress}
+    /**
+    * @notice Set the payout address for an account
+    * @param btcHash: recipient address for exercising
+    * @param format: recipient script format
+    **/
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external override notExpired {
         _setBtcAddress(_msgSender(), btcHash, format);
     }
 
-    /// @dev See {IObligation-getBtcAddress}
+    /**
+    * @notice Get the configured BTC address for an account
+    * @param account Minter address
+    * @return btcHash Address hash
+    * @return format Expected payment format
+    **/
     function getBtcAddress(address account) external view override returns (bytes20 btcHash, Bitcoin.Script format) {
         return (_payouts[account].btcHash, _payouts[account].format);
     }
 
-    /// @dev See {IObligation-mint}
+    /**
+    * @notice Mints obligation tokens
+    * @dev Can only be called by option contract before expiry
+    * @param account Address to credit
+    * @param amount Total credit
+    * @param btcHash Bitcoin hash
+    * @param format Bitcoin script format
+    **/
     function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override notExpired onlyOwner {
         // insert into the accounts balance
         _balancesAvailable[account] = _balancesAvailable[account].add(amount);
@@ -130,7 +148,14 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         emit Transfer(account, address(0), amount);
     }
 
-    /// @dev See {IObligation-exercise}
+    /**
+    * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`. 
+    * @dev Can only be called by option contract during window
+    * @param buyer Account that bought the options
+    * @param seller Account that wrote the options
+    * @param options Buyer's total option balance
+    * @param amount Buyer's claim amount
+    **/
     function exercise(address buyer, address seller, uint options, uint amount) external override onlyOwner canExercise {
         if (!_requests[buyer].exists) {
             // initialize request (lock amounts)
@@ -161,7 +186,11 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         ITreasury(treasury).release(seller, buyer, amount);
     }
 
-    /// @dev See {IObligation-refund}
+    /**
+    * @notice Refund written collateral after `expiryTime + windowSize`.
+    * @param seller Minter address
+    * @param amount Amount of collateral
+    **/
     function refund(address seller, uint amount) external override onlyOwner canRefund {
         _burn(seller, amount);
 
@@ -169,12 +198,22 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         ITreasury(treasury).release(seller, seller, amount);
     }
 
-    /// @dev See {IObligation-getAmountPaid}
+    /**
+    * @notice Get the amount paid to a seller
+    * @dev Caller is buyer
+    * @param seller Account to pay 
+    * @return Amount of obligations burnt
+    **/
     function getAmountPaid(address seller) external override view returns (uint) {
         return _requests[_msgSender()].paid[seller];
     }
 
-    /// @dev See {IObligation-getWriters}
+    /**
+    * @notice Fetch all accounts backing options
+    * @dev Useful for calculating payouts
+    * @return writers Addresses
+    * @return written Obligations
+    **/
     function getWriters() external override view returns (address[] memory writers, uint256[] memory written) {
         uint length = _balancesWritten.size();
         writers = new address[](length);

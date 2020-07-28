@@ -8,11 +8,11 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
 
-/// @title A treasury contract per ERC20
-/// @dev This should not be ownable since it may be shared across factories
-/// @dev All operations MUST be called atomically to prevent misappropriation
+/// @title Treasury ERC20
 /// @author Interlay
 /// @notice This contract manages locking and unlocking of collateral.
+/// @dev This should not be ownable since it may be shared across factories.
+/// @dev All operations MUST be called atomically to prevent misappropriation.
 contract Treasury is ITreasury {
     using SafeMath for uint256;
 
@@ -30,7 +30,7 @@ contract Treasury is ITreasury {
     mapping (address => mapping (address => uint)) internal _locked;
     mapping (address => mapping (address => uint)) internal _unlocked;
 
-    /// Constructor
+    /// @notice Initialize the treasury contract against an ERC20 token.
     /// @param _collateral address of the ERC20
     constructor(
         address _collateral
@@ -38,13 +38,19 @@ contract Treasury is ITreasury {
         collateral = _collateral;
     }
 
+    /// @notice Returns the balance of an `account` under a particular `market`.
+    /// @param market Address of the market
+    /// @param account Address of the supplier
     function balanceOf(address market, address account) external override view returns (uint) {
         return _locked[market][account];
     }
 
-    /// @notice Deposit collateral in a given market
-    /// @dev Separate transfer required
-    /// @param market Address of the obligation contract
+    /// @notice Deposit collateral in the specified `market`. Assumes
+    /// collateral has been transferred within the same transaction and claims
+    /// the unreserved balance since the last deposit.
+    /// @dev Once 'unlocked' the caller must atomically write options or buy obligations
+    /// to prevent misapproriation.
+    /// @param market Address of the market
     /// @param account Address of the supplier
     function deposit(address market, address account) external override {
         uint balance = IERC20(collateral).balanceOf(address(this));
@@ -54,8 +60,9 @@ contract Treasury is ITreasury {
         reserve = balance;
     }
 
-    /// @notice Lock collateral for a specific market
-    /// @dev Reverts if market account has insufficient balance
+    /// @notice Lock collateral for the caller, assuming sufficient
+    /// funds have been deposited against the market.
+    /// @dev Reverts if if there is insufficient funds 'unlocked'.
     /// @param account Ethereum address that locks collateral
     /// @param amount The amount to be locked
     function lock(address account, uint amount) external override {
@@ -63,7 +70,11 @@ contract Treasury is ITreasury {
         _locked[msg.sender][account] = _locked[msg.sender][account].add(amount);
     }
 
-    /// @notice Release collateral for a specific account
+    /// @notice Release collateral for a specific account owned by
+    /// the caller. For instance, if an account has exercised or 
+    /// refunded their options against a specific market (obligation),
+    /// after performing the necessary correctness checks that contract
+    /// should call this function.
     /// @param from Ethereum address that locked collateral
     /// @param to Ethereum address to receive collateral
     /// @param amount The amount to be unlocked

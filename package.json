@@ -10,7 +10,8 @@
     "deploy": "npx buidler run scripts/deploy.ts",
     "ganache": "npx buidler run scripts/ganache.ts",
     "tsc": "tsc && cp typechain/*.d.ts dist/typechain/",
-    "clean": "rm -rf artifacts cache typechain dist"
+    "clean": "rm -rf artifacts cache typechain dist",
+    "docs": "solidity-docgen -t docs -o docs/contracts && docsify serve ./docs"
   },
   "repository": {
     "type": "git",

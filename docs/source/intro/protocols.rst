@@ -1,3 +1,0 @@
-Trustless BTC Put Options
-=========================
-
