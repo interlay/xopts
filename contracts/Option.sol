@@ -9,7 +9,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Obligation } from "./Obligation.sol";
 import { IObligation } from "./interface/IObligation.sol";
 import { IOption } from "./interface/IOption.sol";
-import { Expirable } from "./Expirable.sol";
+import { European } from "./European.sol";
 import { IReferee } from "./interface/IReferee.sol";
 import { Bitcoin } from "./types/Bitcoin.sol";
 
@@ -17,7 +17,7 @@ import { Bitcoin } from "./types/Bitcoin.sol";
 /// @author Interlay
 /// @notice Represents options that may be exercised for the
 /// backing currency in exchange for the underlying BTC.
-contract Option is IOption, IERC20, Expirable {
+contract Option is IOption, IERC20, European {
     using SafeMath for uint;
 
     string constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
@@ -58,7 +58,7 @@ contract Option is IOption, IERC20, Expirable {
         address _referee,
         address _treasury,
         address _obligation
-    ) public Expirable(_expiryTime, _windowSize) {
+    ) public European(_expiryTime, _windowSize) {
         referee = _referee;
         treasury = _treasury;
         obligation = _obligation;

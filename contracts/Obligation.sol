@@ -7,7 +7,7 @@ import "@nomiclabs/buidler/console.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Expirable } from "./Expirable.sol";
+import { European } from "./European.sol";
 import { IObligation } from "./interface/IObligation.sol";
 import { Bitcoin } from "./types/Bitcoin.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
@@ -17,7 +17,7 @@ import { ITreasury } from "./interface/ITreasury.sol";
 /// supported collateral backing currency in return for
 /// the underlying currency - in this case BTC.
 /// @author Interlay
-contract Obligation is IObligation, IERC20, Expirable, Ownable {
+contract Obligation is IObligation, IERC20, European, Ownable {
     using SafeMath for uint;
 
     string constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
@@ -76,7 +76,7 @@ contract Obligation is IObligation, IERC20, Expirable, Ownable {
         uint256 _windowSize,
         uint256 _strikePrice,
         address _treasury
-    ) public Expirable(_expiryTime, _windowSize) Ownable() {
+    ) public European(_expiryTime, _windowSize) Ownable() {
         require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
         strikePrice = _strikePrice;
         treasury = _treasury;

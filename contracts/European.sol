@@ -9,7 +9,7 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
  * specifically to model a European Option with an expiry and settlement phase.
  * It must be used through inheritance which provides several modifiers.
  */
-contract Expirable {
+contract European {
     using SafeMath for uint;
 
     string constant ERR_INIT_EXPIRED = "Cannot init expired";
