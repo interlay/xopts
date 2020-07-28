@@ -30,7 +30,7 @@ contract OptionPairFactory is IOptionPairFactory {
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
 
     /// @notice Emitted whenever this factory creates a new option pair.
-    event Create(address indexed option, uint256 expiryTime, uint256 windowSize, uint256 strikePrice);
+    event Create(address indexed option, address indexed obligation, uint256 expiryTime, uint256 windowSize, uint256 strikePrice);
 
     mapping(address => address) public getObligation;
     mapping(address => address) public getTreasury;
@@ -109,7 +109,7 @@ contract OptionPairFactory is IOptionPairFactory {
         getCollateral[option] = collateral;
         options.push(option);
 
-        emit Create(option, expiryTime, windowSize, strikePrice);
+        emit Create(option, obligation, expiryTime, windowSize, strikePrice);
     }
 
 }

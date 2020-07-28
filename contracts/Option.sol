@@ -143,7 +143,7 @@ contract Option is IOption, IERC20, Expirable {
         IObligation(obligation).exercise(buyer, seller, balance, amount);
 
         // expected amount of btc
-        uint btcAmount = _calculateExercise(amount);
+        uint satoshiAmount = _calculateExercise(amount);
         (bytes20 btcHash,) = IObligation(obligation).getBtcAddress(seller);
 
         // verify & validate tx, use default confirmations
@@ -154,7 +154,7 @@ contract Option is IOption, IERC20, Expirable {
             proof,
             rawtx,
             btcHash,
-            btcAmount), ERR_VALIDATE_TX);
+            satoshiAmount), ERR_VALIDATE_TX);
     }
 
     /**
