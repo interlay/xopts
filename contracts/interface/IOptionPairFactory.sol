@@ -6,13 +6,13 @@ import { Bitcoin } from "../types/Bitcoin.sol";
 
 interface IOptionPairFactory {
 
-    function createOption(
+    function createPair(
         uint256 expiry,
         uint256 window,
         uint256 strikePrice,
         address referee,
         address collateral
-    ) external;
+    ) external returns (address option, address obligation);
 
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external;
 

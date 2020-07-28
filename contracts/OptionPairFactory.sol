@@ -66,6 +66,50 @@ contract OptionPairFactory is IOptionPairFactory {
         return (_btcAddresses[msg.sender].btcHash, _btcAddresses[msg.sender].format);
     }
 
+    function _createOption(
+        uint256 expiryTime,
+        uint256 windowSize,
+        address referee,
+        address treasury,
+        address obligation,
+        bytes32 salt
+    ) internal returns (address option) {
+        bytes memory bytecode = type(Option).creationCode;
+        assembly {
+            // solium-disable-previous-line security/no-inline-assembly
+            option := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        IOption(option).initialize(
+            expiryTime,
+            windowSize,
+            referee,
+            treasury,
+            obligation
+        );
+        return option;
+    }
+
+    function _createObligation(
+        uint256 expiryTime,
+        uint256 windowSize,
+        uint256 strikePrice,
+        address treasury,
+        bytes32 salt
+    ) internal returns (address obligation) {
+        bytes memory bytecode = type(Obligation).creationCode;
+        assembly {
+            // solium-disable-previous-line security/no-inline-assembly
+            obligation := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        IObligation(obligation).initialize(
+            expiryTime,
+            windowSize,
+            strikePrice,
+            treasury
+        );
+        return obligation;
+    }
+
     /**
     * @notice Creates a new option pair with the given parameters. If no
     * treasury contract exists for the associated collateral address a new one
@@ -77,31 +121,28 @@ contract OptionPairFactory is IOptionPairFactory {
     * @param collateral Backing currency
     * @param referee Underlying settlement
     **/
-    function createOption(
+    function createPair(
         uint256 expiryTime,
         uint256 windowSize,
         uint256 strikePrice,
         address collateral,
         address referee
-    ) external override {
+    ) external override returns (address option, address obligation) {
         address treasury = getTreasury[collateral];
         if (treasury == address(0)) {
             treasury = address(new Treasury(collateral));
         }
 
-        address obligation = address(new Obligation(
+        bytes32 salt = keccak256(abi.encodePacked(
             expiryTime,
             windowSize,
             strikePrice,
-            treasury
+            collateral,
+            referee
         ));
-        address option = address(new Option(
-            expiryTime,
-            windowSize,
-            referee,
-            treasury,
-            obligation
-        ));
+
+        obligation = _createObligation(expiryTime, windowSize, strikePrice, treasury, salt);
+        option = _createOption(expiryTime, windowSize, referee, treasury, obligation, salt);
         Ownable(obligation).transferOwnership(option);
 
         getObligation[option] = obligation;

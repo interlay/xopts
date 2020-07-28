@@ -64,6 +64,8 @@ contract Obligation is IObligation, IERC20, European, Ownable {
 
     // event Request(address indexed buyer, uint secret);
 
+    constructor() public Ownable() {}
+
     /**
     * @notice Create Obligation ERC20
     * @param _expiryTime Unix expiry date
@@ -71,13 +73,17 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     * @param _strikePrice Strike price
     * @param _treasury Backing currency
     **/
-    constructor(
+    function initialize(
         uint256 _expiryTime,
         uint256 _windowSize,
         uint256 _strikePrice,
         address _treasury
-    ) public European(_expiryTime, _windowSize) Ownable() {
+    ) external override onlyOwner {
+        require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
+        require(_windowSize > 0, ERR_WINDOW_ZERO);
         require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
+        expiryTime = _expiryTime;
+        windowSize = _windowSize;
         strikePrice = _strikePrice;
         treasury = _treasury;
     }

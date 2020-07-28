@@ -121,17 +121,17 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
   });
 
   it("should fail to create an expired option", async () => {
-    const result = optionFactory.createOption(getTimeNow(), 1000, 9000, collateral.address, btcReferee.address);
+    const result = optionFactory.createPair(getTimeNow(), 1000, 9000, collateral.address, btcReferee.address);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INIT_EXPIRED);
   });
 
   it("should fail to create an option with 0 strikePrice", async () => {
-    const result = optionFactory.createOption(getTimeNow() + 1000, 1000, 0, collateral.address, btcReferee.address);
+    const result = optionFactory.createPair(getTimeNow() + 1000, 1000, 0, collateral.address, btcReferee.address);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_ZERO_STRIKE_PRICE);
   });
 
   it("should create option contract", async () => {
-    await optionFactory.createOption(init + 1000, 1000, strikePrice, collateral.address, btcReferee.address);
+    await optionFactory.createPair(init + 1000, 1000, strikePrice, collateral.address, btcReferee.address);
     const optionAddress = await optionFactory.options(0);
     option = OptionFactory.connect(optionAddress, alice);
 
@@ -256,7 +256,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
   });
 
   it("should create option contract", async () => {
-    await optionFactory.createOption(init + 1000, 1000, 9000, collateral.address, btcReferee.address);
+    await optionFactory.createPair(init + 1000, 1000, 9000, collateral.address, btcReferee.address);
     const optionAddress = await optionFactory.options(0);
     option = OptionFactory.connect(optionAddress, alice);
     const treasuryAddress = await optionFactory.getTreasury(collateral.address);
@@ -343,7 +343,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
   });
 
   it("should create option contract", async () => {
-    await optionFactory.createOption(init + 1000, 1000, 9000, collateral.address, btcReferee.address);
+    await optionFactory.createPair(init + 1000, 1000, 9000, collateral.address, btcReferee.address);
     const optionAddress = await optionFactory.options(0);
     option = OptionFactory.connect(optionAddress, alice);
     const obligationAddress = await optionFactory.getObligation(option.address);
@@ -459,7 +459,7 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations", () => {
   });
 
   it("should create option contract", async () => {
-    await optionFactory.createOption(init + 1000, 1000, 9000, collateral.address, btcReferee.address);
+    await optionFactory.createPair(init + 1000, 1000, 9000, collateral.address, btcReferee.address);
     const optionAddress = await optionFactory.options(0);
     option = OptionFactory.connect(optionAddress, alice);
 
@@ -595,7 +595,7 @@ describe("Put Option (5 Writers, 2 Buyers)", () => {
   });
 
   it("should create option contract", async () => {
-    await optionFactory.createOption(init + 1000, 1000, strikePrice, collateral.address, btcReferee.address);
+    await optionFactory.createPair(init + 1000, 1000, strikePrice, collateral.address, btcReferee.address);
     const optionAddress = await optionFactory.options(0);
     option = OptionFactory.connect(optionAddress, signers[0]);
 

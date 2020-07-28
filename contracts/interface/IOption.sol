@@ -6,6 +6,14 @@ import { Bitcoin } from "../types/Bitcoin.sol";
 
 interface IOption {
 
+    function initialize(
+        uint256 _expiryTime,
+        uint256 _windowSize,
+        address _referee,
+        address _treasury,
+        address _obligation
+    ) external;
+
     function referee() external returns (address);
 
     function treasury() external returns (address);

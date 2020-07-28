@@ -64,7 +64,7 @@ export async function createOption(
 ): Promise<string> {
     let topic = ethers.utils.id("Create(address,uint256,uint256,uint256)");
     // indexed parameters are not included in log data
-    return optionFactory.createOption(expiryTime, windowSize, strikePrice, collateral, referee).then(tx =>
+    return optionFactory.createPair(expiryTime, windowSize, strikePrice, collateral, referee).then(tx =>
         tx.wait(confirmations).then(receipt => ethers.utils.defaultAbiCoder.decode(
             [ 'address' ], receipt.logs.find(log => log.topics.find(name => name == topic)).topics[1]
         )[0]));

@@ -4,6 +4,7 @@ pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Obligation } from "./Obligation.sol";
@@ -17,7 +18,7 @@ import { Bitcoin } from "./types/Bitcoin.sol";
 /// @author Interlay
 /// @notice Represents options that may be exercised for the
 /// backing currency in exchange for the underlying BTC.
-contract Option is IOption, IERC20, European {
+contract Option is IOption, IERC20, European, Ownable {
     using SafeMath for uint;
 
     string constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
@@ -43,6 +44,8 @@ contract Option is IOption, IERC20, European {
     // total number of options available
     uint256 public override totalSupply;
 
+    constructor() public Ownable() {}
+
     /**
     * @notice Initializes the option-side contract with the
     * expected parameters.
@@ -52,13 +55,17 @@ contract Option is IOption, IERC20, European {
     * @param _treasury Backing currency
     * @param _obligation Obligation ERC20
     **/
-    constructor(
+    function initialize(
         uint256 _expiryTime,
         uint256 _windowSize,
         address _referee,
         address _treasury,
         address _obligation
-    ) public European(_expiryTime, _windowSize) {
+    ) external override onlyOwner {
+        require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
+        require(_windowSize > 0, ERR_WINDOW_ZERO);
+        expiryTime = _expiryTime;
+        windowSize = _windowSize;
         referee = _referee;
         treasury = _treasury;
         obligation = _obligation;
