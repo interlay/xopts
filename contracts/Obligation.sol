@@ -9,7 +9,7 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Expirable } from "./Expirable.sol";
 import { IObligation } from "./interface/IObligation.sol";
-import { Bitcoin } from "./Bitcoin.sol";
+import { Bitcoin } from "./types/Bitcoin.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
 
 /// @title Obligation ERC20

@@ -12,7 +12,7 @@ import { IOption } from "./interface/IOption.sol";
 import { IObligation } from "./interface/IObligation.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
 import { IOptionPairFactory } from "./interface/IOptionPairFactory.sol";
-import { Bitcoin } from "./Bitcoin.sol";
+import { Bitcoin } from "./types/Bitcoin.sol";
 
 /// @title OptionLib Helper
 /// @author Interlay

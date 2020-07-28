@@ -7,17 +7,17 @@ import "@nomiclabs/buidler/console.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IReferee } from "./interface/IReferee.sol";
-import { Bitcoin } from "./Bitcoin.sol";
-import { IUniswapV2Factory } from "./lib/IUniswapV2Factory.sol";
 import { IUniswapV2Pair } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import { IUniswapV2Factory } from "./lib/IUniswapV2Factory.sol";
+import { IReferee } from "./interface/IReferee.sol";
+import { Bitcoin } from "./types/Bitcoin.sol";
 import { Option } from "./Option.sol";
 import { IOption } from "./interface/IOption.sol";
 import { Obligation } from "./Obligation.sol";
 import { IObligation } from "./interface/IObligation.sol";
+import { IOptionPairFactory } from "./interface/IOptionPairFactory.sol";
 import { Treasury } from "./Treasury.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
-import { IOptionPairFactory } from "./interface/IOptionPairFactory.sol";
 
 /// @title Parent Factory
 /// @author Interlay

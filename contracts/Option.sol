@@ -11,7 +11,7 @@ import { IObligation } from "./interface/IObligation.sol";
 import { IOption } from "./interface/IOption.sol";
 import { Expirable } from "./Expirable.sol";
 import { IReferee } from "./interface/IReferee.sol";
-import { Bitcoin } from "./Bitcoin.sol";
+import { Bitcoin } from "./types/Bitcoin.sol";
 
 /// @title Option ERC20
 /// @author Interlay
