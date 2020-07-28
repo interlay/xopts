@@ -99,35 +99,6 @@ export interface IContracts {
     ): Promise<IOptionPair>;
 
     getBtcAddress(): Promise<BtcAddress>;
-
-    writeOption(
-        option: string,
-        premium: BigNumberish,
-        amount: BigNumberish,
-        btcAddress?: BtcAddress,
-    ): Promise<void>;
-
-    buyOption(
-        option: string,
-        amountOut: BigNumberish,
-        amountInMax: BigNumberish
-    ): Promise<void>;
-
-    exerciseOption(
-        option: string,
-        seller: string,
-        amount: BigNumberish,
-        height: BigNumberish,
-        index: BigNumberish,
-        txid: Arrayish,
-        proof: Arrayish,
-        rawtx: Arrayish
-    ): Promise<void>;
-
-    refundOption(
-        option: string,
-        amount: BigNumberish,
-    ): Promise<void>;
 }
 
 type BtcAddress = {
@@ -221,7 +192,16 @@ export class Contracts implements IContracts {
             this.optionFactory, expiryTime, windowSize, strikePrice,
             this.collateral.address, this.referee.address, this.confirmations);
         const obligationAddress = await this.optionFactory.getObligation(optionAddress);
-        return new OptionPair(optionAddress, obligationAddress, this.treasury, this.signer, this.account);
+        return new OptionPair(
+            optionAddress,
+            obligationAddress,
+            this.optionLib.address,
+            this.collateral,
+            this.treasury,
+            this.confirmations,
+            this.signer,
+            this.account
+        );
     }
 
     // persistent btcAddress across options
@@ -229,37 +209,22 @@ export class Contracts implements IContracts {
         const { btcHash, format } = await this.optionFactory.getBtcAddress();
         return { btcHash, format };
     }
+}
 
-    // back options with the default collateral
-    // this also adds liquidity to the uniswap pool
-    async writeOption(
-        option: string,
+export interface IOptionPair {
+
+    writeOption(
         premium: BigNumberish,
         amount: BigNumberish,
-        btcAddress: BtcAddress,
-    ): Promise<void> {
-        await this.optionLib.lockAndWrite(
-            option, premium, amount, btcAddress.btcHash, btcAddress.format
-        ).then(tx => tx.wait(this.confirmations));
-    }
-    
-    // buy order (i.e. specify exact number of options)
-    async buyOption(
-        option: string,
+        btcAddress?: BtcAddress,
+    ): Promise<void>;
+
+    buyOption(
         amountOut: BigNumberish,
         amountInMax: BigNumberish
-    ): Promise<void> {
-        await this.optionLib.swapTokensForExactTokens(
-            amountOut,
-            amountInMax,
-            this.collateral.address,
-            option
-        ).then(tx => tx.wait(this.confirmations));
-    }
+    ): Promise<void>;
 
-    // prove inclusion and claim collateral
-    async exerciseOption(
-        option: string,
+    exerciseOption(
         seller: string,
         amount: BigNumberish,
         height: BigNumberish,
@@ -267,23 +232,12 @@ export class Contracts implements IContracts {
         txid: Arrayish,
         proof: Arrayish,
         rawtx: Arrayish
-    ): Promise<void> {
-        await this.optionFactory.exerciseOption(
-            option, seller, amount, height, index, txid, proof, rawtx
-        ).then(tx => tx.wait(this.confirmations));
-    }
+    ): Promise<void>;
 
-    // claim written collateral after expiry
-    async refundOption(
-        option: string,
+    refundOption(
         amount: BigNumberish,
-    ): Promise<void> {
-        await this.optionFactory.refundOption(option, amount)
-            .then(tx => tx.wait(this.confirmations));
-    }
-}
+    ): Promise<void>;
 
-export interface IOptionPair {
     getDetails(): Promise<{
         expiryTime: BigNumber,
         windowSize: BigNumber,
@@ -298,27 +252,87 @@ export interface IOptionPair {
     }[]>;
 
     balance(obligation: string): Promise<BigNumber>;
+
 }
 
 export class OptionPair implements IOptionPair {
     option: Option;
     obligation: Obligation;
+    optionLib: OptionLib;
+    collateral: IERC20;
     treasury: ITreasury;
+
+    confirmations: number;
     signer: Signer;
     account: string;
 
     constructor(
         option: string,
         obligation: string,
+        optionLib: string,
+        collateral: IERC20,
         treasury: ITreasury,
+        confirmations: number,
         signer: Signer,
         account: string,
     ) {
         this.option = OptionFactory.connect(option, signer);
         this.obligation = ObligationFactory.connect(obligation, signer);
+        this.optionLib = OptionLibFactory.connect(optionLib, signer);
+        this.collateral = collateral;
         this.treasury = treasury;
+
+        this.confirmations = confirmations;
         this.signer = signer;
         this.account = account;
+    }
+
+    // back options with the default collateral
+    // this also adds liquidity to the uniswap pool
+    async writeOption(
+        premium: BigNumberish,
+        amount: BigNumberish,
+        btcAddress: BtcAddress,
+    ): Promise<void> {
+        await this.optionLib.lockAndWrite(
+            this.option.address, premium, amount, btcAddress.btcHash, btcAddress.format
+        ).then(tx => tx.wait(this.confirmations));
+    }
+    
+    // buy order (i.e. specify exact number of options)
+    async buyOption(
+        amountOut: BigNumberish,
+        amountInMax: BigNumberish
+    ): Promise<void> {
+        await this.optionLib.swapTokensForExactTokens(
+            amountOut,
+            amountInMax,
+            this.collateral.address,
+            this.option.address
+        ).then(tx => tx.wait(this.confirmations));
+    }
+
+    // prove inclusion and claim collateral
+    async exerciseOption(
+        seller: string,
+        amount: BigNumberish,
+        height: BigNumberish,
+        index: BigNumberish,
+        txid: Arrayish,
+        proof: Arrayish,
+        rawtx: Arrayish
+    ): Promise<void> {
+        await this.option.exercise(
+            seller, amount, height, index, txid, proof, rawtx
+        ).then(tx => tx.wait(this.confirmations));
+    }
+
+    // claim written collateral after expiry
+    async refundOption(
+        amount: BigNumberish,
+    ): Promise<void> {
+        await this.option.refund(amount)
+            .then(tx => tx.wait(this.confirmations));
     }
 
     async getDetails() {

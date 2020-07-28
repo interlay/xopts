@@ -22,11 +22,9 @@ contract OptionLib {
     using SafeMath for uint256;
 
     address internal _uniswapFactory;
-    address internal _optionFactory;
 
-    constructor(address uniswapFactory, address optionFactory) public {
+    constructor(address uniswapFactory) public {
         _uniswapFactory = uniswapFactory;
-        _optionFactory = optionFactory;
     }
 
     function getReserves(address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
@@ -156,7 +154,7 @@ contract OptionLib {
         // deposit 'unlocked' balance for writing
         ITreasury(treasury).deposit(obligation, msg.sender);
         // mint options and obligations - locking collateral
-        IOptionPairFactory(_optionFactory).writeOption(option, msg.sender, pair, amount, btcHash, format);
+        IOption(option).mint(msg.sender, pair, amount, btcHash, format);
 
         // send premium to uniswap pair
         IERC20(collateral).transferFrom(msg.sender, pair, premium);

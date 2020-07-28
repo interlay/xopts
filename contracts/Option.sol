@@ -4,8 +4,6 @@ pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Context } from "@openzeppelin/contracts/GSN/Context.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IterableBalances } from "./IterableBalances.sol";
@@ -20,7 +18,7 @@ import { Bitcoin } from "./Bitcoin.sol";
 /// @author Interlay
 /// @notice Represents options that may be exercised for the
 /// backing currency in exchange for the underlying BTC.
-contract Option is IOption, IERC20, Context, Expirable, Ownable {
+contract Option is IOption, IERC20, Expirable {
     using SafeMath for uint;
     using IterableBalances for IterableBalances.Map;
 
@@ -71,7 +69,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         address _referee,
         address _treasury,
         address _obligation
-    ) public Expirable(_expiryTime, _windowSize) Ownable() {
+    ) public Expirable(_expiryTime, _windowSize) {
         require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
         strikePrice = _strikePrice;
         referee = _referee;
@@ -82,7 +80,10 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     /**
     * @notice Mints option tokens `from` a writer and transfers them `to` a
     * participant - designed to immediately add liquidity to a pool. This contract
-    * will then call the owned Obligation contract to mint the `from` tokens.
+    * will then call the owned Obligation contract to mint the `from` tokens. To 
+    * prevent misappropriation of funds we expect this function to be called atomically
+    * after depositing in the treasury. The `OptionLib` contract should provide helpers 
+    * to facilitate this.
     * @dev Can only be called by the parent factory contract.
     * @dev Once the expiry date has lapsed this function is no longer valid.
     * @param from Origin address
@@ -91,14 +92,15 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     * @param btcHash Bitcoin hash
     * @param format Bitcoin script format
     **/
-    function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override notExpired onlyOwner {
-        // insert into the accounts balance
+    function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override notExpired {
+        // collateral:(options/obligations) are 1:1
         _balancesPostExpiry[to] = _balancesPostExpiry[to].add(amount);
         _balancesPreExpiry[to] = _balancesPreExpiry[to].add(amount);
         totalSupply = totalSupply.add(amount);
         emit Transfer(address(0), to, amount);
 
         // mint the equivalent obligations
+        // obligation is responsible for locking with treasury
         IObligation(obligation).mint(from, amount, btcHash, format);
     }
 
@@ -113,9 +115,9 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
 
     /**
     * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`. 
+    * Requires a transaction inclusion proof which is verified by our chain relay.
     * @dev Can only be called by the parent factory contract.
-    * @param buyer Account that bought the options
-    * @param seller Account that wrote the options
+    * @param seller Account to exercise against
     * @param amount Options to burn for collateral
     * @param height Bitcoin block height
     * @param index Bitcoin tx index
@@ -124,7 +126,6 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     * @param rawtx Bitcoin raw tx
     **/
     function exercise(
-        address buyer,
         address seller,
         uint256 amount,
         uint256 height,
@@ -132,7 +133,8 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
         bytes32 txid,
         bytes calldata proof,
         bytes calldata rawtx
-    ) external override canExercise onlyOwner {
+    ) external override canExercise {
+        address buyer = msg.sender;
         uint balance = _balancesPostExpiry[buyer];
 
         // burn buyer's options
@@ -158,12 +160,11 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     /**
     * @notice Refund written collateral after `expiryTime + windowSize`.
     * @dev Can only be called by the parent factory contract.
-    * @param seller Minter address
     * @param amount Amount of collateral
     **/
-    function refund(address seller, uint amount) external override canRefund onlyOwner {
+    function refund(uint amount) external override canRefund {
         // nothing to do here, forward
-        IObligation(obligation).refund(seller, amount);
+        IObligation(obligation).refund(msg.sender, amount);
     }
 
     /**
@@ -171,7 +172,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
     * @return Caller's balance before exercise / refund
     **/
     function getBalancePreExpiry() external override view returns (uint256) {
-        return _balancesPreExpiry[_msgSender()];
+        return _balancesPreExpiry[msg.sender];
     }
 
     /// @dev See {IERC20-allowance}
@@ -181,7 +182,7 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
 
     /// @dev See {IERC20-approve}
     function approve(address spender, uint256 amount) external override notExpired returns (bool) {
-        _approve(_msgSender(), spender, amount);
+        _approve(msg.sender, spender, amount);
         return true;
     }
 
@@ -200,14 +201,14 @@ contract Option is IOption, IERC20, Context, Expirable, Ownable {
 
     /// @dev See {IERC20-transfer}
     function transfer(address recipient, uint256 amount) external override notExpired returns (bool) {
-        _transfer(_msgSender(), recipient, amount);
+        _transfer(msg.sender, recipient, amount);
         return true;
     }
 
     /// @dev See {IERC20-transferFrom}
     function transferFrom(address sender, address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         return true;
     }
 

@@ -63,7 +63,7 @@ async function loadContracts(signer: Signer): Promise<Contracts> {
   const uniswapFactory = await deployUniswapFactory(signer, address) as IUniswapV2Factory;
   const optionPairFactory = await deploy0(signer, OptionPairFactoryFactory);
   const optionLibFactory = new OptionLibFactory(signer);
-  const optionLib = await optionLibFactory.deploy(uniswapFactory.address, optionPairFactory.address);
+  const optionLib = await optionLibFactory.deploy(uniswapFactory.address);
 
   return {
     uniswapFactory: uniswapFactory,
@@ -194,9 +194,8 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
   });
 
   it("bob cannot exercise before expiry", async () => {
-    const result = reconnect(optionFactory, OptionPairFactoryFactory, bob)
-      .exerciseOption(
-        option.address,
+    const result = reconnect(option, OptionFactory, bob)
+      .exercise(
         aliceAddress,
         amountOut,
         0,
@@ -209,9 +208,8 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
 
   it("bob should exercise options against alice after expiry", async () => {
     await evmSnapFastForward(1000, async () => {
-      let result = reconnect(optionFactory, OptionPairFactoryFactory, bob)
-        .exerciseOption(
-          option.address,
+      let result = reconnect(option, OptionFactory, bob)
+        .exercise(
           aliceAddress,
           amountOut,
           0,
@@ -222,9 +220,8 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
       await expect(result, "payout should be split").to.be.revertedWith(ErrorCode.ERR_INVALID_EXERCISE_AMOUNT);
 
       const aliceAmountOut = amountOut / 2;
-      await reconnect(optionFactory, OptionPairFactoryFactory, bob)
-        .exerciseOption(
-          option.address,
+      await reconnect(option, OptionFactory, bob)
+        .exercise(
           aliceAddress,
           aliceAmountOut,
           0,
@@ -331,8 +328,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
     const obligationBalance = (await obligation.balanceOf(aliceAddress)).toNumber();
     expect(obligationBalance).to.eq(collateralAmount);
     await evmSnapFastForward(2000, async () => {
-      await reconnect(optionFactory, OptionPairFactoryFactory, alice)
-        .refundOption(option.address, collateralAmount);
+      await reconnect(option, OptionFactory, alice).refund(collateralAmount);
       const obligationBalance = (await obligation.balanceOf(aliceAddress)).toNumber();
       expect(obligationBalance).to.eq(0);
     });
@@ -683,9 +679,8 @@ describe("Put Option (5 Writers, 2 Buyers)", () => {
     await evmSnapFastForward(1000, async () => {
 
       // TODO: check repeated call fails
-      await reconnect(optionFactory, OptionPairFactoryFactory, signers[7])
-        .exerciseOption(
-          option.address,
+      await reconnect(option, OptionFactory, signers[7])
+        .exercise(
           addresses[1],
           115,
           0,

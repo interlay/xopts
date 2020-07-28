@@ -14,28 +14,6 @@ interface IOptionPairFactory {
         address collateral
     ) external;
 
-    function writeOption(
-        address option,
-        address from,
-        address to,
-        uint256 amount,
-        bytes20 btcHash,
-        Bitcoin.Script format
-    ) external;
-
-    function exerciseOption(
-        address option,
-        address seller,
-        uint256 amount,
-        uint256 height,
-        uint256 index,
-        bytes32 txid,
-        bytes calldata proof,
-        bytes calldata rawtx
-    ) external;
-
-    function refundOption(address option, uint amount) external;
-
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external;
 
     function getBtcAddress() external view returns (bytes20 btcHash, Bitcoin.Script format);

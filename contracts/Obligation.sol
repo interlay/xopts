@@ -43,7 +43,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     // accounting to track and ensure proportional payouts
     mapping (address => Request) internal _requests;
 
-    // payout addresses for underwriters
+    // payout addresses for obligation holders
     mapping (address => Bitcoin.Address) _payouts;
 
     // obligations writers (exc. pools)
