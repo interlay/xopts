@@ -16,8 +16,8 @@ contract BTCReferee is IReferee {
     using Script for bytes;
 
     string constant ERR_INVALID_OUT_HASH = "Invalid output hash";
-    string constant ERR_INVALID_OUT_AMOUNT = "Invalid output amount";
-    string constant ERR_VERIFY_TX = "Cannot verify tx inclusion";
+    string constant ERR_TX_NOT_INCLUDED = "Cannot verify tx inclusion";
+    string constant ERR_INVALID_TX = "Tx is invalid";
 
     address relay;
 
@@ -34,11 +34,10 @@ contract BTCReferee is IReferee {
         return IRelay(relay).verifyTx(height, index, txid, proof, 0, false);
     }
 
-    function _isValid(
+    function _extractOutputValue(
         bytes memory rawTx,
-        bytes20 btcHash,
-        uint256 btcAmount
-    ) internal pure returns(bool) {
+        bytes20 btcHash
+    ) internal pure returns(uint256) {
         (, uint lenInputs) = rawTx.extractInputLength();
         bytes memory outputs = rawTx.slice(lenInputs, rawTx.length - lenInputs);
         (uint numOutputs, ) = outputs.extractOutputLength();
@@ -48,6 +47,7 @@ contract BTCReferee is IReferee {
             bytes memory script = output.extractOutputScript();
             bytes20 _btcHash;
 
+            // TODO: explicitly check format
             if (script.isP2SH()) {
                 _btcHash = script.P2SH();
             } else if (script.isP2PKH()) {
@@ -57,12 +57,11 @@ contract BTCReferee is IReferee {
             }
 
             if (_btcHash == btcHash) {
-                require(output.extractOutputValue() >= btcAmount, ERR_INVALID_OUT_AMOUNT);
-                return true;
+                return output.extractOutputValue();
             }
         }
 
-        return false;
+        revert(ERR_INVALID_TX);
     }
 
     function verifyTx(
@@ -71,12 +70,10 @@ contract BTCReferee is IReferee {
         bytes32 txid,
         bytes calldata proof,
         bytes calldata rawTx,
-        bytes20 btcHash,
-        uint256 btcAmount
-    ) external override virtual view returns(bool) {
+        bytes20 btcHash
+    ) external override virtual view returns(uint256) {
         require(btcHash != 0, ERR_INVALID_OUT_HASH);
-        require(_isIncluded(height, index, txid, proof), ERR_VERIFY_TX);
-        require(_isValid(rawTx, btcHash, btcAmount), ERR_VERIFY_TX);
-        return true;
+        require(_isIncluded(height, index, txid, proof), ERR_TX_NOT_INCLUDED);
+        return _extractOutputValue(rawTx, btcHash);
     }
 }

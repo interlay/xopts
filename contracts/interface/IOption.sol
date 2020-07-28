@@ -14,9 +14,10 @@ interface IOption {
 
     function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external;
 
-    function exercise(
+    function requestExercise(address seller, uint amount) external;
+
+    function executeExercise(
         address seller,
-        uint256 amount,
         uint256 height,
         uint256 index,
         bytes32 txid,
@@ -25,7 +26,5 @@ interface IOption {
     ) external;
 
     function refund(uint amount) external;
-
-    function getBalancePreExpiry() external view returns (uint256);
 
 }

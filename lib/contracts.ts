@@ -45,23 +45,6 @@ export function deploy2<A extends Callable, B, C>(signer: Signer, factory: new (
     return (new factory(signer)).deploy(arg0, arg1);
 }
 
-// fetches writers (including those in pools) and calculates the amount owed
-export async function calculatePayouts(option: Option, obligation: Obligation): Promise<{
-    account: string;
-    options: BigNumber;
-}[]> {
-    const options = await option.getBalancePreExpiry();
-    const { writers, written } = await obligation.getWriters();
-    const total = written.reduce((prev, curr) => prev.add(curr));
-    return Promise.all(writers.map(async (acc, i) => {
-        const paid = await obligation.getAmountPaid(acc);
-        return {
-            account: acc,
-            options: written[i].mul(options).div(total).sub(paid),
-        };
-    }));
-}
-
 // runs the callback after increasing the evm time, resets after
 export async function evmSnapFastForward<R>(n: number, cb: () => Promise<R>) {
     const id = await ethers.provider.send("evm_snapshot", []);
@@ -246,11 +229,6 @@ export interface IOptionPair {
 
     getBtcAddress(account: string, network: bitcoin.Network): Promise<string>;
 
-    getPayouts(): Promise<{
-        account: string,
-        options: BigNumber,
-    }[]>;
-
     balance(obligation: string): Promise<BigNumber>;
 
 }
@@ -347,11 +325,6 @@ export class OptionPair implements IOptionPair {
     async getBtcAddress(account: string, network: bitcoin.Network): Promise<string> {
         const { btcHash, format } = await this.obligation.getBtcAddress(account);
         return encodeBtcAddress(btcHash.substr(2), format, network);
-    }
-
-    // calculate amounts owed to each writer
-    async getPayouts() {
-        return calculatePayouts(this.option, this.obligation);
     }
 
     // gets the locked collateral for a pair

@@ -5,10 +5,8 @@ pragma solidity ^0.6.0;
 import "@nomiclabs/buidler/console.sol";
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Context } from "@openzeppelin/contracts/GSN/Context.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IterableBalances } from "./IterableBalances.sol";
 import { Expirable } from "./Expirable.sol";
 import { IObligation } from "./interface/IObligation.sol";
 import { Bitcoin } from "./Bitcoin.sol";
@@ -19,9 +17,8 @@ import { ITreasury } from "./interface/ITreasury.sol";
 /// supported collateral backing currency in return for
 /// the underlying currency - in this case BTC.
 /// @author Interlay
-contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
+contract Obligation is IObligation, IERC20, Expirable, Ownable {
     using SafeMath for uint;
-    using IterableBalances for IterableBalances.Map;
 
     string constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
     string constant ERR_APPROVE_TO_ZERO_ADDRESS = "Approve to zero address";
@@ -29,57 +26,59 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
     string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
 
-    string constant ERR_INVALID_EXERCISE_AMOUNT = "Invalid exercise amount";
+    string constant ERR_INVALID_OUTPUT_AMOUNT = "Invalid output amount";
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
+    string constant ERR_INSUFFICIENT_OBLIGATIONS = "Seller has insufficient obligations";
+    string constant ERR_INVALID_SECRET = "Buyer has encoded an incorrect secret";
+    string constant ERR_SUB_WITHDRAW_BALANCE = "Insufficient pool balance";
+    string constant ERR_SUB_WITHDRAW_AVAILABLE = "Insufficient available";
+    string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
+
+    uint256 public strikePrice;
 
     address public override treasury;
 
     struct Request {
-        bool exists;
-        mapping (address => uint) owed;
-        mapping (address => uint) paid;
+        uint secret;
+        uint amount;
     }
 
-    // accounting to track and ensure proportional payouts
-    mapping (address => Request) internal _requests;
+    // accounting to track and ensure correct payouts
+    mapping (address => mapping (address => Request)) internal _requests;
+    mapping (address => uint) internal _locked;
 
     // payout addresses for obligation holders
     mapping (address => Bitcoin.Address) _payouts;
 
-    // obligations writers (exc. pools)
-    // read-only after expiry for payout calculation
-    IterableBalances.Map internal _balancesWritten;
+    mapping (address => uint) internal _balances;
+    mapping (address => uint) internal _obligations;
 
-    // like _balancesWritten, but burnt if exercised
-    // allows refunds if credited
-    mapping (address => uint) internal _balancesRemaining;
+    uint256 public override totalSupply;
 
-    // total obligations per account (inc. pools)
-    mapping (address => uint) internal _balancesAvailable;
-
-    // required to calculate proportional purchases
-    mapping (address => uint) internal _totalSupply;
-
-    // when exercising we need a final count
-    uint internal _finalSupply;
-
-    // model trading pools to enable proportional purchases
-    mapping (address => IterableBalances.Map) internal _pools;
+    // model trading pools to enable withdrawals
+    mapping (address => uint) internal _poolSupply;
+    mapping (address => mapping (address => uint)) internal _poolBalance;
 
     // accounts that can spend an owners funds
     mapping (address => mapping (address => uint)) internal _allowances;
+
+    // event Request(address indexed buyer, uint secret);
 
     /**
     * @notice Create Obligation ERC20
     * @param _expiryTime Unix expiry date
     * @param _windowSize Settlement window
+    * @param _strikePrice Strike price
     * @param _treasury Backing currency
     **/
     constructor(
         uint256 _expiryTime,
         uint256 _windowSize,
+        uint256 _strikePrice,
         address _treasury
     ) public Expirable(_expiryTime, _windowSize) Ownable() {
+        require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
+        strikePrice = _strikePrice;
         treasury = _treasury;
     }
 
@@ -98,7 +97,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     * @param format: recipient script format
     **/
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external override notExpired {
-        _setBtcAddress(_msgSender(), btcHash, format);
+        _setBtcAddress(msg.sender, btcHash, format);
     }
 
     /**
@@ -121,65 +120,75 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     **/
     function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override notExpired onlyOwner {
         // insert into the accounts balance
-        _balancesAvailable[account] = _balancesAvailable[account].add(amount);
-        _balancesRemaining[account] = _balancesRemaining[account].add(amount);
-        _balancesWritten.set(account, _balancesWritten.get(account).add(amount));
-
-        _totalSupply[address(this)] = _totalSupply[address(this)].add(amount);
-        _finalSupply = _finalSupply.add(amount);
+        _balances[account] = _balances[account].add(amount);
+        _obligations[account] = _obligations[account].add(amount);
+        totalSupply = totalSupply.add(amount);
 
         _setBtcAddress(account, btcHash, format);
 
-        // check treasury has enough locked
+        // check treasury has enough unlocked
         ITreasury(treasury).lock(account, amount);
 
         emit Transfer(address(0), account, amount);
     }
 
-    function _burn(address account, uint amount) internal onlyOwner {
-        if (_balancesAvailable[account] == _balancesRemaining[account]) {
-            // TODO: is there a better way to adjust this?
-            _balancesAvailable[account] = _balancesAvailable[account].sub(amount);
-        }
+    function _burn(address account, uint amount) internal {
         // we only allow the owner to withdraw
-        _balancesRemaining[account] = _balancesRemaining[account].sub(amount);
+        _obligations[account] = _obligations[account].sub(amount);
 
-        _totalSupply[address(this)] = _totalSupply[address(this)].sub(amount);
+        totalSupply = totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
+    }
+
+    function requestExercise(address buyer, address seller, uint amount) external override onlyOwner canExercise {
+        _locked[seller] = _locked[seller].add(amount);
+        require(
+            _locked[seller] <= _obligations[seller],
+            ERR_INSUFFICIENT_OBLIGATIONS
+        );
+        uint total = _requests[seller][buyer].amount;
+        _requests[seller][buyer].amount = total.add(amount);
+
+        bytes32 salt = keccak256(abi.encodePacked(
+            expiryTime,
+            windowSize,
+            strikePrice,
+            buyer,
+            seller,
+            total
+        ));
+        _requests[seller][buyer].secret = uint256(uint8(salt[0]));
+    }
+
+    function getSecret(address buyer, address seller) external view returns (uint) {
+        return _requests[seller][buyer].secret;
     }
 
     /**
     * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`. 
-    * @dev Can only be called by option contract during window
+    * @dev Only callable by the parent option contract.
     * @param buyer Account that bought the options
     * @param seller Account that wrote the options
-    * @param options Buyer's total option balance
-    * @param amount Buyer's claim amount
+    * @param satoshiOutput Output amount
     **/
-    function exercise(address buyer, address seller, uint options, uint amount) external override onlyOwner canExercise {
-        if (!_requests[buyer].exists) {
-            // initialize request (lock amounts)
-            _requests[buyer].exists = true;
-            // after expiry we do not want to alter the authorship
-            // since the balances / totalSupply must be unchanged
-            // for later participants
-            for (uint i = 0; i < _balancesWritten.size(); i = i.add(1)) {
-                address owner = _balancesWritten.getKeyAtIndex(i);
-                uint256 value = _balancesWritten.get(owner);
-                _requests[buyer].owed[owner] = value.mul(options).div(_finalSupply);
-            }
-        }
+    function executeExercise(address buyer, address seller, uint satoshiOutput) external override onlyOwner canExercise {
+        uint amount = _requests[seller][buyer].amount;
 
-        // once locked, buyer has to payout equally
-        uint owed = _requests[buyer].owed[seller];
-        require(amount <= owed, ERR_INVALID_EXERCISE_AMOUNT);
-        _requests[buyer].owed[seller] = owed.sub(amount);
+        // expected amount of btc
+        uint satoshiAmount = _calculateExercise(amount);
 
-        // track total paid to simplify payout calculation
-        uint paid = _requests[buyer].paid[seller];
-        _requests[buyer].paid[seller] = paid.add(amount);
+        require(satoshiOutput >= satoshiAmount, ERR_INVALID_OUTPUT_AMOUNT);
 
-        // remove seller's obligations to prevent refunds
+        uint secret = _requests[seller][buyer].secret;
+        require(
+            secret == satoshiOutput.sub(satoshiAmount),
+            ERR_INVALID_SECRET
+        );
+
+        _locked[seller] = _locked[seller].sub(amount);
+        delete _requests[seller][buyer];
+
+        // remove seller's obligations
         _burn(seller, amount);
 
         // transfers from the treasury to the buyer
@@ -188,6 +197,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
 
     /**
     * @notice Refund written collateral after `expiryTime + windowSize`.
+    * @dev Only callable by the parent option contract.
     * @param seller Minter address
     * @param amount Amount of collateral
     **/
@@ -199,39 +209,26 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     }
 
     /**
-    * @notice Get the amount paid to a seller
-    * @dev Caller is buyer
-    * @param seller Account to pay 
-    * @return Amount of obligations burnt
+    * @notice Withdraw collateral for obligation tokens if sold.
+    * @param amount Amount of collateral
+    * @param pool Address of the liquidity pool (i.e. Uniswap)
     **/
-    function getAmountPaid(address seller) external override view returns (uint) {
-        return _requests[_msgSender()].paid[seller];
-    }
+    function withdraw(uint amount, address pool) external override {
+        address seller = msg.sender;
 
-    /**
-    * @notice Fetch all accounts backing options
-    * @dev Useful for calculating payouts
-    * @return writers Addresses
-    * @return written Obligations
-    **/
-    function getWriters() external override view returns (address[] memory writers, uint256[] memory written) {
-        uint length = _balancesWritten.size();
-        writers = new address[](length);
-        written = new uint256[](length);
+        // caller should have pool credit
+        uint balance = _poolBalance[pool][seller];
+        _poolBalance[pool][seller] = balance.sub(amount, ERR_SUB_WITHDRAW_BALANCE);
 
-        for (uint i = 0; i < length; i++) {
-            address owner = _balancesWritten.getKeyAtIndex(i);
-            uint256 value = _balancesWritten.get(owner);
-            writers[i] = owner;
-            written[i] = value;
-        }
+        // pool must have supply > balance
+        uint available = _poolSupply[pool].sub(_balances[pool]);
+        _poolSupply[pool] = available.sub(amount, ERR_SUB_WITHDRAW_AVAILABLE);
 
-        return (writers, written);
-    }
+        // destroy obligations
+        _burn(seller, amount);
 
-    /// @dev See {IERC20-totalSupply}
-    function totalSupply() external override view returns (uint256) {
-        return _totalSupply[address(this)];
+        // transfers from the treasury to the seller
+        ITreasury(treasury).release(seller, seller, amount);
     }
 
     /// @dev See {IERC20-allowance}
@@ -241,7 +238,7 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
 
     /// @dev See {IERC20-approve}
     function approve(address spender, uint256 amount) external override returns (bool) {
-        _approve(_msgSender(), spender, amount);
+        _approve(msg.sender, spender, amount);
         return true;
     }
 
@@ -257,19 +254,23 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
     function balanceOf(address account) external override view returns (uint256) {
         // must show immediate balance (not written / remaining)
         // required by uniswap to mint
-        return _balancesAvailable[account];
+        return _balances[account];
+    }
+
+    function balanceObl(address account) external view returns (uint256) {
+        return _obligations[account];
     }
 
     /// @dev See {IERC20-transfer}
     function transfer(address recipient, uint256 amount) external override notExpired returns (bool) {
-        _transfer(_msgSender(), recipient, amount);
+        _transfer(msg.sender, recipient, amount);
         return true;
     }
 
     /// @dev See {IERC20-transferFrom}
     function transferFrom(address sender, address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         return true;
     }
 
@@ -287,50 +288,39 @@ contract Obligation is IObligation, IERC20, Context, Expirable, Ownable {
         require(sender != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
         require(recipient != address(0), ERR_TRANSFER_TO_ZERO_ADDRESS);
 
-        _balancesAvailable[sender] = _balancesAvailable[sender].sub(amount);
-        _balancesAvailable[recipient] = _balancesAvailable[recipient].add(amount);
+        _balances[sender] = _balances[sender].sub(amount);
+        _balances[recipient] = _balances[recipient].add(amount);
 
         if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash != 0) {
             // simple transfer, lock recipient collateral
             // Note: the market must have 'unlocked' funds
             ITreasury(treasury).lock(recipient, amount);
             ITreasury(treasury).release(sender, sender, amount);
-            // transfer ownership and authorship
-            _balancesRemaining[sender] = _balancesRemaining[sender].sub(amount);
-            _balancesRemaining[recipient] = _balancesRemaining[recipient].add(amount);
-            _balancesWritten.set(sender, _balancesWritten.get(sender).sub(amount));
-            _balancesWritten.set(recipient, _balancesWritten.get(recipient).add(amount));
+
+            // transfer ownership
+            _obligations[sender] = _obligations[sender].sub(amount);
+            _obligations[recipient] = _obligations[recipient].add(amount);
         } else if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash == 0) {
             // selling obligations to a pool
-            _pools[recipient].set(sender, _pools[recipient].get(sender).add(amount));
-            _totalSupply[recipient] = _totalSupply[recipient].add(amount);
+            _poolSupply[recipient] = _poolSupply[recipient].add(amount);
+            _poolBalance[recipient][sender] = _poolBalance[recipient][sender].add(amount);
         } else {
             // buying obligations from a pool
             require(_payouts[recipient].btcHash != 0, ERR_NO_BTC_ADDRESS);
             // call to treasury should revert if insufficient locked
             ITreasury(treasury).lock(recipient, amount);
-
-            // should take proportional ownership
-            IterableBalances.Map storage balances = _pools[sender];
-            for (uint i = 0; i < balances.size(); i = i.add(1)) {
-                address owner = balances.getKeyAtIndex(i);
-                uint256 value = balances.get(owner);
-                uint256 take = value.mul(amount).div(_totalSupply[sender]);
-
-                // release previously locked collateral
-                ITreasury(treasury).release(owner, owner, take);
-                balances.set(owner, balances.get(owner).sub(take));
-
-                // ownership has now changed
-                _balancesRemaining[owner] = _balancesRemaining[owner].sub(take);
-                _balancesWritten.set(owner, _balancesWritten.get(owner).sub(amount));
-            }
-            _balancesRemaining[recipient] = _balancesRemaining[recipient].add(amount);
-            _balancesWritten.set(recipient, _balancesWritten.get(recipient).add(amount));
-            _totalSupply[sender] = _totalSupply[sender].sub(amount);
+            _obligations[recipient] = _obligations[recipient].add(amount);
         }
 
         emit Transfer(sender, recipient, amount);
+    }
+
+    /**
+    * @dev Computes the exercise payout from the amount and the strikePrice
+    * @param amount Asset to exchange
+    */
+    function _calculateExercise(uint256 amount) internal view returns (uint256) {
+        return amount.div(strikePrice);
     }
 
 }

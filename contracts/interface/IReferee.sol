@@ -12,7 +12,7 @@ interface IReferee {
     * @param proof Bitcoin inclusion proof
     * @param rawtx Bitcoin raw tx
     * @param btcHash Bitcoin address hash
-    * @param btcAmount Bitcoin output satoshis
+    * @return Bitcoin output satoshis
     **/
     function verifyTx(
         uint256 height,
@@ -20,8 +20,7 @@ interface IReferee {
         bytes32 txid,
         bytes calldata proof,
         bytes calldata rawtx,
-        bytes20 btcHash,
-        uint256 btcAmount
-    ) external view returns(bool);
+        bytes20 btcHash
+    ) external view returns(uint256);
 
 }

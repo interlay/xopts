@@ -92,12 +92,12 @@ contract OptionPairFactory is IOptionPairFactory {
         address obligation = address(new Obligation(
             expiryTime,
             windowSize,
+            strikePrice,
             treasury
         ));
         address option = address(new Option(
             expiryTime,
             windowSize,
-            strikePrice,
             referee,
             treasury,
             obligation

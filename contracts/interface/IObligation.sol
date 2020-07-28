@@ -10,13 +10,13 @@ interface IObligation {
 
     function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external;
 
-    function exercise(address buyer, address seller, uint options, uint amount) external;
+    function requestExercise(address buyer, address seller, uint amount) external;
+
+    function executeExercise(address buyer, address seller, uint satoshis) external;
 
     function refund(address account, uint amount) external;
 
-    function getAmountPaid(address seller) external view returns (uint);
-
-    function getWriters() external view returns (address[] memory writers, uint256[] memory written);
+    function withdraw(uint amount, address pool) external;
 
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external;
 
