@@ -52,6 +52,8 @@ First, clone this repository, initialize its submodules and enter into its root 
 
 ```bash
 git clone git@gitlab.com:interlay/xopts.git
+git submodule init
+git submodule update
 cd xopts
 ```
 
@@ -100,6 +102,21 @@ Run tests.
 
 ```bash
 yarn test
+```
+
+### Docs
+
+Make sure you have [solidity-docgen](https://github.com/OpenZeppelin/solidity-docgen) and [docsify](https://docsify.js.org/#/) installed.
+
+```
+yarn global add solidity-docgen
+yarn global add docsify-cli
+```
+
+You can then launch the documentation locally.
+
+```
+yarn docs
 ```
 
 ### Releasing

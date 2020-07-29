@@ -1,4 +1,7 @@
 - [Home](/)
+- Background
+  - [Options and Obligations](background/options-and-obligations.md)
+  - [Automated Market Makers](background/market-makers.md)
 - Contracts
   - [OptionPairFactory](contracts/OptionPairFactory.md)
   - [Option](contracts/Option.md)
