@@ -13,5 +13,3 @@ export const contracts = {
       optionPool: "0x07633ee498C7084Cf7B47c886ecD27A7E57C6907"
     }
 };
-
-export { Script } from './scripts/constants';

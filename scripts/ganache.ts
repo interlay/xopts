@@ -1,6 +1,6 @@
 import config from "../buidler.config";
 import  * as child from "child_process";
-import { contracts } from "../contracts";
+import { contracts } from "../index";
 
 const ganache_cmd = "ganache-cli";
 const port = "-p 8545";

@@ -52,29 +52,41 @@ First, clone this repository, initialize its submodules and enter into its root 
 
 ```bash
 git clone git@gitlab.com:interlay/xopts.git
-git submodule init && git submodule update
 cd xopts
 ```
-
-### Smart Contracts
 
 Install the required node packages.
 
 ```bash
-npm install
+yarn install
 ```
 
-Compile the XOPTS contracts.
+### Try it out
+
+Compile contracts and create the [TypeChain](https://github.com/ethereum-ts/TypeChain) interfaces.
 
 ```bash
-yarn compile
+yarn build
 ```
 
-Deploy the XOPTS contracts.
+Start buidlerevm.
 
 ```bash
-yarn deploy
+npx buidler node
 ```
+
+In another terminal, create test data that can be used in the front-end. Execute this from the root folder of the project.
+
+```bash
+npx buidler run scripts/testdata.ts --network localhost
+```
+
+Go to [xopts.io](https://xopts.io/) and point your [MetaMask wallet](https://metamask.io/) to `localhost:8545`. On your first setup, you might need to add one of the buidlerevm accounts to your MetaMask list of accounts by [importing the private key](https://metamask.zendesk.com/hc/en-us/articles/360015489331-Importing-an-Account). You can find the private keys of the buidlerevm accounts in the console output where you started buidler evm (with the `npx buidler node` command). It should look like this:
+
+<div align="center">
+    <img src="media/buidler_accounts.png" alt="buidlerevm accounts" width="700">
+</div>
+
 
 ### Development
 
@@ -103,32 +115,10 @@ yarn publish --access public
 
 In order to verify testnet transactions we need to swap out any mocked components.
 
-1. Launch a local instance of Ganache.
+1. Launch a local instance of Ganache via `yarn run ganache`.
 2. Clone the [btc-relay-sol](https://gitlab.com/interlay/btc-relay-sol) repository.
 3. Deploy using the testnet configuration.
 4. On `OptionPool` deployment use the live relay address and `./lib/TxValidator.sol`.
-
-### Testdata
-
-Make sure ganache or buidlerevm is running in one terminal window.
-
-**ganache**
-
-```bash
-yarn run ganache
-```
-
-**buidlerevm**
-
-```bash
-npx buidler node
-```
-
-In another terminal, create test data that can be used in the front-end. Execute this from the root folder of the project.
-
-```bash
-npx buidler run scripts/testdata.ts --network localhost
-```
 
 ### Integrations
 
@@ -140,6 +130,8 @@ npx buidler run scripts/uniswap.ts --network localhost
 ```
 
 ### [React UI](https://gitlab.com/interlay/xopts-ui)
+
+Clone the [xopts-ui](https://gitlab.com/interlay/xopts-ui) and in a separate terminal window:
 
 ```bash
 git clone git@gitlab.com:interlay/xopts-ui.git

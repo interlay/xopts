@@ -1,7 +1,11 @@
 import { ethers } from "@nomiclabs/buidler";
 import {
-	TxValidator, OptionPool, MockCollateral, daiToWeiDai, premiumInDaiForOneBTC, strikePriceInDaiForOneBTC
-} from "./contracts";
+	daiToWeiDai, strikePriceInDaiForOneBTC
+} from "../lib/conversion";
+import { deploy0, deploy1 } from "../lib/contracts";
+import { CollateralFactory } from "../typechain/CollateralFactory";
+import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
+import { BTCRefereeFactory } from "../typechain/BTCRefereeFactory";
 
 // ROPSTEN
 
@@ -14,11 +18,10 @@ let overrides = {
 async function main() {
 	let signers = await ethers.signers();
 
-	const collateral = await MockCollateral(signers[0]);
+	const collateral = await deploy0(signers[0], CollateralFactory);
 	await collateral.mint(await signers[0].getAddress(), daiToWeiDai(100_000));
-
-	const validator = await TxValidator(signers[0]);
-	let pool = await OptionPool(signers[0], collateral.address, relay, validator.address);
+	const referee = await deploy1(signers[0], BTCRefereeFactory, relay);
+	const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
 
 	var date = new Date();
 	let current_time = Math.round(date.getTime() / 1000);
@@ -33,12 +36,12 @@ async function main() {
 	// volatility per year 48.5% (see https://www.bitpremier.com/volatility-index)
 	// time to expiration as indicated
 	// premium based on American option calculated by http://www.math.columbia.edu/~smirnov/options.html
-	await pool.createOption(inAWeek, premiumInDaiForOneBTC(131), strikePriceInDaiForOneBTC(9_100), overrides);
-	await pool.createOption(inAWeek, premiumInDaiForOneBTC(66), strikePriceInDaiForOneBTC(8_850), overrides);
-	await pool.createOption(inAWeek, premiumInDaiForOneBTC(28), strikePriceInDaiForOneBTC(8_600), overrides);
-	await pool.createOption(inAMonth, premiumInDaiForOneBTC(391), strikePriceInDaiForOneBTC(9_100), overrides);
-	await pool.createOption(inAMonth, premiumInDaiForOneBTC(303), strikePriceInDaiForOneBTC(8_850), overrides);
-	await pool.createOption(inAMonth, premiumInDaiForOneBTC(216), strikePriceInDaiForOneBTC(8_600), overrides);
+	await optionFactory.createOption(inAWeek, 2000, strikePriceInDaiForOneBTC(9_100), collateral.address, referee.address, overrides);
+	await optionFactory.createOption(inAWeek, 2000, strikePriceInDaiForOneBTC(8_850), collateral.address, referee.address, overrides);
+	await optionFactory.createOption(inAWeek, 2000, strikePriceInDaiForOneBTC(8_600), collateral.address, referee.address, overrides);
+	await optionFactory.createOption(inAMonth, 2000, strikePriceInDaiForOneBTC(9_100), collateral.address, referee.address, overrides);
+	await optionFactory.createOption(inAMonth, 2000, strikePriceInDaiForOneBTC(8_850), collateral.address, referee.address, overrides);
+	await optionFactory.createOption(inAMonth, 2000, strikePriceInDaiForOneBTC(8_600), collateral.address, referee.address, overrides);
 }
 
 main()
