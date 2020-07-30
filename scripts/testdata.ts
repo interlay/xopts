@@ -2,7 +2,7 @@ import { ethers } from "@nomiclabs/buidler";
 import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { Signer } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
-import { deploy0, reconnect, deploy2, createOption, deploy1 } from "../lib/contracts";
+import { deploy0, reconnect, deploy2, createPair, deploy1 } from "../lib/contracts";
 import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
 import { daiToWeiDai, strikePriceInDaiForOneBTC, premiumInDaiForOneBTC } from "../lib/conversion";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
@@ -34,7 +34,7 @@ async function createAndLockAndWrite(
 	premium: BigNumber,
 	amount: BigNumber,
 ) {
-	const optionAddress = await createOption(optionFactory, expiryTime, windowSize, strikePrice, collateral.address, referee.address);
+	const optionAddress = await createPair(optionFactory, expiryTime, windowSize, strikePrice, collateral.address, referee.address);
 	const option = OptionFactory.connect(optionAddress, signer)
 
     console.log("Adding data to option: ", optionAddress);

@@ -130,6 +130,7 @@ contract OptionPairFactory is IOptionPairFactory {
     ) external override returns (address option, address obligation) {
         address treasury = getTreasury[collateral];
         if (treasury == address(0)) {
+            // TODO: treasury create2?
             treasury = address(new Treasury(collateral));
         }
 

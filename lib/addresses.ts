@@ -1,3 +1,8 @@
+import { keccak256, solidityPack } from "ethers/utils";
+import { utils } from "ethers";
+import OptionArtifact from '../artifacts/Option.json';
+import ObligationArtifact from '../artifacts/Obligation.json';
+
 export interface Addresses {
     collateral: string;
     optionFactory: string;
@@ -23,4 +28,52 @@ export const Deployments: Record<Networks, Addresses> = {
         relay: "0xA7102d753442D827A853FeFE3DD88E182aea622D",
         referee: "0x5429c8fafa53b09386E41F07CbA2479C170faf0b",
     }
+}
+
+type saltArgs = {
+    expiryTime: number,
+    windowSize: number,
+    strikePrice: number,
+    collateral: string,
+    referee: string,
+}
+
+export function getCreate2Address(
+    salt: saltArgs,
+    factory: string,
+    bytecode: string,
+) {
+    return utils.getCreate2Address({
+        from: factory,
+        salt: keccak256(solidityPack(
+            ["uint256", "uint256", "uint256", "address", "address"],
+            [
+                salt.expiryTime, salt.windowSize, salt.strikePrice, 
+                salt.collateral, salt.referee
+            ]
+        )),
+        initCodeHash: keccak256(bytecode),
+    });
+}
+
+export function getCreate2OptionAddress(
+    salt: saltArgs,
+    factory: string,
+) {
+    return getCreate2Address(
+        salt,
+        factory,
+        OptionArtifact.bytecode
+    );
+}
+
+export function getCreate2ObligationAddress(
+    salt: saltArgs,
+    factory: string,
+) {
+    return getCreate2Address(
+        salt,
+        factory,
+        ObligationArtifact.bytecode
+    );
 }

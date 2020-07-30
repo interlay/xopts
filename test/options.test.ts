@@ -9,11 +9,11 @@ import { ErrorCode, Script } from '../lib/constants';
 import { MockCollateral } from "../typechain/MockCollateral";
 import { OptionLibFactory } from "../typechain/OptionLibFactory";
 import { OptionLib } from "../typechain/OptionLib";
-import { deploy0, reconnect, evmSnapFastForward } from "../lib/contracts";
+import { deploy0, reconnect, evmSnapFastForward, createPair } from "../lib/contracts";
 import { Option } from "../typechain/Option";
 import { OptionPairFactory } from "../typechain/OptionPairFactory";
 import { ObligationFactory } from "../typechain/ObligationFactory";
-import { deployUniswapFactory, createUniswapPair, estimateInput, getUniswapPair } from "../lib/uniswap";
+import { deployUniswapFactory, estimateInput } from "../lib/uniswap";
 import { IERC20 } from "../typechain/IERC20";
 import { IERC20Factory } from "../typechain/IERC20Factory";
 import { Obligation } from "../typechain/Obligation";
@@ -21,6 +21,7 @@ import { Treasury } from "../typechain/Treasury";
 import { TreasuryFactory } from "../typechain/TreasuryFactory";
 import { IUniswapV2Factory } from "../typechain/IUniswapV2Factory";
 import BTCRefereeArtifact from "../artifacts/BTCReferee.json";
+import { getCreate2OptionAddress, getCreate2ObligationAddress } from "../lib/addresses";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -57,9 +58,8 @@ async function loadAccounts(): Promise<Accounts> {
 }
 
 async function loadContracts(signer: Signer): Promise<Contracts> {
-  // charlie creates everything
-  const address = await signer.getAddress();
-  const uniswapFactory = await deployUniswapFactory(signer, address) as IUniswapV2Factory;
+  const account = await signer.getAddress();
+  const uniswapFactory = await deployUniswapFactory(signer, account) as IUniswapV2Factory;
   const optionPairFactory = await deploy0(signer, OptionPairFactoryFactory);
   const optionLibFactory = new OptionLibFactory(signer);
   const optionLib = await optionLibFactory.deploy(uniswapFactory.address);
@@ -82,6 +82,91 @@ const approve = async function(collateral: IERC20, signer: Signer, spender: stri
   await reconnect(collateral, IERC20Factory, signer).approve(spender, amount);
 };
 
+async function getPair(optionFactory: OptionPairFactory, optionAddress: string, signer: Signer) {
+  const obligationAddress = await optionFactory.getObligation(optionAddress);
+  return {
+    option: OptionFactory.connect(optionAddress, signer),
+    obligation: ObligationFactory.connect(obligationAddress, signer),
+  }
+}
+
+describe('Sanity Checks', () => {
+  let alice: Signer;
+  let bob: Signer;
+
+  let aliceAddress: string;
+  let bobAddress: string;
+
+  let collateral: MockCollateral;
+  let optionFactory: OptionPairFactory;
+  let btcReferee: MockContract;
+
+  const expiryTime = getTimeNow() + 1000;
+  const windowSize = 1000;
+  const strikePrice = 500;
+
+  beforeEach(async () => {
+    ({ alice, bob } = await loadAccounts());
+    ({ btcReferee, optionFactory, collateral } = await loadContracts(alice));
+    [aliceAddress, bobAddress] = await Promise.all([
+      alice.getAddress(),
+      bob.getAddress(),
+    ]);
+  });
+
+  it("should fail to create an expired option", async () => {
+    const result = optionFactory.createPair(getTimeNow(), windowSize, strikePrice, collateral.address, btcReferee.address);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_INIT_EXPIRED);
+  });
+
+  it("should fail to create a zero-window option", async () => {
+    const result = optionFactory.createPair(expiryTime, 0, strikePrice, collateral.address, btcReferee.address);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_WINDOW_ZERO);
+  });
+
+  it("should fail to create an option with 0 strikePrice", async () => {
+    const result = optionFactory.createPair(expiryTime, windowSize, 0, collateral.address, btcReferee.address);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_ZERO_STRIKE_PRICE);
+  });
+
+  it("should generate deterministic contract address", async () => {    
+    const salt = {expiryTime, windowSize, strikePrice, collateral: collateral.address, referee: btcReferee.address};
+    
+    await optionFactory.createPair(expiryTime, windowSize, strikePrice, collateral.address, btcReferee.address);
+    const optionAddress0 = await optionFactory.options(0);
+
+    const optionAddress1 = getCreate2OptionAddress(salt, optionFactory.address);
+    expect(optionAddress0).to.eq(optionAddress1);
+
+    const obligationAddress0 = await optionFactory.getObligation(optionAddress0);
+    const obligationAddress1 = getCreate2ObligationAddress(salt, optionFactory.address);
+    expect(obligationAddress0).to.eq(obligationAddress1);
+  });
+
+  describe('Put Options', () => {
+    let option: Option;
+    let obligation: Obligation;
+
+    beforeEach(async () => {
+      const optionAddress = await createPair(
+        optionFactory, expiryTime, windowSize, strikePrice, collateral.address, btcReferee.address);
+      ({option, obligation} = await getPair(optionFactory, optionAddress, alice));
+    });
+
+    it("should fail to transfer without options", async () => {
+      const result = option.transfer(bobAddress, 100);
+      await expect(result).to.be.revertedWith(ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE);
+    });
+
+    it("should fail to transfer without obligations", async () => {
+      const result = obligation.transfer(bobAddress, 100);
+      await expect(result).to.be.revertedWith(ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE);
+    });
+  
+  });
+
+});
+
 describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
   let alice: Signer;
   let bob: Signer;
@@ -90,7 +175,6 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
 
   let aliceAddress: string;
   let bobAddress: string;
-  let charlieAddress: string;
   let eveAddress: string;
 
   let uniswapFactory: IUniswapV2Factory;
@@ -115,19 +199,11 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
     const accounts = await loadAccounts();
     ({ alice, bob, eve, charlie } = accounts);
     ({ btcReferee, optionFactory, collateral, uniswapFactory, optionLib } = await loadContracts(charlie));
-    aliceAddress = await alice.getAddress();
-    bobAddress = await bob.getAddress();
-    eveAddress = await eve.getAddress();
-  });
-
-  it("should fail to create an expired option", async () => {
-    const result = optionFactory.createPair(getTimeNow(), 1000, 9000, collateral.address, btcReferee.address);
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_INIT_EXPIRED);
-  });
-
-  it("should fail to create an option with 0 strikePrice", async () => {
-    const result = optionFactory.createPair(getTimeNow() + 1000, 1000, 0, collateral.address, btcReferee.address);
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_ZERO_STRIKE_PRICE);
+    [aliceAddress, bobAddress, eveAddress] = await Promise.all([
+      alice.getAddress(),
+      bob.getAddress(),
+      eve.getAddress(),
+    ]);
   });
 
   it("should create option contract", async () => {
@@ -224,12 +300,9 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
   let alice: Signer;
   let bob: Signer;
   let charlie: Signer;
-  let eve: Signer;
 
   let aliceAddress: string;
   let bobAddress: string;
-  let charlieAddress: string;
-  let eveAddress: string;
 
   let uniswapFactory: IUniswapV2Factory;
   let collateral: MockCollateral;
@@ -248,11 +321,12 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Obligations", () => {
 
   before(async () => {
     const accounts = await loadAccounts();
-    ({ alice, bob, eve, charlie } = accounts);
+    ({ alice, bob, charlie } = accounts);
     ({ btcReferee, optionFactory, collateral, uniswapFactory, optionLib } = await loadContracts(charlie));
-    aliceAddress = await alice.getAddress();
-    bobAddress = await bob.getAddress();
-    eveAddress = await eve.getAddress();
+    [aliceAddress, bobAddress] = await Promise.all([
+      alice.getAddress(),
+      bob.getAddress(),
+    ]);
   });
 
   it("should create option contract", async () => {
@@ -312,7 +386,6 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
 
   let aliceAddress: string;
   let bobAddress: string;
-  let charlieAddress: string;
   let eveAddress: string;
 
   let uniswapFactory: IUniswapV2Factory;
@@ -337,17 +410,21 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
     const accounts = await loadAccounts();
     ({ alice, bob, eve, charlie } = accounts);
     ({ btcReferee, optionFactory, collateral, uniswapFactory, optionLib } = await loadContracts(charlie));
-    aliceAddress = await alice.getAddress();
-    bobAddress = await bob.getAddress();
-    eveAddress = await eve.getAddress();
+    [aliceAddress, bobAddress, eveAddress] = await Promise.all([
+      alice.getAddress(),
+      bob.getAddress(),
+      eve.getAddress(),
+    ]);
   });
 
   it("should create option contract", async () => {
     await optionFactory.createPair(init + 1000, 1000, 9000, collateral.address, btcReferee.address);
     const optionAddress = await optionFactory.options(0);
     option = OptionFactory.connect(optionAddress, alice);
+
     const obligationAddress = await optionFactory.getObligation(option.address);
     obligation = ObligationFactory.connect(obligationAddress, alice);
+
     const treasuryAddress = await optionFactory.getTreasury(collateral.address);
     treasury = TreasuryFactory.connect(treasuryAddress, alice);
   });
@@ -362,7 +439,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
     const obligationBalance = (await obligation.balanceOf(aliceAddress)).toNumber();
     expect(obligationBalance).to.eq(collateralAmount);  
 
-    const pairAddress: string = await uniswapFactory.getPair(collateral.address, option.address)
+    const pairAddress = await uniswapFactory.getPair(collateral.address, option.address)
     const optionBalance = (await option.balanceOf(pairAddress)).toNumber();
     expect(optionBalance).to.eq(collateralAmount);
   });
@@ -392,7 +469,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations", () => {
   });
 
   it("eve should set btc address and buy obligations", async () => {
-    const aliceCollateral0 = (await collateral.balanceOf(aliceAddress)).toNumber();
+    // const aliceCollateral0 = (await collateral.balanceOf(aliceAddress)).toNumber();
 
     await mint(collateral, eve, eveAddress, amountInMax + amountOut);
     await approve(collateral, eve, optionLib.address, amountInMax + amountOut);
@@ -428,7 +505,6 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations", () => {
 
   let aliceAddress: string;
   let bobAddress: string;
-  let charlieAddress: string;
   let eveAddress: string;
 
   let uniswapFactory: IUniswapV2Factory;
@@ -453,9 +529,11 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations", () => {
     const accounts = await loadAccounts();
     ({ alice, bob, eve, charlie } = accounts);
     ({ btcReferee, optionFactory, collateral, uniswapFactory, optionLib } = await loadContracts(charlie));
-    aliceAddress = await alice.getAddress();
-    bobAddress = await bob.getAddress();
-    eveAddress = await eve.getAddress();
+    [aliceAddress, bobAddress, eveAddress] = await Promise.all([
+      alice.getAddress(),
+      bob.getAddress(),
+      eve.getAddress(),
+    ]);
   });
 
   it("should create option contract", async () => {
@@ -516,8 +594,8 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations", () => {
   });
 
   it("bob should buy obligations from the pool", async () => {
-    const aliceCollateral0 = (await collateral.balanceOf(aliceAddress)).toNumber();
-    const eveCollateral0 = (await collateral.balanceOf(eveAddress)).toNumber();
+    // const aliceCollateral0 = (await collateral.balanceOf(aliceAddress)).toNumber();
+    // const eveCollateral0 = (await collateral.balanceOf(eveAddress)).toNumber();
 
     await mint(collateral, bob, bobAddress, amountInMax + amountOut);
     await approve(collateral, bob, optionLib.address, amountInMax + amountOut);

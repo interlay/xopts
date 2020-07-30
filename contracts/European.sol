@@ -23,22 +23,11 @@ contract European {
     // window post expiry
     uint256 public windowSize;
 
-    // /**
-    //  * @dev Initializes the contract with an expiry time and exercise window
-    //  * @param _expiryTime Unix time for expiry
-    //  * @param _windowSize Non-zero window for exercises post-expiry
-    //  */
-    // constructor (uint _expiryTime, uint _windowSize) internal {
-    //     require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
-    //     require(_windowSize > 0, ERR_WINDOW_ZERO);
-    //     expiryTime = _expiryTime;
-    //     windowSize = _windowSize;
-    // }
-
     /**
     * @dev Throws if called before the configured timestamp
     */
     modifier hasExpired() {
+        // solium-disable-next-line security/no-block-members
         require(block.timestamp > expiryTime, ERR_NOT_EXPIRED);
         _;
     }
@@ -47,6 +36,7 @@ contract European {
     * @dev Throws if called after the configured timestamp
     */
     modifier notExpired() {
+        // solium-disable-next-line security/no-block-members
         require(block.timestamp <= expiryTime, ERR_EXPIRED);
         _;
     }
@@ -55,7 +45,9 @@ contract European {
     * @dev Throws if called after the exercise window has expired
     */
     modifier canExercise() {
+        // solium-disable-next-line security/no-block-members
         require(block.timestamp > expiryTime, ERR_NOT_EXPIRED);
+        // solium-disable-next-line security/no-block-members
         require(block.timestamp <= expiryTime.add(windowSize), ERR_EXPIRED);
         _;
     }
@@ -64,7 +56,8 @@ contract European {
     * @dev Throws if called before the exercise window has expired
     */
     modifier canRefund() {
-        require( block.timestamp > expiryTime.add(windowSize), ERR_NOT_EXPIRED);
+        // solium-disable-next-line security/no-block-members
+        require(block.timestamp > expiryTime.add(windowSize), ERR_NOT_EXPIRED);
         _;
     }
 }
