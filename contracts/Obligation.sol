@@ -246,7 +246,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     }
 
     /// @dev See {IERC20-approve}
-    function approve(address spender, uint256 amount) external override returns (bool) {
+    function approve(address spender, uint256 amount) external override notExpired returns (bool) {
         _approve(msg.sender, spender, amount);
         return true;
     }
@@ -297,7 +297,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         require(sender != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
         require(recipient != address(0), ERR_TRANSFER_TO_ZERO_ADDRESS);
 
-        _balances[sender] = _balances[sender].sub(amount);
+        _balances[sender] = _balances[sender].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE);
         _balances[recipient] = _balances[recipient].add(amount);
 
         if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash != 0) {

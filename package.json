@@ -1,6 +1,6 @@
 {
   "name": "@interlay/xopts",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Bitcoin-backed put options on Ethereum.",
   "main": "dist/index.js",
   "scripts": {

@@ -54,7 +54,7 @@ export async function evmSnapFastForward<R>(n: number, cb: () => Promise<R>) {
     await ethers.provider.send("evm_revert", [id]);
 }
 
-export async function createOption(
+export async function createPair(
     optionFactory: OptionPairFactory,
     expiryTime: BigNumberish,
     windowSize: BigNumberish,
@@ -63,7 +63,7 @@ export async function createOption(
     referee: string,
     confirmations?: number,
 ): Promise<string> {
-    let topic = ethers.utils.id("Create(address,uint256,uint256,uint256)");
+    let topic = ethers.utils.id("Create(address,address,uint256,uint256,uint256)");
     // indexed parameters are not included in log data
     return optionFactory.createPair(expiryTime, windowSize, strikePrice, collateral, referee).then(tx =>
         tx.wait(confirmations).then(receipt => ethers.utils.defaultAbiCoder.decode(
@@ -78,7 +78,7 @@ export interface IContracts {
 
     approveMax(): Promise<ContractTransaction>;
 
-    createOption(
+    createPair(
         expiryTime: BigNumberish,
         windowSize: BigNumberish,
         strikePrice: BigNumberish,
@@ -171,12 +171,12 @@ export class Contracts implements IContracts {
     }
     
     // creates a european put option
-    async createOption(
+    async createPair(
         expiryTime: BigNumberish,
         windowSize: BigNumberish,
         strikePrice: BigNumberish,
     ): Promise<IOptionPair> {
-        const optionAddress = await createOption(
+        const optionAddress = await createPair(
             this.optionFactory, expiryTime, windowSize, strikePrice,
             this.collateral.address, this.referee.address, this.confirmations);
         const obligationAddress = await this.optionFactory.getObligation(optionAddress);

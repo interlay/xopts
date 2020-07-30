@@ -28,7 +28,7 @@ async function main() {
   let currentTime = Math.round(new Date().getTime()/1000);
 	let expiry = currentTime + 60;
 
-	let tx = await contract.createOption(expiry, 2000, strikePriceInDaiForOneBTC(9_200), collateral.address, referee.address);
+	let tx = await contract.createPair(expiry, 2000, strikePriceInDaiForOneBTC(9_200), collateral.address, referee.address);
   receipt = await tx.wait(0);  
   console.log(`Gas [Create]: ${receipt.gasUsed?.toString()}`);
 
