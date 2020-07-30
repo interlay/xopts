@@ -19,7 +19,8 @@ import { ITreasury } from "../typechain/ITreasury";
 import { ITreasuryFactory } from "../typechain/ITreasuryFactory";
 import { ObligationFactory } from "../typechain/ObligationFactory";
 import * as bitcoin from 'bitcoinjs-lib';
-import { encodeBtcAddress } from "./address";
+import { encodeBtcAddress } from "./encode";
+import { Addresses } from "./addresses";
 
 interface Connectable<C> {
     connect: (addr: string, signer?: Signer) => C;
@@ -71,6 +72,8 @@ export async function createOption(
 }
 
 export interface IContracts {
+    getRelayHeight(): Promise<number>;
+
     checkAllowance(): Promise<boolean>;
 
     approveMax(): Promise<ContractTransaction>;
@@ -90,15 +93,16 @@ type BtcAddress = {
 }
 
 export class Contracts implements IContracts {
-    confirmations: number;
-    optionFactory: OptionPairFactory;
-    optionLib: OptionLib;
-    collateral: IERC20;
-    treasury: ITreasury;
-    referee: IReferee;
-    relay: IRelay;
-    signer: Signer;
-    account: string;
+    private optionFactory: OptionPairFactory;
+    private optionLib: OptionLib;
+    private collateral: IERC20;
+    private treasury: ITreasury;
+    private referee: IReferee;
+    private relay: IRelay;
+
+    readonly signer: Signer;
+    readonly account: string;
+    readonly confirmations: number;
 
     constructor(
         confirmations: number,
@@ -123,21 +127,17 @@ export class Contracts implements IContracts {
     }
 
     static async load(
-        confirmations: number,
-        optionFactory: string,
-        optionLib: string,
-        collateral: string,
-        referee: string,
-        relay: string,
-        signer: Signer
+        contracts: Addresses,
+        signer: Signer,
+        confirmations: number
     ): Promise<Contracts> {
-        const _optionFactory = OptionPairFactoryFactory.connect(optionFactory, signer);
-        const _optionLib = OptionLibFactory.connect(optionLib, signer);
-        const _collateral = IERC20Factory.connect(collateral, signer);
+        const _optionFactory = OptionPairFactoryFactory.connect(contracts.optionFactory, signer);
+        const _optionLib = OptionLibFactory.connect(contracts.optionLib, signer);
+        const _collateral = IERC20Factory.connect(contracts.collateral, signer);
         const _treasuryAddress = await _optionFactory.getTreasury(_collateral.address);
         const _treasury = ITreasuryFactory.connect(_treasuryAddress, signer);
-        const _referee = IRefereeFactory.connect(referee, signer);
-        const _relay = IRelayFactory.connect(relay, signer);
+        const _referee = IRefereeFactory.connect(contracts.referee, signer);
+        const _relay = IRelayFactory.connect(contracts.relay, signer);
         const account = await signer.getAddress();
         return new Contracts(
             confirmations,
@@ -150,6 +150,11 @@ export class Contracts implements IContracts {
             signer,
             account,
         );
+    }
+
+    async getRelayHeight() {
+        const {height} = await this.relay.getBestBlock();
+        return height;
     }
 
     // if this returns false we should call `approveMax`
@@ -175,15 +180,15 @@ export class Contracts implements IContracts {
             this.optionFactory, expiryTime, windowSize, strikePrice,
             this.collateral.address, this.referee.address, this.confirmations);
         const obligationAddress = await this.optionFactory.getObligation(optionAddress);
+        const option = OptionFactory.connect(optionAddress, this.signer);
+        const obligation = ObligationFactory.connect(obligationAddress, this.signer);
         return new OptionPair(
-            optionAddress,
-            obligationAddress,
-            this.optionLib.address,
+            option,
+            obligation,
+            this.optionLib,
             this.collateral,
             this.treasury,
-            this.confirmations,
-            this.signer,
-            this.account
+            this.confirmations
         );
     }
 
@@ -196,20 +201,24 @@ export class Contracts implements IContracts {
 
 export interface IOptionPair {
 
-    writeOption(
+    write(
         premium: BigNumberish,
         amount: BigNumberish,
         btcAddress?: BtcAddress,
     ): Promise<void>;
 
-    buyOption(
+    buy(
         amountOut: BigNumberish,
         amountInMax: BigNumberish
     ): Promise<void>;
 
-    exerciseOption(
+    requestExercise(
         seller: string,
         amount: BigNumberish,
+    ): Promise<BigNumber>;
+
+    executeExercise(
+        seller: string,
         height: BigNumberish,
         index: BigNumberish,
         txid: Arrayish,
@@ -217,7 +226,7 @@ export interface IOptionPair {
         rawtx: Arrayish
     ): Promise<void>;
 
-    refundOption(
+    refund(
         amount: BigNumberish,
     ): Promise<void>;
 
@@ -229,45 +238,39 @@ export interface IOptionPair {
 
     getBtcAddress(account: string, network: bitcoin.Network): Promise<string>;
 
-    balance(obligation: string): Promise<BigNumber>;
+    balanceOf(account: string): Promise<BigNumber>;
 
 }
 
 export class OptionPair implements IOptionPair {
-    option: Option;
-    obligation: Obligation;
-    optionLib: OptionLib;
-    collateral: IERC20;
-    treasury: ITreasury;
+    private option: Option;
+    private obligation: Obligation;
+    private optionLib: OptionLib;
+    private collateral: IERC20;
+    private treasury: ITreasury;
 
-    confirmations: number;
-    signer: Signer;
-    account: string;
+    readonly confirmations: number;
 
     constructor(
-        option: string,
-        obligation: string,
-        optionLib: string,
+        option: Option,
+        obligation: Obligation,
+        optionLib: OptionLib,
         collateral: IERC20,
         treasury: ITreasury,
         confirmations: number,
-        signer: Signer,
-        account: string,
     ) {
-        this.option = OptionFactory.connect(option, signer);
-        this.obligation = ObligationFactory.connect(obligation, signer);
-        this.optionLib = OptionLibFactory.connect(optionLib, signer);
+        this.option = option;
+        this.obligation = obligation;
+        this.optionLib = optionLib;
         this.collateral = collateral;
         this.treasury = treasury;
 
         this.confirmations = confirmations;
-        this.signer = signer;
-        this.account = account;
     }
 
     // back options with the default collateral
     // this also adds liquidity to the uniswap pool
-    async writeOption(
+    async write(
         premium: BigNumberish,
         amount: BigNumberish,
         btcAddress: BtcAddress,
@@ -278,7 +281,7 @@ export class OptionPair implements IOptionPair {
     }
     
     // buy order (i.e. specify exact number of options)
-    async buyOption(
+    async buy(
         amountOut: BigNumberish,
         amountInMax: BigNumberish
     ): Promise<void> {
@@ -290,23 +293,31 @@ export class OptionPair implements IOptionPair {
         ).then(tx => tx.wait(this.confirmations));
     }
 
-    // prove inclusion and claim collateral
-    async exerciseOption(
+    async requestExercise(
         seller: string,
-        amount: BigNumberish,
+        amount: BigNumberish
+    ): Promise<BigNumber> {
+        await this.option.requestExercise(seller, amount)
+            .then(tx => tx.wait(this.confirmations));
+        return this.obligation.getSecret(seller);
+    }
+
+    // prove inclusion and claim collateral
+    async executeExercise(
+        seller: string,
         height: BigNumberish,
         index: BigNumberish,
         txid: Arrayish,
         proof: Arrayish,
         rawtx: Arrayish
     ): Promise<void> {
-        await this.option.exercise(
-            seller, amount, height, index, txid, proof, rawtx
+        await this.option.executeExercise(
+            seller, height, index, txid, proof, rawtx
         ).then(tx => tx.wait(this.confirmations));
     }
 
     // claim written collateral after expiry
-    async refundOption(
+    async refund(
         amount: BigNumberish,
     ): Promise<void> {
         await this.option.refund(amount)
@@ -328,7 +339,7 @@ export class OptionPair implements IOptionPair {
     }
 
     // gets the locked collateral for a pair
-    async balance() {
-        return this.treasury.balanceOf(this.obligation.address, this.account)
+    async balanceOf(account: string) {
+        return this.treasury.balanceOf(this.obligation.address, account)
     }
 }

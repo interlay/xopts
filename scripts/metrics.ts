@@ -1,6 +1,6 @@
 import { ethers } from "@nomiclabs/buidler";
 import { daiToWeiDai, strikePriceInDaiForOneBTC, mbtcToSatoshi } from "../lib/conversion";
-import { CollateralFactory } from "../typechain/CollateralFactory";
+import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { Script } from '../lib/constants';
 import * as bitcoin from 'bitcoinjs-lib';
 import { deploy0, reconnect } from "../lib/contracts";
@@ -17,7 +17,7 @@ async function main() {
   let bob = signers[1];
   let charlie = signers[2];
 
-  const collateral = await deploy0(alice, CollateralFactory);
+  const collateral = await deploy0(alice, MockCollateralFactory);
   const referee = await deploy0(alice, MockBTCRefereeFactory);
 
   let contract = await deploy0(alice, OptionPairFactoryFactory);
@@ -38,10 +38,10 @@ async function main() {
 
   let options = await contract.getOptions();
 
-  await reconnect(collateral, CollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
-  await reconnect(collateral, CollateralFactory, alice).mint(bobAddress, daiToWeiDai(100_000));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(bobAddress, daiToWeiDai(100_000));
   
-  await reconnect(collateral, CollateralFactory, bob).approve(contract.address, daiToWeiDai(10_000));
+  await reconnect(collateral, MockCollateralFactory, bob).approve(contract.address, daiToWeiDai(10_000));
 	tx = await reconnect(contract, OptionPairFactoryFactory, bob).underwriteOption(options[0], daiToWeiDai(5_000), btcHash, Script.p2wpkh);
   receipt = await tx.wait(0);  
   console.log(`Gas [Underwrite]: ${receipt.gasUsed?.toString()}`);
@@ -56,7 +56,7 @@ async function main() {
   await reconnect(option, OptionFactory, charlie).setBtcAddress(btcHash, Script.p2wpkh);
 
   // alice claims against charlie's options
-  // await reconnect(collateral, CollateralFactory, alice).approve(contract.address, daiToWeiDai(200));
+  // await reconnect(collateral, MockCollateralFactory, alice).approve(contract.address, daiToWeiDai(200));
 	// tx = await reconnect(contract, OptionPairFactoryFactory, alice).insureOption(options[0], charlieAddress, mbtcToSatoshi(100));
   // receipt = await tx.wait(0);  
   // console.log(`Gas [Insure]: ${receipt.gasUsed?.toString()}`);
