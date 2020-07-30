@@ -1,8 +1,8 @@
 import { ethers } from "@nomiclabs/buidler";
-import { CollateralFactory } from "../typechain/CollateralFactory";
+import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { Signer } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
-import { deploy0, reconnect, deploy2, createOption } from "../lib/contracts";
+import { deploy0, reconnect, deploy2, createOption, deploy1 } from "../lib/contracts";
 import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
 import { daiToWeiDai, strikePriceInDaiForOneBTC, premiumInDaiForOneBTC } from "../lib/conversion";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
@@ -12,7 +12,7 @@ import { OptionLibFactory } from "../typechain/OptionLibFactory";
 import { Script } from "../lib/constants";
 import { OptionPairFactory } from "../typechain/OptionPairFactory";
 import { BigNumberish, BigNumber } from "ethers/utils";
-import { Collateral } from "../typechain/Collateral";
+import { MockCollateral } from "../typechain/MockCollateral";
 import { BTCReferee } from "../typechain/BTCReferee";
 import { OptionLib } from "../typechain/OptionLib";
 
@@ -29,7 +29,7 @@ async function createAndLockAndWrite(
 	expiryTime: BigNumberish,
 	windowSize: BigNumberish,
 	strikePrice: BigNumberish,
-	collateral: Collateral,
+	collateral: MockCollateral,
 	referee: BTCReferee,
 	premium: BigNumber,
 	amount: BigNumber,
@@ -38,7 +38,7 @@ async function createAndLockAndWrite(
 	const option = OptionFactory.connect(optionAddress, signer)
 
     console.log("Adding data to option: ", optionAddress);
-	await reconnect(collateral, CollateralFactory, signer).approve(optionLib.address, amount.add(premium));
+	await reconnect(collateral, MockCollateralFactory, signer).approve(optionLib.address, amount.add(premium));
 
 	await reconnect(optionLib, OptionLibFactory, signer)
 		.lockAndWrite(option.address, premium, amount, btcHash, Script.p2pkh);
@@ -61,20 +61,20 @@ async function main() {
 	const eveAddress = await eve.getAddress();
 	const daveAddress = await dave.getAddress();
 
-	const collateral = await deploy0(alice, CollateralFactory);
+	const collateral = await deploy0(alice, MockCollateralFactory);
 	const referee = await deploy0(alice, MockBTCRefereeFactory);
 	const uniswap = await deployUniswapFactory(alice, await alice.getAddress());
   
 	// 0x151eA753f0aF1634B90e1658054C247eFF1C2464
 	const optionFactory = await deploy0(alice, OptionPairFactoryFactory);
-	const optionLib = await deploy2(alice, OptionLibFactory, uniswap.address, optionFactory.address);
+	const optionLib = await deploy1(alice, OptionLibFactory, uniswap.address);
 
     // get collateral for everyone
-	await reconnect(collateral, CollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
-	await reconnect(collateral, CollateralFactory, alice).mint(bobAddress, daiToWeiDai(100_000));
-	await reconnect(collateral, CollateralFactory, alice).mint(charlieAddress, daiToWeiDai(100_000));
-	await reconnect(collateral, CollateralFactory, alice).mint(eveAddress, daiToWeiDai(100_000));
-	await reconnect(collateral, CollateralFactory, alice).mint(daveAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, MockCollateralFactory, alice).mint(bobAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, MockCollateralFactory, alice).mint(charlieAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, MockCollateralFactory, alice).mint(eveAddress, daiToWeiDai(100_000));
+	await reconnect(collateral, MockCollateralFactory, alice).mint(daveAddress, daiToWeiDai(100_000));
 
 	console.log("Generating expired option");
 	// get the current time
@@ -129,7 +129,7 @@ async function main() {
 
     // console.log("Alice insuring 0.8 BTC");
     // console.log(strikePriceInDaiForOneBTC(9000).mul(mbtcToSatoshi(800)).toString());
-	// await call(collateral, CollateralFactory, alice).approve(pool.address, daiToWeiDai(200));
+	// await call(collateral, MockCollateralFactory, alice).approve(pool.address, daiToWeiDai(200));
 	// await call(pool, OptionPoolFactory, alice).insureOption(sellableAddress, bobAddress, mbtcToSatoshi(800));
 
 	// sellableAddress = options[3];
@@ -137,11 +137,11 @@ async function main() {
 
     // console.log("Adding data to option: ", sellableAddress);
     // console.log("Eve underwriting 20.000 Dai");
-	// await call(collateral, CollateralFactory, eve).approve(pool.address, daiToWeiDai(20_000));
+	// await call(collateral, MockCollateralFactory, eve).approve(pool.address, daiToWeiDai(20_000));
 	// await call(pool, OptionPoolFactory, eve).underwriteOption(sellableAddress, daiToWeiDai(20_000), btcHash, Script.p2wpkh);
 
     // console.log("Dave insuring 1.27 BTC");
-	// await call(collateral, CollateralFactory, dave).approve(pool.address, daiToWeiDai(2*17));
+	// await call(collateral, MockCollateralFactory, dave).approve(pool.address, daiToWeiDai(2*17));
 	// await call(pool, OptionPoolFactory, dave).insureOption(sellableAddress, eveAddress, mbtcToSatoshi(1270));
 
 	// details = await attachSellableOption(alice, sellableAddress).getDetails();

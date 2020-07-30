@@ -196,7 +196,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Exercise Options', () => {
           aliceAddress,
           amountOut);
 
-      const secret = (await obligation.getSecret(bobAddress, aliceAddress)).toNumber();
+      const secret = (await reconnect(obligation, ObligationFactory, bob).getSecret(aliceAddress)).toNumber();
       await btcReferee.mock.verifyTx.returns((amountOut / strikePrice) + secret);
 
       await reconnect(option, OptionFactory, bob)
@@ -653,7 +653,7 @@ describe("Put Option (5 Writers, 2 Buyers)", () => {
           addresses[1],
           115);
 
-      const secret = (await obligation.getSecret(addresses[7], addresses[1])).toNumber();
+          const secret = (await reconnect(obligation, ObligationFactory, signers[7]).getSecret(addresses[1])).toNumber();
       await btcReferee.mock.verifyTx.returns((115 / strikePrice) + secret);
 
       await reconnect(option, OptionFactory, signers[7])

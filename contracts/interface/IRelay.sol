@@ -13,4 +13,6 @@ interface IRelay {
         bool insecure
     ) external view returns(bool);
 
+    function getBestBlock() external view returns (bytes32 digest, uint32 height);
+
 }

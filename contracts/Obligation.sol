@@ -62,7 +62,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     // accounts that can spend an owners funds
     mapping (address => mapping (address => uint)) internal _allowances;
 
-    // event Request(address indexed buyer, uint secret);
+    event RequestExercise(address indexed buyer, address indexed seller, uint amount, uint secret);
 
     constructor() public Ownable() {}
 
@@ -163,11 +163,14 @@ contract Obligation is IObligation, IERC20, European, Ownable {
             seller,
             total
         ));
-        _requests[seller][buyer].secret = uint256(uint8(salt[0]));
+        uint secret = uint256(uint8(salt[0]));
+        _requests[seller][buyer].secret = secret;
+
+        emit RequestExercise(buyer, seller, total, secret);
     }
 
-    function getSecret(address buyer, address seller) external view returns (uint) {
-        return _requests[seller][buyer].secret;
+    function getSecret(address seller) external view returns (uint) {
+        return _requests[seller][msg.sender].secret;
     }
 
     /**
