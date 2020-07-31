@@ -1,6 +1,6 @@
 {
   "name": "@interlay/xopts",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Bitcoin-backed put options on Ethereum.",
   "main": "dist/index.js",
   "scripts": {
@@ -50,7 +50,6 @@
     "buidler-typechain": "0.0.5",
     "chai": "^4.2.0",
     "ethereum-waffle": "^2.4.1",
-    "ethers": "^4.0.47",
     "husky": "^4.2.5",
     "ts-generator": "0.0.8",
     "ts-node": "^8.9.0",
@@ -61,7 +60,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@studydefi/money-legos": "^2.1.0",
-    "bitcoinjs-lib": "^5.1.10"
+    "bitcoinjs-lib": "^5.1.10",
+    "ethers": "^4.0.47"
   }
 }

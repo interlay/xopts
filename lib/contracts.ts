@@ -1,5 +1,4 @@
-import { ethers } from "@nomiclabs/buidler";
-import { Signer, ContractTransaction } from "ethers";
+import { ethers, Signer, ContractTransaction } from "ethers";
 import { Obligation } from "../typechain/Obligation";
 import { OptionPairFactory } from "../typechain/OptionPairFactory";
 import { BigNumberish, Arrayish, BigNumber } from "ethers/utils";
@@ -44,14 +43,6 @@ export function deploy1<A extends Callable, B>(signer: Signer, factory: new (sig
 
 export function deploy2<A extends Callable, B, C>(signer: Signer, factory: new (signer: Signer) => { deploy: (b: B, c: C) => Promise<A> }, arg0: B, arg1: C) {
     return (new factory(signer)).deploy(arg0, arg1);
-}
-
-// runs the callback after increasing the evm time, resets after
-export async function evmSnapFastForward<R>(n: number, cb: () => Promise<R>) {
-    const id = await ethers.provider.send("evm_snapshot", []);
-    await ethers.provider.send("evm_increaseTime", [n]);
-    await cb();
-    await ethers.provider.send("evm_revert", [id]);
 }
 
 export async function createPair(

@@ -9,7 +9,7 @@ import { ErrorCode, Script } from '../lib/constants';
 import { MockCollateral } from "../typechain/MockCollateral";
 import { OptionLibFactory } from "../typechain/OptionLibFactory";
 import { OptionLib } from "../typechain/OptionLib";
-import { deploy0, reconnect, evmSnapFastForward, createPair } from "../lib/contracts";
+import { deploy0, reconnect, createPair } from "../lib/contracts";
 import { Option } from "../typechain/Option";
 import { OptionPairFactory } from "../typechain/OptionPairFactory";
 import { ObligationFactory } from "../typechain/ObligationFactory";
@@ -22,6 +22,7 @@ import { TreasuryFactory } from "../typechain/TreasuryFactory";
 import { IUniswapV2Factory } from "../typechain/IUniswapV2Factory";
 import BTCRefereeArtifact from "../artifacts/BTCReferee.json";
 import { getCreate2OptionAddress, getCreate2ObligationAddress } from "../lib/addresses";
+import { evmSnapFastForward } from "../lib/mock";
 
 chai.use(solidity);
 const { expect } = chai;
