@@ -19,7 +19,8 @@ import { ITreasuryFactory } from "../typechain/ITreasuryFactory";
 import { ObligationFactory } from "../typechain/ObligationFactory";
 import * as bitcoin from 'bitcoinjs-lib';
 import { encodeBtcAddress } from "./encode";
-import { Addresses } from "./addresses";
+import { Addresses, Deployments } from "./addresses";
+import { Provider } from "ethers/providers";
 
 interface Connectable<C> {
     connect: (addr: string, signer?: Signer) => C;
@@ -62,20 +63,23 @@ export async function createPair(
         )[0]));
 }
 
-export interface IContracts {
-    getRelayHeight(): Promise<number>;
+type SignerOrProvider = Signer | Provider;
+type SignerAndProvider = Signer & Provider;
+type Optional<T> = T | undefined;
 
-    checkAllowance(): Promise<boolean>;
+async function resolve(provider: Provider): Promise<Optional<Addresses>> {
+    let network = await provider.getNetwork();
 
-    approveMax(): Promise<ContractTransaction>;
-
-    createPair(
-        expiryTime: BigNumberish,
-        windowSize: BigNumberish,
-        strikePrice: BigNumberish,
-    ): Promise<IOptionPair>;
-
-    getBtcAddress(): Promise<BtcAddress>;
+    switch (network.chainId) {
+        case 31337:
+            // Buidlerevm
+            return Deployments.buidler;
+        case 2222:
+            // Ganache
+            return Deployments.ganache;
+        default:
+            return;
+    }
 }
 
 type BtcAddress = {
@@ -83,30 +87,49 @@ type BtcAddress = {
     format: Script,
 }
 
-export class Contracts implements IContracts {
-    private optionFactory: OptionPairFactory;
-    private optionLib: OptionLib;
-    private collateral: IERC20;
-    private treasury: ITreasury;
-    private referee: IReferee;
-    private relay: IRelay;
+export interface IReadContracts {
+    getRelayHeight(): Promise<number>;
 
-    readonly signer: Signer;
-    readonly account: string;
-    readonly confirmations: number;
+    getPair(option: string): Promise<IReadOptionPair>;
+
+    listOptions(): Promise<string[]>;
+}
+
+export interface IWriteContracts extends IReadContracts {
+    checkAllowance(): Promise<boolean>;
+    
+    approveMax(): Promise<ContractTransaction>;
+    
+    createPair(
+        expiryTime: BigNumberish,
+        windowSize: BigNumberish,
+        strikePrice: BigNumberish,
+    ): Promise<IWriteOptionPair>;
+
+    getBtcAddress(): Promise<BtcAddress>;
+
+    getPair(option: string): Promise<IWriteOptionPair>;
+}
+
+export class ReadOnlyContracts implements IReadContracts {
+    protected optionFactory: OptionPairFactory;
+    protected optionLib: OptionLib;
+    protected collateral: IERC20;
+    protected treasury: ITreasury;
+    protected referee: IReferee;
+    protected relay: IRelay;
+
+    readonly signer: SignerOrProvider;
 
     constructor(
-        confirmations: number,
         optionFactory: OptionPairFactory,
         optionLib: OptionLib,
         collateral: IERC20,
         treasury: ITreasury,
         referee: IReferee,
         relay: IRelay,
-        signer: Signer,
-        account: string
+        signer: SignerOrProvider,
     ) {
-        this.confirmations = confirmations;
         this.optionFactory = optionFactory;
         this.optionLib = optionLib;
         this.collateral = collateral;
@@ -114,14 +137,85 @@ export class Contracts implements IContracts {
         this.referee = referee;
         this.relay = relay;
         this.signer = signer;
-        this.account = account;
     }
 
     static async load(
         contracts: Addresses,
+        signer: SignerOrProvider
+    ): Promise<ReadOnlyContracts> {
+        const _optionFactory = OptionPairFactoryFactory.connect(contracts.optionFactory, signer);
+        const _optionLib = OptionLibFactory.connect(contracts.optionLib, signer);
+        const _collateral = IERC20Factory.connect(contracts.collateral, signer);
+        const _treasuryAddress = await _optionFactory.getTreasury(_collateral.address);
+        const _treasury = ITreasuryFactory.connect(_treasuryAddress, signer);
+        const _referee = IRefereeFactory.connect(contracts.referee, signer);
+        const _relay = IRelayFactory.connect(contracts.relay, signer);
+        return new ReadOnlyContracts(
+            _optionFactory,
+            _optionLib,
+            _collateral,
+            _treasury,
+            _referee,
+            _relay,
+            signer
+        );
+    }
+
+    static async resolve(provider: Provider): Promise<Optional<ReadOnlyContracts>> {
+        const addresses = await resolve(provider);
+        return addresses ? this.load(addresses, provider) : undefined;
+    }
+
+    async getRelayHeight() {
+        const {height} = await this.relay.getBestBlock();
+        return height;
+    }
+
+    async getPair(
+        optionAddress: string,
+    ): Promise<IReadOptionPair> {
+        const obligationAddress = await this.optionFactory.getObligation(optionAddress);
+        const option = OptionFactory.connect(optionAddress, this.signer);
+        const obligation = ObligationFactory.connect(obligationAddress, this.signer);
+        return new ReadOnlyOptionPair(
+            option,
+            obligation,
+            this.optionLib,
+            this.collateral,
+            this.treasury,
+        );
+    }
+
+    listOptions(): Promise<string[]> {
+        return this.optionFactory.allOptions();
+    }
+}
+
+export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContracts {
+    readonly account: string;
+    readonly confirmations?: number;
+
+    constructor(
+        optionFactory: OptionPairFactory,
+        optionLib: OptionLib,
+        collateral: IERC20,
+        treasury: ITreasury,
+        referee: IReferee,
+        relay: IRelay,
         signer: Signer,
-        confirmations: number
-    ): Promise<Contracts> {
+        account: string,
+        confirmations?: number,
+    ) {
+        super(optionFactory, optionLib, collateral, treasury, referee, relay, signer);
+        this.account = account;
+        this.confirmations = confirmations;
+    }
+
+    static async load(
+        contracts: Addresses,
+        signer: SignerAndProvider,
+        confirmations?: number,
+    ): Promise<ReadWriteContracts> {
         const _optionFactory = OptionPairFactoryFactory.connect(contracts.optionFactory, signer);
         const _optionLib = OptionLibFactory.connect(contracts.optionLib, signer);
         const _collateral = IERC20Factory.connect(contracts.collateral, signer);
@@ -130,8 +224,7 @@ export class Contracts implements IContracts {
         const _referee = IRefereeFactory.connect(contracts.referee, signer);
         const _relay = IRelayFactory.connect(contracts.relay, signer);
         const account = await signer.getAddress();
-        return new Contracts(
-            confirmations,
+        return new ReadWriteContracts(
             _optionFactory,
             _optionLib,
             _collateral,
@@ -140,12 +233,13 @@ export class Contracts implements IContracts {
             _relay,
             signer,
             account,
+            confirmations,
         );
     }
 
-    async getRelayHeight() {
-        const {height} = await this.relay.getBestBlock();
-        return height;
+    static async resolve(provider: SignerAndProvider, confirmations?: number): Promise<Optional<ReadWriteContracts>> {
+        const addresses = await resolve(provider);
+        return addresses ? this.load(addresses, provider, confirmations) : undefined;
     }
 
     // if this returns false we should call `approveMax`
@@ -153,7 +247,7 @@ export class Contracts implements IContracts {
         const amount = await this.collateral.allowance(this.account, this.optionLib.address);
         return amount.eq(ethers.constants.MaxUint256);
     }
-    
+
     // in order to limit the number of transactions we need to
     // pre-approve our contracts to work with the max allowance
     approveMax() {
@@ -166,14 +260,20 @@ export class Contracts implements IContracts {
         expiryTime: BigNumberish,
         windowSize: BigNumberish,
         strikePrice: BigNumberish,
-    ): Promise<IOptionPair> {
+    ): Promise<IWriteOptionPair> {
         const optionAddress = await createPair(
             this.optionFactory, expiryTime, windowSize, strikePrice,
             this.collateral.address, this.referee.address, this.confirmations);
+        return this.getPair(optionAddress);
+    }
+
+    async getPair(
+        optionAddress: string,
+    ): Promise<IWriteOptionPair> {
         const obligationAddress = await this.optionFactory.getObligation(optionAddress);
         const option = OptionFactory.connect(optionAddress, this.signer);
         const obligation = ObligationFactory.connect(obligationAddress, this.signer);
-        return new OptionPair(
+        return new ReadWriteOptionPair(
             option,
             obligation,
             this.optionLib,
@@ -190,8 +290,19 @@ export class Contracts implements IContracts {
     }
 }
 
-export interface IOptionPair {
+export interface IReadOptionPair {
+    getDetails(): Promise<{
+        expiryTime: BigNumber,
+        windowSize: BigNumber,
+        strikePrice: BigNumber,
+    }>;
 
+    getBtcAddress(account: string, network: bitcoin.Network): Promise<string>;
+
+    balanceOf(account: string): Promise<BigNumber>;
+}
+
+export interface IWriteOptionPair extends IReadOptionPair {
     write(
         premium: BigNumberish,
         amount: BigNumberish,
@@ -220,26 +331,50 @@ export interface IOptionPair {
     refund(
         amount: BigNumberish,
     ): Promise<void>;
-
-    getDetails(): Promise<{
-        expiryTime: BigNumber,
-        windowSize: BigNumber,
-        strikePrice: BigNumber,
-    }>;
-
-    getBtcAddress(account: string, network: bitcoin.Network): Promise<string>;
-
-    balanceOf(account: string): Promise<BigNumber>;
-
 }
 
-export class OptionPair implements IOptionPair {
-    private option: Option;
-    private obligation: Obligation;
-    private optionLib: OptionLib;
-    private collateral: IERC20;
-    private treasury: ITreasury;
+export class ReadOnlyOptionPair implements IReadOptionPair {
+    protected option: Option;
+    protected obligation: Obligation;
+    protected optionLib: OptionLib;
+    protected collateral: IERC20;
+    protected treasury: ITreasury;
 
+    constructor(
+        option: Option,
+        obligation: Obligation,
+        optionLib: OptionLib,
+        collateral: IERC20,
+        treasury: ITreasury,
+    ) {
+        this.option = option;
+        this.obligation = obligation;
+        this.optionLib = optionLib;
+        this.collateral = collateral;
+        this.treasury = treasury;
+    }
+
+    async getDetails() {
+        const [expiryTime, windowSize, strikePrice] = await Promise.all([
+            this.option.expiryTime(),
+            this.option.windowSize(),
+            this.option.strikePrice(),
+        ]);
+        return ({ expiryTime, windowSize, strikePrice });
+    }
+
+    async getBtcAddress(account: string, network: bitcoin.Network): Promise<string> {
+        const { btcHash, format } = await this.obligation.getBtcAddress(account);
+        return encodeBtcAddress(btcHash.substr(2), format, network);
+    }
+
+    // gets the locked collateral for a pair
+    async balanceOf(account: string) {
+        return this.treasury.balanceOf(this.obligation.address, account)
+    }
+}
+
+export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOptionPair {
     readonly confirmations: number;
 
     constructor(
@@ -250,12 +385,7 @@ export class OptionPair implements IOptionPair {
         treasury: ITreasury,
         confirmations: number,
     ) {
-        this.option = option;
-        this.obligation = obligation;
-        this.optionLib = optionLib;
-        this.collateral = collateral;
-        this.treasury = treasury;
-
+        super(option, obligation, optionLib, collateral, treasury);
         this.confirmations = confirmations;
     }
 
@@ -313,24 +443,5 @@ export class OptionPair implements IOptionPair {
     ): Promise<void> {
         await this.option.refund(amount)
             .then(tx => tx.wait(this.confirmations));
-    }
-
-    async getDetails() {
-        const [expiryTime, windowSize, strikePrice] = await Promise.all([
-            this.option.expiryTime(),
-            this.option.windowSize(),
-            this.option.strikePrice(),
-        ]);
-        return ({ expiryTime, windowSize, strikePrice });
-    }
-
-    async getBtcAddress(account: string, network: bitcoin.Network): Promise<string> {
-        const { btcHash, format } = await this.obligation.getBtcAddress(account);
-        return encodeBtcAddress(btcHash.substr(2), format, network);
-    }
-
-    // gets the locked collateral for a pair
-    async balanceOf(account: string) {
-        return this.treasury.balanceOf(this.obligation.address, account)
     }
 }

@@ -14,6 +14,8 @@ interface IOptionPairFactory {
         address collateral
     ) external returns (address option, address obligation);
 
+    function allOptions() external view returns (address[] memory);
+
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external;
 
     function getBtcAddress() external view returns (bytes20 btcHash, Bitcoin.Script format);

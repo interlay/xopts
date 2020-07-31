@@ -154,4 +154,8 @@ contract OptionPairFactory is IOptionPairFactory {
         emit Create(option, obligation, expiryTime, windowSize, strikePrice);
     }
 
+    function allOptions() external override view returns (address[] memory) {
+        return options;
+    }
+
 }
