@@ -52,3 +52,14 @@ export async function estimateOutput(pairAddress: string, input: IERC20, output:
     const denominator = inputReserve.mul(1000).add(inputAmount.mul(997));
     return numerator.div(denominator);
 }
+
+export async function quote(pairAddress: string, tokenA: IERC20, tokenB: IERC20, amountA: number) {
+    const reserveA = await tokenA.balanceOf(pairAddress);
+    const reserveB = await tokenB.balanceOf(pairAddress);
+
+    console.log(reserveA.toNumber());
+    console.log(reserveB.toNumber());
+
+    const amountAIn = new BigNumber(amountA);
+    return amountAIn.mul(reserveA).div(reserveB);
+}
