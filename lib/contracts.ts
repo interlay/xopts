@@ -20,7 +20,7 @@ import { ObligationFactory } from "../typechain/ObligationFactory";
 import * as bitcoin from 'bitcoinjs-lib';
 import { encodeBtcAddress } from "./encode";
 import { Addresses, Deployments } from "./addresses";
-import { Provider } from "ethers/providers";
+import { Provider, InfuraProvider, Web3Provider } from "ethers/providers";
 
 interface Connectable<C> {
     connect: (addr: string, signer?: Signer) => C;
@@ -191,6 +191,8 @@ export class ReadOnlyContracts implements IReadContracts {
     }
 }
 
+type WebProvider = InfuraProvider | Web3Provider;
+
 export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContracts {
     readonly account: string;
     readonly confirmations?: number;
@@ -213,7 +215,7 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
 
     static async load(
         contracts: Addresses,
-        signer: SignerAndProvider,
+        signer: Signer,
         confirmations?: number,
     ): Promise<ReadWriteContracts> {
         const _optionFactory = OptionPairFactoryFactory.connect(contracts.optionFactory, signer);
@@ -237,9 +239,9 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
         );
     }
 
-    static async resolve(provider: SignerAndProvider, confirmations?: number): Promise<Optional<ReadWriteContracts>> {
+    static async resolve(provider: WebProvider, confirmations?: number): Promise<Optional<ReadWriteContracts>> {
         const addresses = await resolve(provider);
-        return addresses ? this.load(addresses, provider, confirmations) : undefined;
+        return addresses ? this.load(addresses, provider.getSigner(), confirmations) : undefined;
     }
 
     // if this returns false we should call `approveMax`
