@@ -6,4 +6,3 @@ export {
     ReadOnlyContracts, ReadWriteContracts, ReadOnlyOptionPair, ReadWriteOptionPair,
 } from './lib/contracts';
 export { Deployments } from './lib/addresses';
-export { contracts } from './contracts';

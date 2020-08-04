@@ -39,21 +39,18 @@ You can find more details on how XOpts works in our [Guides](https://xopts.io/he
 
 ### Built with
 
-* [Yarn](https://yarnpkg.com/)
-* [Typescript](https://www.typescriptlang.org/)
 * [Buidler](https://buidler.dev/)
-* [money-legos](https://github.com/studydefi/money-legos)
+* [Typescript](https://www.typescriptlang.org/)
+* [Yarn](https://yarnpkg.com/)
 
 ## Getting Started
 
 Make sure you have [node](https://nodejs.org/en/) installed. Generally, we also recommend managing different version of node via version manager like [NVM](https://github.com/nvm-sh/nvm).
 
-First, clone this repository, initialize its submodules and enter into its root folder.
+Clone this repository and enter into its root folder.
 
 ```bash
 git clone git@gitlab.com:interlay/xopts.git
-git submodule init
-git submodule update
 cd xopts
 ```
 
@@ -65,7 +62,7 @@ yarn install
 
 ### Try it out
 
-Compile contracts and create the [TypeChain](https://github.com/ethereum-ts/TypeChain) interfaces.
+Compile the contracts and create the [TypeChain](https://github.com/ethereum-ts/TypeChain) interfaces.
 
 ```bash
 yarn build
@@ -74,31 +71,27 @@ yarn build
 Start buidlerevm.
 
 ```bash
-npx buidler node
+yarn buidler
 ```
 
-In another terminal, create test data that can be used in the front-end. Execute this from the root folder of the project.
+In another terminal, deploy the contracts and create some test data. Execute this from the root folder of the project.
 
 ```bash
-npx buidler run scripts/testdata.ts --network localhost
+yarn deploy::test --network localhost
 ```
 
-Go to [xopts.io](https://xopts.io/) and point your [MetaMask wallet](https://metamask.io/) to `localhost:8545`. On your first setup, you might need to add one of the buidlerevm accounts to your MetaMask list of accounts by [importing the private key](https://metamask.zendesk.com/hc/en-us/articles/360015489331-Importing-an-Account). You can find the private keys of the buidlerevm accounts in the console output where you started buidler evm (with the `npx buidler node` command). It should look like this:
+> Note that you can deploy without specifying the network but this will not persist, hence we start an Ethereum node first.
+
+Go to [xopts.io](https://xopts.io/) and point your [MetaMask wallet](https://metamask.io/) to `localhost:8545`. On your first setup, you might need to add one of the buidlerevm accounts to your MetaMask list of accounts by [importing the private key](https://metamask.zendesk.com/hc/en-us/articles/360015489331-Importing-an-Account). You can find the private keys of the buidlerevm accounts in the console output where you started buidler evm (with the `yarn buidler` command). It should look like this:
 
 <div align="center">
     <img src="media/buidler_accounts.png" alt="buidlerevm accounts" width="700">
 </div>
 
 
-### Development
+## Development
 
-Compile contracts and create the [TypeChain](https://github.com/ethereum-ts/TypeChain) interfaces.
-
-```bash
-yarn build
-```
-
-Run tests.
+After compiling the contracts as described above, run the tests.
 
 ```bash
 yarn test
@@ -106,20 +99,22 @@ yarn test
 
 ### Docs
 
-Make sure you have [solidity-docgen](https://github.com/OpenZeppelin/solidity-docgen) and [docsify](https://docsify.js.org/#/) installed.
+We build our docs using [solidity-docgen](https://github.com/OpenZeppelin/solidity-docgen) and [docsify](https://docsify.js.org/#/).
 
-```
-yarn global add solidity-docgen
-yarn global add docsify-cli
-```
-
-You can then launch the documentation locally.
-
-```
+```bash
 yarn docs
 ```
 
+Point your local browser to `./docs/index.html` or use the `docsify-cli` tool to start a live reload development server.
+
+```bash
+yarn global add docsify-cli
+docsify serve ./docs
+```
+
 ### Releasing
+
+Prior to bumping the `package.json` version, first clean and rebuild the project.
 
 ```bash
 yarn clean
@@ -128,7 +123,7 @@ yarn tsc
 yarn publish --access public
 ```
 
-#### Bitcoin Testnet
+### Bitcoin Testnet
 
 In order to verify testnet transactions we need to swap out any mocked components.
 
@@ -137,18 +132,9 @@ In order to verify testnet transactions we need to swap out any mocked component
 3. Deploy using the testnet configuration.
 4. On `OptionPool` deployment use the live relay address and `./lib/TxValidator.sol`.
 
-### Integrations
-
-#### Uniswap
-
-```bash
-INFURA_ID=***** yarn run ganache
-npx buidler run scripts/uniswap.ts --network localhost
-```
-
 ### [React UI](https://gitlab.com/interlay/xopts-ui)
 
-Clone the [xopts-ui](https://gitlab.com/interlay/xopts-ui) and in a separate terminal window:
+Clone the [xopts-ui](https://gitlab.com/interlay/xopts-ui) and in a separate terminal window.
 
 ```bash
 git clone git@gitlab.com:interlay/xopts-ui.git
@@ -178,14 +164,13 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 + OptionPool: [0x929bcF49ce947535815b3A34ac312D027ec06825](https://ropsten.etherscan.io/address/0x929bcF49ce947535815b3A34ac312D027ec06825)
 + Interlay's BTC-Relay: [0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb](https://ropsten.etherscan.io/address/0x78A389B693e0E3DE1849F34e70bf4Bcb57F0F2bb)
 
-You can interact with Xopts on [xopts.io](https://xopts.io)or run a locally deployed front-end on [localhost:3000](http://localhost:3000).
+You can interact with Xopts on [xopts.io](https://xopts.io) or run a locally deployed front-end on [localhost:3000](http://localhost:3000).
+
 
 ## Roadmap
 
-- [x] Integration with [Uniswap v2](https://uniswap.org/docs/v2).
-- [ ] Integration with [ENS](https://ens.domains/).
-- [x] Deployment on Ropsten.
-- [ ] Development of call options.
+- [x] Put Options
+- [ ] Call Options
 
 
 ## Contributing
@@ -206,13 +191,8 @@ XOPTS is licensed under the terms of the Apache License (Version 2.0). See [LICE
 
 ## Contact
 
-
 Website: [Interlay.io](https://www.interlay.io)
 
 Twitter: [@interlayHQ](https://twitter.com/InterlayHQ)
 
 Email: contact@interlay.io
-
-
-## Acknowledgements
-

@@ -2,13 +2,14 @@ import { ethers } from "@nomiclabs/buidler";
 import {
 	daiToWeiDai, strikePriceInDaiForOneBTC
 } from "../lib/conversion";
-import { deploy0, deploy1 } from "../lib/contracts";
+import { deploy0, deploy1, deploy2 } from "../lib/contracts";
 import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
 import { BTCRefereeFactory } from "../typechain/BTCRefereeFactory";
 import { OptionLibFactory } from "../typechain/OptionLibFactory";
 import { deployUniswapFactory } from "../lib/uniswap";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
+import { AddressZero } from "ethers/constants";
 
 // ROPSTEN
 
@@ -27,7 +28,7 @@ async function main() {
 	const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
 	// TODO: make conditional
 	const uniswapFactory = await deployUniswapFactory(signers[0], account);
-	const optionLib = await deploy1(signers[0], OptionLibFactory, uniswapFactory.address);
+	const optionLib = await deploy2(signers[0], OptionLibFactory, uniswapFactory.address, AddressZero);
 	const relay = await deploy0(signers[0], MockRelayFactory);
 	const referee = await deploy1(signers[0], BTCRefereeFactory, relay.address);
 

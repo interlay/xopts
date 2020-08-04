@@ -1,6 +1,5 @@
 import config from "../buidler.config";
 import  * as child from "child_process";
-import { contracts } from "../index";
 
 const ganache_cmd = "ganache-cli";
 const port = "-p 8545";
@@ -16,9 +15,6 @@ var unlocked = "";
 if (INFURA_ID) {
     const INFURA_URL = 'https://ropsten.infura.io/v3/'.concat(INFURA_ID.toString());
     fork = "-f ".concat(INFURA_URL.toString());
-    var dai_account = "--unlock ".concat(contracts.ropsten.dai_account);
-    var dai_contract = "--unlock ".concat(contracts.ropsten.dai);
-    unlocked = "".concat(dai_account, " ", dai_contract)
 }
 
 const ganache_string = ganache_cmd.concat(" ", port, " ", mnemonic, " ", id, " ", fork, " ", unlocked);

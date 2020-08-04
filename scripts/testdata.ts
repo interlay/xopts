@@ -2,7 +2,7 @@ import { ethers } from "@nomiclabs/buidler";
 import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { Signer } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
-import { deploy0, reconnect, deploy2, createPair, deploy1 } from "../lib/contracts";
+import { deploy0, reconnect, deploy2, createPair } from "../lib/contracts";
 import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
 import { daiToWeiDai, strikePriceInDaiForOneBTC, premiumInDaiForOneBTC } from "../lib/conversion";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
@@ -15,8 +15,7 @@ import { BigNumberish, BigNumber } from "ethers/utils";
 import { MockCollateral } from "../typechain/MockCollateral";
 import { BTCReferee } from "../typechain/BTCReferee";
 import { OptionLib } from "../typechain/OptionLib";
-
-// NOTE: following address is owned by @gregdhill
+import { AddressZero } from "ethers/constants";
 
 const keyPair = bitcoin.ECPair.makeRandom();
 const payment = bitcoin.payments.p2pkh({pubkey: keyPair.publicKey, network: bitcoin.networks.testnet});
@@ -41,7 +40,17 @@ async function createAndLockAndWrite(
 	await reconnect(collateral, MockCollateralFactory, signer).approve(optionLib.address, amount.add(premium));
 
 	await reconnect(optionLib, OptionLibFactory, signer)
-		.lockAndWrite(option.address, premium, amount, btcHash, Script.p2pkh);
+		.lockAndWrite(
+			option.address,
+			collateral.address,
+			collateral.address,
+			amount,
+			premium,
+			amount,
+			premium,
+			btcHash,
+			Script.p2pkh
+		);
 
 	return optionAddress;
 }
@@ -67,7 +76,7 @@ async function main() {
   
 	// 0x151eA753f0aF1634B90e1658054C247eFF1C2464
 	const optionFactory = await deploy0(alice, OptionPairFactoryFactory);
-	const optionLib = await deploy1(alice, OptionLibFactory, uniswap.address);
+	const optionLib = await deploy2(alice, OptionLibFactory, uniswap.address, AddressZero);
 
     // get collateral for everyone
 	await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
