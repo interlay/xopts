@@ -6,7 +6,6 @@ import { MockBTCReferee } from "../typechain/MockBTCReferee";
 import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
 import * as bitcoin from 'bitcoinjs-lib';
 import { btcToSatoshi } from "../lib/conversion";
-import { ErrorCode } from '../lib/constants';
 
 chai.use(solidity);
 const { expect } = chai;

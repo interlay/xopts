@@ -8,6 +8,8 @@
     "compile": "npx buidler compile",
     "test": "npx buidler test",
     "deploy": "npx buidler run scripts/deploy.ts",
+    "deploy::test": "npx buidler run scripts/testdata.ts",
+    "buidler": "npx buidler node",
     "ganache": "npx buidler run scripts/ganache.ts",
     "tsc": "tsc && cp typechain/*.d.ts dist/typechain/",
     "clean": "rm -rf artifacts cache typechain dist",
@@ -61,7 +63,6 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@studydefi/money-legos": "^2.1.0",
     "bitcoinjs-lib": "^5.1.10",
     "ethers": "^4.0.47"
   }
