@@ -1,25 +1,10 @@
-name: build and test
+name: docs
 
 on:
   push:
-    branches: [ dev ]
-  pull_request:
-    branches: [ dev ]
+    branches: [ master ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: '14.x'
-    - run: yarn install
-    - run: yarn build
-    - run: yarn test
-
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -29,11 +14,11 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '14.x'
-      - name: Install / Build
+      - name: install / build
         run: |
           yarn install
           yarn docs
-      - name: Deploy
+      - name: publish
         uses: JamesIves/github-pages-deploy-action@3.5.9
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
