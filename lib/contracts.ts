@@ -313,7 +313,8 @@ export interface IWriteOptionPair extends IReadOptionPair {
 
     buy(
         amountOut: BigNumberish,
-        amountInMax: BigNumberish
+        amountInMax: BigNumberish,
+        deadline: BigNumberish
     ): Promise<void>;
 
     requestExercise(
@@ -377,7 +378,8 @@ export class ReadOnlyOptionPair implements IReadOptionPair {
 }
 
 export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOptionPair {
-    readonly confirmations: number;
+    readonly account: string;
+    readonly confirmations?: number;
 
     constructor(
         option: Option,
@@ -385,7 +387,7 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOpt
         optionLib: OptionLib,
         collateral: IERC20,
         treasury: ITreasury,
-        confirmations: number,
+        confirmations?: number,
     ) {
         super(option, obligation, optionLib, collateral, treasury);
         this.confirmations = confirmations;
@@ -399,20 +401,30 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOpt
         btcAddress: BtcAddress,
     ): Promise<void> {
         await this.optionLib.lockAndWrite(
-            this.option.address, premium, amount, btcAddress.btcHash, btcAddress.format
+            this.option.address,
+            this.collateral.address,
+            this.collateral.address,
+            amount,
+            premium,
+            amount,
+            premium,
+            btcAddress.btcHash,
+            btcAddress.format
         ).then(tx => tx.wait(this.confirmations));
     }
     
     // buy order (i.e. specify exact number of options)
     async buy(
         amountOut: BigNumberish,
-        amountInMax: BigNumberish
+        amountInMax: BigNumberish,
+        deadline: BigNumberish
     ): Promise<void> {
         await this.optionLib.swapTokensForExactTokens(
             amountOut,
             amountInMax,
-            this.collateral.address,
-            this.option.address
+            [this.collateral.address, this.option.address],
+            this.account,
+            deadline,
         ).then(tx => tx.wait(this.confirmations));
     }
 

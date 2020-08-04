@@ -5,8 +5,8 @@ pragma solidity ^0.6.0;
 import "@nomiclabs/buidler/console.sol";
 
 import { BytesLib } from "@interlay/bitcoin-spv-sol/contracts/BytesLib.sol";
-import { Parser } from "@interlay/btc-relay-sol/src/Parser.sol";
-import { Script } from "@interlay/btc-relay-sol/src/Script.sol";
+import { Parser } from "@interlay/btc-relay-sol/contracts/Parser.sol";
+import { Script } from "@interlay/btc-relay-sol/contracts/Script.sol";
 import { IReferee } from "./interface/IReferee.sol";
 import { IRelay } from "./interface/IRelay.sol";
 

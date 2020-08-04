@@ -402,17 +402,17 @@
     "@ethersproject/properties" ">=5.0.0-beta.140"
     "@ethersproject/strings" ">=5.0.0-beta.136"
 
-"@interlay/bitcoin-spv-sol@3.2.1":
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/@interlay/bitcoin-spv-sol/-/bitcoin-spv-sol-3.2.1.tgz#ce6ffa5f271d07d8f4a8e3234d9063ce1b7bbee2"
-  integrity sha512-VwG9xZ+PCeoR82+FDW6M0qOQa1nAapDBKhsiRy8UwiDTd5ZfvO/mbrhoPXB2WGtqodtt3GRjX1AtOjtQI8JElg==
+"@interlay/bitcoin-spv-sol@3.2.2":
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/@interlay/bitcoin-spv-sol/-/bitcoin-spv-sol-3.2.2.tgz#5d4afb571b0c9868799a9ce7c7bc4aee2daaf3d9"
+  integrity sha512-Srf5XVyDGE/U6fQ9fEo6RCAgUSYhZJsI5YaJVc3O7dtyiprzjSuh/pFKxZOydL7y3AFetCEJxLLMzjbMDQntfQ==
 
-"@interlay/btc-relay-sol@0.3.2":
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.3.2.tgz#eea2fed47254f2c2fc02e795661ac826888d6afc"
-  integrity sha512-N3y9gSiznII1x+3CxogH5zN7keaLo/CAHNRaUksUKPiuPlEUzrbr0U4lDp+zAJFRFqT+5DLhe93hoEzapWKzOA==
+"@interlay/btc-relay-sol@0.3.3":
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.3.3.tgz#7503924e98226a0bfff8f13574611e51ed866fd7"
+  integrity sha512-sowHWVHLrfw2RNWCgKkh5tamxAtPBB5Q6Qhh1OoXmXyv0ZOS7Myw2Sojf2LcT682d+JPnuLO1Dn4c90pigcy1w==
   dependencies:
-    "@interlay/bitcoin-spv-sol" "3.2.1"
+    "@interlay/bitcoin-spv-sol" "3.2.2"
     "@openzeppelin/contracts" "3.1.0"
     bitcoinjs-lib "^5.1.7"
 
