@@ -17,7 +17,7 @@ describe("Treasury", () => {
   let treasury: Treasury;
 
   it("should deploy treasury", async () => {
-    signers = await ethers.signers();
+    signers = await ethers.getSigners();
     addresses = await Promise.all([
       signers[0].getAddress(),
       signers[1].getAddress(),

@@ -1,5 +1,4 @@
-export { ethers } from 'ethers';
-export { BigNumber } from 'ethers/utils';
+export { ethers, BigNumber } from 'ethers';
 export { Script } from './lib/constants';
 export { 
     IReadContracts, IWriteContracts, IReadOptionPair, IWriteOptionPair,

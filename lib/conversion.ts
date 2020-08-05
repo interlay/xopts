@@ -1,4 +1,5 @@
 import { ethers } from "@nomiclabs/buidler";
+import { BigNumber } from "ethers";
 
 // convert a BTC amount to satoshis
 export function btcToSatoshi(amount: number) {
@@ -31,14 +32,6 @@ export function weiDaiToMdai(amount: string) {
     return ethers.utils.formatUnits(amount, 15);
 }
 
-// calculate the premium in dai for 1 BTC
-export function premiumInDaiForOneBTC(amount: number) {
-    let weiDai = daiToWeiDai(amount);
-    return weiDai.div(btcToSatoshi(1));
-}
-
-// calculate the premium in dai for 1 BTC
-export function strikePriceInDaiForOneBTC(amount: number) {
-    let weiDai = daiToWeiDai(amount);
-    return weiDai.div(btcToSatoshi(1));
+export function newBigNum(value: number, decimals: number) {
+    return BigNumber.from(value).mul(BigNumber.from(10).pow(decimals));
 }

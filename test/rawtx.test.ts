@@ -2,8 +2,8 @@ import { ethers } from "@nomiclabs/buidler";
 import { Signer } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { MockBTCReferee } from "../typechain/MockBTCReferee";
-import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
+import { MockBtcReferee } from "../typechain/MockBtcReferee";
+import { MockBtcRefereeFactory } from "../typechain/MockBtcRefereeFactory";
 import * as bitcoin from 'bitcoinjs-lib';
 import { btcToSatoshi } from "../lib/conversion";
 
@@ -12,12 +12,12 @@ const { expect } = chai;
 
 describe("Tx Validation", () => {
   let signers: Signer[];
-  let btcReferee: MockBTCReferee;
+  let btcReferee: MockBtcReferee;
 
   beforeEach(async () => {
-    signers = await ethers.signers();
+    signers = await ethers.getSigners();
 
-    let btcRefereeFactory = new MockBTCRefereeFactory(signers[0]);
+    let btcRefereeFactory = new MockBtcRefereeFactory(signers[0]);
     btcReferee = await btcRefereeFactory.deploy();
   });
 
@@ -45,6 +45,7 @@ describe("Tx Validation", () => {
   //   await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUT_AMOUNT);
   // });
 
+  // d9c9213136854a53211f1c80d202b743dfe971867558fd2c5628fe781a7f7ba9
   const p2pkhTx = "0x0200000001f76fec5260faa8f39fbd8f17f5acb2bd50260fa715347201657fceaefc14a102" +
                   "000000006a47304402203f09be3d47d77f6a0948023aa80dc849128ce5a9cb017ed3c2413abb" +
                   "74accf9c022019da8fed912a6b5b01aa6088fee3bdeb0d237d37072e29fb7b238932bf140cd0" +

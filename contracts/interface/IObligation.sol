@@ -17,7 +17,7 @@ interface IObligation {
 
     function mint(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external;
 
-    function requestExercise(address buyer, address seller, uint amount) external;
+    function requestExercise(address buyer, address seller, uint satoshis) external returns (uint);
 
     function executeExercise(address buyer, address seller, uint satoshis) external;
 

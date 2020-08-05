@@ -19,11 +19,12 @@ export const ErrorCode = {
     ERR_WINDOW_ZERO: "Window cannot be zero",
 
     // Obligation
-    ERR_INVALID_EXERCISE_AMOUNT: "Invalid exercise amount",
+    ERR_INVALID_OUTPUT_AMOUNT: "Invalid output amount",
     ERR_NO_BTC_ADDRESS: "Insurer lacks BTC address",
-
-    // Option
-    ERR_VALIDATE_TX: "Cannot validate tx",
+    ERR_INSUFFICIENT_OBLIGATIONS: "Seller has insufficient obligations",
+    ERR_INVALID_SECRET: "Buyer has encoded an incorrect secret",
+    ERR_SUB_WITHDRAW_BALANCE: "Insufficient pool balance",
+    ERR_SUB_WITHDRAW_AVAILABLE: "Insufficient available",
     ERR_ZERO_STRIKE_PRICE: "Requires non-zero strike price",
 
     // OptionPairFactory
@@ -38,6 +39,5 @@ export const ErrorCode = {
 
     // BTCReferee
     ERR_INVALID_OUT_HASH: "Invalid output hash",
-    ERR_INVALID_OUT_AMOUNT: "Invalid output amount",
-    ERR_VERIFY_TX: "Cannot verify tx inclusion",
+    ERR_TX_NOT_INCLUDED: "Cannot verify tx inclusion",
 }

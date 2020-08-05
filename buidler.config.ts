@@ -3,7 +3,7 @@ import { usePlugin } from "@nomiclabs/buidler/config";
 // Plugins
 usePlugin("@nomiclabs/buidler-ganache");
 usePlugin("@nomiclabs/buidler-waffle");
-usePlugin("buidler-typechain");
+usePlugin("@interlay/buidler-typechain");
 usePlugin('buidler-gas-reporter');
 
 // environment
@@ -40,7 +40,7 @@ const config = {
 	},
 	typechain: {
     	outDir: 'typechain',
-    	target: 'ethers'
+    	target: 'ethers-v5'
   	},
     networks: {
         buidlerevm : {

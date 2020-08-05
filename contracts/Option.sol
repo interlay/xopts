@@ -27,9 +27,6 @@ contract Option is IOption, IERC20, European, Ownable {
     string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
     string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
 
-    // event Insure(address indexed account, uint256 amount);
-    // event Exercise(address indexed account, uint256 amount);
-
     // btc relay or oracle
     address public override referee;
     address public override treasury;
@@ -101,15 +98,22 @@ contract Option is IOption, IERC20, European, Ownable {
         address account,
         uint256 amount
     ) internal {
-        _balances[account] = _balances[account].sub(amount);
+        _balances[account] = _balances[account].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE);
         totalSupply = totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
 
-    function requestExercise(address seller, uint amount) external override canExercise {
-        // immediately burn options to prevent double spends
-        _burn(msg.sender, amount);
-        IObligation(obligation).requestExercise(msg.sender, seller, amount);
+    /**
+    * @notice Request exercise for an amount of input satoshis then burn the equivalent
+    * options to prevent spamming - these must be exercised with the specified seller.
+    * @dev Caller is assumed to be the `buyer`.
+    * @param seller Account to exercise against.
+    * @param satoshis Input amount.
+    **/
+    function requestExercise(address seller, uint satoshis) external override canExercise {
+        uint options = IObligation(obligation).requestExercise(msg.sender, seller, satoshis);
+        // burn options to prevent double spends
+        _burn(msg.sender, options);
     }
 
     /**
