@@ -4,6 +4,7 @@ pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
 
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { BytesLib } from "@interlay/bitcoin-spv-sol/contracts/BytesLib.sol";
 import { Parser } from "@interlay/btc-relay-sol/contracts/Parser.sol";
 import { Script } from "@interlay/btc-relay-sol/contracts/Script.sol";
@@ -11,13 +12,13 @@ import { IReferee } from "./interface/IReferee.sol";
 import { IRelay } from "./interface/IRelay.sol";
 
 contract BTCReferee is IReferee {
+    using SafeMath for uint;
     using BytesLib for bytes;
     using Parser for bytes;
     using Script for bytes;
 
     string constant ERR_INVALID_OUT_HASH = "Invalid output hash";
     string constant ERR_TX_NOT_INCLUDED = "Cannot verify tx inclusion";
-    string constant ERR_INVALID_TX = "Tx is invalid";
 
     address relay;
 
@@ -37,11 +38,12 @@ contract BTCReferee is IReferee {
     function _extractOutputValue(
         bytes memory rawTx,
         bytes20 btcHash
-    ) internal pure returns(uint256) {
+    ) internal pure returns(uint256 amount) {
         (, uint lenInputs) = rawTx.extractInputLength();
         bytes memory outputs = rawTx.slice(lenInputs, rawTx.length - lenInputs);
         (uint numOutputs, ) = outputs.extractOutputLength();
 
+        // sum total over all outputs
         for (uint i = 0; i < numOutputs; i++) {
             bytes memory output = outputs.extractOutputAtIndex(i);
             bytes memory script = output.extractOutputScript();
@@ -57,11 +59,9 @@ contract BTCReferee is IReferee {
             }
 
             if (_btcHash == btcHash) {
-                return output.extractOutputValue();
+                amount = amount.add(output.extractOutputValue());
             }
         }
-
-        revert(ERR_INVALID_TX);
     }
 
     function verifyTx(

@@ -1,15 +1,15 @@
 import { ethers, Signer, ContractTransaction } from "ethers";
 import { Obligation } from "../typechain/Obligation";
 import { OptionPairFactory } from "../typechain/OptionPairFactory";
-import { BigNumberish, Arrayish, BigNumber } from "ethers/utils";
+import { BigNumberish, BytesLike, BigNumber } from "ethers";
 import { Option } from "../typechain/Option";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
 import { OptionFactory } from "../typechain/OptionFactory";
 import { OptionLibFactory } from "../typechain/OptionLibFactory";
 import { OptionLib } from "../typechain/OptionLib";
 import { Script } from "./constants";
-import { IERC20 } from "../typechain/IERC20";
-import { IERC20Factory } from "../typechain/IERC20Factory";
+import { Ierc20 } from "../typechain/Ierc20";
+import { Ierc20Factory } from "../typechain/Ierc20Factory";
 import { IRelay } from "../typechain/IRelay";
 import { IReferee } from "../typechain/IReferee";
 import { IRelayFactory } from "../typechain/IRelayFactory";
@@ -20,7 +20,6 @@ import { ObligationFactory } from "../typechain/ObligationFactory";
 import * as bitcoin from 'bitcoinjs-lib';
 import { encodeBtcAddress } from "./encode";
 import { Addresses, Deployments } from "./addresses";
-import { Provider, InfuraProvider, Web3Provider } from "ethers/providers";
 
 interface Connectable<C> {
     connect: (addr: string, signer?: Signer) => C;
@@ -63,8 +62,9 @@ export async function createPair(
         )[0]));
 }
 
+type Provider = ethers.providers.Provider;
+// type Signer = ethers.providers.JsonRpcSigner;
 type SignerOrProvider = Signer | Provider;
-type SignerAndProvider = Signer & Provider;
 type Optional<T> = T | undefined;
 
 async function resolve(provider: Provider): Promise<Optional<Addresses>> {
@@ -83,7 +83,7 @@ async function resolve(provider: Provider): Promise<Optional<Addresses>> {
 }
 
 type BtcAddress = {
-    btcHash: Arrayish,
+    btcHash: BytesLike,
     format: Script,
 }
 
@@ -114,7 +114,7 @@ export interface IWriteContracts extends IReadContracts {
 export class ReadOnlyContracts implements IReadContracts {
     protected optionFactory: OptionPairFactory;
     protected optionLib: OptionLib;
-    protected collateral: IERC20;
+    protected collateral: Ierc20;
     protected treasury: ITreasury;
     protected referee: IReferee;
     protected relay: IRelay;
@@ -124,7 +124,7 @@ export class ReadOnlyContracts implements IReadContracts {
     constructor(
         optionFactory: OptionPairFactory,
         optionLib: OptionLib,
-        collateral: IERC20,
+        collateral: Ierc20,
         treasury: ITreasury,
         referee: IReferee,
         relay: IRelay,
@@ -145,7 +145,7 @@ export class ReadOnlyContracts implements IReadContracts {
     ): Promise<ReadOnlyContracts> {
         const _optionFactory = OptionPairFactoryFactory.connect(contracts.optionFactory, signer);
         const _optionLib = OptionLibFactory.connect(contracts.optionLib, signer);
-        const _collateral = IERC20Factory.connect(contracts.collateral, signer);
+        const _collateral = Ierc20Factory.connect(contracts.collateral, signer);
         const _treasuryAddress = await _optionFactory.getTreasury(_collateral.address);
         const _treasury = ITreasuryFactory.connect(_treasuryAddress, signer);
         const _referee = IRefereeFactory.connect(contracts.referee, signer);
@@ -191,7 +191,7 @@ export class ReadOnlyContracts implements IReadContracts {
     }
 }
 
-type WebProvider = InfuraProvider | Web3Provider;
+type JsonRpcProvider = ethers.providers.JsonRpcProvider;
 
 export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContracts {
     readonly account: string;
@@ -200,7 +200,7 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
     constructor(
         optionFactory: OptionPairFactory,
         optionLib: OptionLib,
-        collateral: IERC20,
+        collateral: Ierc20,
         treasury: ITreasury,
         referee: IReferee,
         relay: IRelay,
@@ -220,7 +220,7 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
     ): Promise<ReadWriteContracts> {
         const _optionFactory = OptionPairFactoryFactory.connect(contracts.optionFactory, signer);
         const _optionLib = OptionLibFactory.connect(contracts.optionLib, signer);
-        const _collateral = IERC20Factory.connect(contracts.collateral, signer);
+        const _collateral = Ierc20Factory.connect(contracts.collateral, signer);
         const _treasuryAddress = await _optionFactory.getTreasury(_collateral.address);
         const _treasury = ITreasuryFactory.connect(_treasuryAddress, signer);
         const _referee = IRefereeFactory.connect(contracts.referee, signer);
@@ -239,7 +239,7 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
         );
     }
 
-    static async resolve(provider: WebProvider, confirmations?: number): Promise<Optional<ReadWriteContracts>> {
+    static async resolve(provider: JsonRpcProvider, confirmations?: number): Promise<Optional<ReadWriteContracts>> {
         const addresses = await resolve(provider);
         return addresses ? this.load(addresses, provider.getSigner(), confirmations) : undefined;
     }
@@ -326,9 +326,9 @@ export interface IWriteOptionPair extends IReadOptionPair {
         seller: string,
         height: BigNumberish,
         index: BigNumberish,
-        txid: Arrayish,
-        proof: Arrayish,
-        rawtx: Arrayish
+        txid: BytesLike,
+        proof: BytesLike,
+        rawtx: BytesLike
     ): Promise<void>;
 
     refund(
@@ -340,14 +340,14 @@ export class ReadOnlyOptionPair implements IReadOptionPair {
     protected option: Option;
     protected obligation: Obligation;
     protected optionLib: OptionLib;
-    protected collateral: IERC20;
+    protected collateral: Ierc20;
     protected treasury: ITreasury;
 
     constructor(
         option: Option,
         obligation: Obligation,
         optionLib: OptionLib,
-        collateral: IERC20,
+        collateral: Ierc20,
         treasury: ITreasury,
     ) {
         this.option = option;
@@ -385,7 +385,7 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOpt
         option: Option,
         obligation: Obligation,
         optionLib: OptionLib,
-        collateral: IERC20,
+        collateral: Ierc20,
         treasury: ITreasury,
         confirmations?: number,
     ) {
@@ -442,9 +442,9 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOpt
         seller: string,
         height: BigNumberish,
         index: BigNumberish,
-        txid: Arrayish,
-        proof: Arrayish,
-        rawtx: Arrayish
+        txid: BytesLike,
+        proof: BytesLike,
+        rawtx: BytesLike
     ): Promise<void> {
         await this.option.executeExercise(
             seller, height, index, txid, proof, rawtx

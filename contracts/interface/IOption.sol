@@ -22,7 +22,7 @@ interface IOption {
 
     function mint(address from, address to, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external;
 
-    function requestExercise(address seller, uint amount) external;
+    function requestExercise(address seller, uint satoshis) external;
 
     function executeExercise(
         address seller,

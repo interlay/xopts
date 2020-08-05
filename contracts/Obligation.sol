@@ -34,6 +34,9 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     string constant ERR_SUB_WITHDRAW_AVAILABLE = "Insufficient available";
     string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
 
+    uint constant satoshiExp = 10;
+
+    // set price at which options can be sold when exercised
     uint256 public strikePrice;
 
     address public override treasury;
@@ -74,9 +77,9 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     * @param _treasury Backing currency
     **/
     function initialize(
-        uint256 _expiryTime,
-        uint256 _windowSize,
-        uint256 _strikePrice,
+        uint _expiryTime,
+        uint _windowSize,
+        uint _strikePrice,
         address _treasury
     ) external override onlyOwner {
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
@@ -146,14 +149,22 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         emit Transfer(account, address(0), amount);
     }
 
-    function requestExercise(address buyer, address seller, uint amount) external override onlyOwner canExercise {
-        _locked[seller] = _locked[seller].add(amount);
+    /**
+    * @notice Initiate physical settlement, locking obligations owned by the specified seller.
+    * @dev Only callable by the parent option contract.
+    * @param buyer Account that bought the options.
+    * @param seller Account that wrote the options.
+    * @param satoshis Input amount.
+    **/
+    function requestExercise(address buyer, address seller, uint satoshis) external override onlyOwner canExercise returns (uint) {
+        uint options = calculateAmountIn(satoshis);
+        _locked[seller] = _locked[seller].add(options);
         require(
             _locked[seller] <= _obligations[seller],
             ERR_INSUFFICIENT_OBLIGATIONS
         );
-        uint total = _requests[seller][buyer].amount;
-        _requests[seller][buyer].amount = total.add(amount);
+        uint amount = _requests[seller][buyer].amount.add(options);
+        _requests[seller][buyer].amount = amount;
 
         bytes32 salt = keccak256(abi.encodePacked(
             expiryTime,
@@ -161,12 +172,16 @@ contract Obligation is IObligation, IERC20, European, Ownable {
             strikePrice,
             buyer,
             seller,
-            total
+            amount,
+            // append height to avoid replay
+            // attacks on the same option
+            block.number
         ));
         uint secret = uint256(uint8(salt[0]));
         _requests[seller][buyer].secret = secret;
 
-        emit RequestExercise(buyer, seller, total, secret);
+        emit RequestExercise(buyer, seller, amount, secret);
+        return options;
     }
 
     function getSecret(address seller) external view returns (uint) {
@@ -176,23 +191,17 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     /**
     * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`. 
     * @dev Only callable by the parent option contract.
-    * @param buyer Account that bought the options
-    * @param seller Account that wrote the options
-    * @param satoshiOutput Output amount
+    * @param buyer Account that bought the options.
+    * @param seller Account that wrote the options.
+    * @param satoshis Input amount.
     **/
-    function executeExercise(address buyer, address seller, uint satoshiOutput) external override onlyOwner canExercise {
+    function executeExercise(address buyer, address seller, uint satoshis) external override onlyOwner canExercise {
         uint amount = _requests[seller][buyer].amount;
-
-        // expected amount of btc
-        uint satoshiAmount = _calculateExercise(amount);
-
-        require(satoshiOutput >= satoshiAmount, ERR_INVALID_OUTPUT_AMOUNT);
-
         uint secret = _requests[seller][buyer].secret;
-        require(
-            secret == satoshiOutput.sub(satoshiAmount),
-            ERR_INVALID_SECRET
-        );
+
+        // final amount must equal exactly for the secret to be valid
+        uint options = calculateAmountIn(satoshis.sub(secret));
+        require(amount == options, ERR_INVALID_OUTPUT_AMOUNT);
 
         _locked[seller] = _locked[seller].sub(amount);
         delete _requests[seller][buyer];
@@ -325,11 +334,24 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     }
 
     /**
-    * @dev Computes the exercise payout from the amount and the strikePrice
-    * @param amount Asset to exchange
-    */
-    function _calculateExercise(uint256 amount) internal view returns (uint256) {
-        return amount.div(strikePrice);
+    * @notice Calculates the expected input amount for the specified satoshi amount.
+    * @dev The `strikePrice` and collateral should use the same precision.
+    * @param satoshis The number of satoshis to exercise.
+    **/
+    function calculateAmountIn(uint satoshis) public view returns (uint) {
+        return satoshis.mul(strikePrice).div(10**satoshiExp);
     }
 
+    /**
+    * @notice Calculates the expected satoshi amount for the specified input amount.
+    * @dev This will underflow if the collateral's precision is less than 10.
+    * @param amount The number of tokens to exercise.
+    **/
+    function calculateAmountOut(uint amount) external view returns (uint) {
+        // we lose some precision here
+        // ((4500*10**6)*10**10)/(9000*10**6) = 5000000000.0 = 0.5 BTC
+        // ((4500*10**18)*10**10)/(9000*10**18) = 5000000000.0 = 0.5 BTC
+        // ((1200*10**18)*10**10)/(2390*10**18) = 5020920502.092051 ~= 0.502 BTC
+        return amount.mul(10**satoshiExp).div(strikePrice);
+    }
 }

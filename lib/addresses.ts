@@ -1,4 +1,3 @@
-import { keccak256, solidityPack } from "ethers/utils";
 import { utils } from "ethers";
 import OptionArtifact from '../artifacts/Option.json';
 import ObligationArtifact from '../artifacts/Obligation.json';
@@ -43,17 +42,17 @@ export function getCreate2Address(
     factory: string,
     bytecode: string,
 ) {
-    return utils.getCreate2Address({
-        from: factory,
-        salt: keccak256(solidityPack(
+    return utils.getCreate2Address(
+        factory,
+        utils.keccak256(utils.solidityPack(
             ["uint256", "uint256", "uint256", "address", "address"],
             [
                 salt.expiryTime, salt.windowSize, salt.strikePrice, 
                 salt.collateral, salt.referee
             ]
         )),
-        initCodeHash: keccak256(bytecode),
-    });
+        utils.keccak256(bytecode),
+    );
 }
 
 export function getCreate2OptionAddress(

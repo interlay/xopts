@@ -1,9 +1,9 @@
 import chai from "chai";
+import { BigNumber } from "ethers";
 import { estimateInput, estimateOutput } from "../lib/uniswap";
-import { BigNumber } from "ethers/utils";
 
 const { expect } = chai;
-const promisify = (n: number) => new Promise<BigNumber>((resolve) => resolve(new BigNumber(n)))
+const promisify = (n: number) => new Promise<BigNumber>((resolve) => resolve(BigNumber.from(n)))
 
 describe("Uniswap", () => {
   it("should estimate input correctly", async () => {
