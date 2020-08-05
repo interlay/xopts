@@ -1,15 +1,13 @@
 import { ethers } from "@nomiclabs/buidler";
-import {
-	daiToWeiDai, strikePriceInDaiForOneBTC
-} from "../lib/conversion";
 import { deploy0, deploy1, deploy2 } from "../lib/contracts";
 import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
-import { BTCRefereeFactory } from "../typechain/BTCRefereeFactory";
+import { BtcRefereeFactory } from "../typechain/BtcRefereeFactory";
 import { OptionLibFactory } from "../typechain/OptionLibFactory";
 import { deployUniswapFactory } from "../lib/uniswap";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
-import { AddressZero } from "ethers/constants";
+import { constants } from "ethers";
+import { newBigNum } from "../lib/conversion";
 
 // ROPSTEN
 
@@ -20,17 +18,17 @@ let overrides = {
 }
 
 async function main() {
-	const signers = await ethers.signers();
+	const signers = await ethers.getSigners();
 	const account = await signers[0].getAddress();
 
 	const collateral = await deploy0(signers[0], MockCollateralFactory);
-	await collateral.mint(await signers[0].getAddress(), daiToWeiDai(100_000));
+	await collateral.mint(await signers[0].getAddress(), newBigNum(100_000, 18));
 	const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
 	// TODO: make conditional
 	const uniswapFactory = await deployUniswapFactory(signers[0], account);
-	const optionLib = await deploy2(signers[0], OptionLibFactory, uniswapFactory.address, AddressZero);
+	const optionLib = await deploy2(signers[0], OptionLibFactory, uniswapFactory.address, constants.AddressZero);
 	const relay = await deploy0(signers[0], MockRelayFactory);
-	const referee = await deploy1(signers[0], BTCRefereeFactory, relay.address);
+	const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
 
 	console.log("MockCollateral:", collateral.address);
 	console.log("OptionPairFactory:", optionFactory.address);
@@ -52,12 +50,12 @@ async function main() {
 	// volatility per year 48.5% (see https://www.bitpremier.com/volatility-index)
 	// time to expiration as indicated
 	// premium based on American option calculated by http://www.math.columbia.edu/~smirnov/options.html
-	await optionFactory.createPair(inAWeek, 2000, strikePriceInDaiForOneBTC(9_100), collateral.address, referee.address, overrides);
-	await optionFactory.createPair(inAWeek, 2000, strikePriceInDaiForOneBTC(8_850), collateral.address, referee.address, overrides);
-	await optionFactory.createPair(inAWeek, 2000, strikePriceInDaiForOneBTC(8_600), collateral.address, referee.address, overrides);
-	await optionFactory.createPair(inAMonth, 2000, strikePriceInDaiForOneBTC(9_100), collateral.address, referee.address, overrides);
-	await optionFactory.createPair(inAMonth, 2000, strikePriceInDaiForOneBTC(8_850), collateral.address, referee.address, overrides);
-	await optionFactory.createPair(inAMonth, 2000, strikePriceInDaiForOneBTC(8_600), collateral.address, referee.address, overrides);
+	await optionFactory.createPair(inAWeek, 2000, newBigNum(9_100, 18), collateral.address, referee.address, overrides);
+	await optionFactory.createPair(inAWeek, 2000, newBigNum(8_850, 18), collateral.address, referee.address, overrides);
+	await optionFactory.createPair(inAWeek, 2000, newBigNum(8_600, 18), collateral.address, referee.address, overrides);
+	await optionFactory.createPair(inAMonth, 2000, newBigNum(9_100, 18), collateral.address, referee.address, overrides);
+	await optionFactory.createPair(inAMonth, 2000, newBigNum(8_850, 18), collateral.address, referee.address, overrides);
+	await optionFactory.createPair(inAMonth, 2000, newBigNum(8_600, 18), collateral.address, referee.address, overrides);
 }
 
 main()

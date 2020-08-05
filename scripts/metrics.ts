@@ -1,10 +1,10 @@
 import { ethers } from "@nomiclabs/buidler";
-import { daiToWeiDai, strikePriceInDaiForOneBTC, mbtcToSatoshi } from "../lib/conversion";
+import { newBigNum } from "../lib/conversion";
 import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { Script } from '../lib/constants';
 import * as bitcoin from 'bitcoinjs-lib';
 import { deploy0, reconnect } from "../lib/contracts";
-import { MockBTCRefereeFactory } from "../typechain/MockBTCRefereeFactory";
+import { MockBtcRefereeFactory } from "../typechain/MockBtcRefereeFactory";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
 import { OptionFactory } from "../typechain/OptionFactory";
 
@@ -12,13 +12,13 @@ const payment = bitcoin.payments.p2wpkh({address: "tb1q2krsjrpj3z6xm7xvj2xxjy9gc
 const btcHash = '0x' + payment.hash?.toString('hex');
 
 async function main() {
-  let signers = await ethers.signers();
+  let signers = await ethers.getSigners();
   let alice = signers[0];
   let bob = signers[1];
   let charlie = signers[2];
 
   const collateral = await deploy0(alice, MockCollateralFactory);
-  const referee = await deploy0(alice, MockBTCRefereeFactory);
+  const referee = await deploy0(alice, MockBtcRefereeFactory);
 
   let contract = await deploy0(alice, OptionPairFactoryFactory);
 
@@ -28,7 +28,7 @@ async function main() {
   let currentTime = Math.round(new Date().getTime()/1000);
 	let expiry = currentTime + 60;
 
-	let tx = await contract.createPair(expiry, 2000, strikePriceInDaiForOneBTC(9_200), collateral.address, referee.address);
+	let tx = await contract.createPair(expiry, 2000, newBigNum(9_200, 18), collateral.address, referee.address);
   receipt = await tx.wait(0);  
   console.log(`Gas [Create]: ${receipt.gasUsed?.toString()}`);
 
@@ -38,11 +38,11 @@ async function main() {
 
   let options = await contract.getOptions();
 
-  await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, daiToWeiDai(100_000));
-  await reconnect(collateral, MockCollateralFactory, alice).mint(bobAddress, daiToWeiDai(100_000));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, newBigNum(100_000, 18));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(bobAddress, newBigNum(100_000, 18));
   
-  await reconnect(collateral, MockCollateralFactory, bob).approve(contract.address, daiToWeiDai(10_000));
-	tx = await reconnect(contract, OptionPairFactoryFactory, bob).underwriteOption(options[0], daiToWeiDai(5_000), btcHash, Script.p2wpkh);
+  await reconnect(collateral, MockCollateralFactory, bob).approve(contract.address, newBigNum(10_000, 18));
+	tx = await reconnect(contract, OptionPairFactoryFactory, bob).underwriteOption(options[0], newBigNum(5_000, 18), btcHash, Script.p2wpkh);
   receipt = await tx.wait(0);  
   console.log(`Gas [Underwrite]: ${receipt.gasUsed?.toString()}`);
 
@@ -50,7 +50,7 @@ async function main() {
   let optionAddress = options[0];
   let option = OptionFactory.connect(optionAddress, bob);
 
-  tx = await option.transfer(charlieAddress, daiToWeiDai(5_000));
+  tx = await option.transfer(charlieAddress, newBigNum(5_000, 18));
   receipt = await tx.wait(0);  
   console.log(`Gas [Transfer (Unsold)]: ${receipt.gasUsed?.toString()}`);
   await reconnect(option, OptionFactory, charlie).setBtcAddress(btcHash, Script.p2wpkh);

@@ -25,6 +25,8 @@ contract OptionLib is UniswapV2Router02 {
 
     constructor(address _factory, address _WETH) public UniswapV2Router02(_factory, _WETH) {}
 
+    /// @notice Atomically deposit collateral into a treasury and add liquidity to a
+    /// Uniswap pair based on the specified premium.
     function lockAndWrite(
         address tokenA, // options
         address tokenB, // premium
@@ -53,6 +55,8 @@ contract OptionLib is UniswapV2Router02 {
         liquidity = IUniswapV2Pair(pair).mint(msg.sender);
     }
 
+    /// @notice Atomically deposit collateral into a treasury and purchase `amountOut`
+    /// obligations from a Uniswap pool.
     function lockAndBuy(
         uint amountOut,
         uint amountInMax,

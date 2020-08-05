@@ -269,9 +269,7 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
         return this.getPair(optionAddress);
     }
 
-    async getPair(
-        optionAddress: string,
-    ): Promise<IWriteOptionPair> {
+    async getPair(optionAddress: string): Promise<IWriteOptionPair> {
         const obligationAddress = await this.optionFactory.getObligation(optionAddress);
         const option = OptionFactory.connect(optionAddress, this.signer);
         const obligation = ObligationFactory.connect(obligationAddress, this.signer);
@@ -311,15 +309,28 @@ export interface IWriteOptionPair extends IReadOptionPair {
         btcAddress?: BtcAddress,
     ): Promise<void>;
 
-    buy(
+    buyOptions(
         amountOut: BigNumberish,
         amountInMax: BigNumberish,
         deadline: BigNumberish
     ): Promise<void>;
 
+    sellObligations(
+        amountADesired: BigNumberish,
+        amountBDesired: BigNumberish,
+        amountAMin: BigNumberish,
+        amountBMin: BigNumberish,
+        deadline: BigNumberish
+    ): Promise<void>;
+
+    buyObligations(
+        amountOut: BigNumberish,
+        amountInMax: BigNumberish
+    ): Promise<void>;
+
     requestExercise(
         seller: string,
-        amount: BigNumberish,
+        satoshis: BigNumberish,
     ): Promise<BigNumber>;
 
     executeExercise(
@@ -413,12 +424,12 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOpt
         ).then(tx => tx.wait(this.confirmations));
     }
     
-    // buy order (i.e. specify exact number of options)
-    async buy(
+    async buyOptions(
         amountOut: BigNumberish,
         amountInMax: BigNumberish,
         deadline: BigNumberish
     ): Promise<void> {
+        // buy order (i.e. specify exact number of options)
         await this.optionLib.swapTokensForExactTokens(
             amountOut,
             amountInMax,
@@ -428,11 +439,41 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOpt
         ).then(tx => tx.wait(this.confirmations));
     }
 
+    async sellObligations(
+        amountADesired: BigNumberish,
+        amountBDesired: BigNumberish,
+        amountAMin: BigNumberish,
+        amountBMin:BigNumberish,
+        deadline: BigNumberish
+    ): Promise<void> {
+        await this.optionLib.addLiquidity(
+            this.collateral.address,
+            this.obligation.address,
+            amountADesired,
+            amountBDesired,
+            amountAMin,
+            amountBMin,
+            this.account,
+            deadline,
+        ).then(tx => tx.wait(this.confirmations));
+    }
+
+    async buyObligations(
+        amountOut: BigNumberish,
+        amountInMax: BigNumberish,
+    ): Promise<void> {
+        await this.optionLib.lockAndBuy(
+            amountOut,
+            amountInMax,
+            [this.collateral.address, this.obligation.address],
+        ).then(tx => tx.wait(this.confirmations));
+    }
+
     async requestExercise(
         seller: string,
-        amount: BigNumberish
+        satoshis: BigNumberish
     ): Promise<BigNumber> {
-        await this.option.requestExercise(seller, amount)
+        await this.option.requestExercise(seller, satoshis)
             .then(tx => tx.wait(this.confirmations));
         return this.obligation.getSecret(seller);
     }
@@ -452,9 +493,7 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOpt
     }
 
     // claim written collateral after expiry
-    async refund(
-        amount: BigNumberish,
-    ): Promise<void> {
+    async refund(amount: BigNumberish): Promise<void> {
         await this.option.refund(amount)
             .then(tx => tx.wait(this.confirmations));
     }

@@ -56,6 +56,8 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     mapping (address => uint) internal _balances;
     mapping (address => uint) internal _obligations;
 
+    // TODO: add seller array
+
     uint256 public override totalSupply;
 
     // model trading pools to enable withdrawals
@@ -65,6 +67,9 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     // accounts that can spend an owners funds
     mapping (address => mapping (address => uint)) internal _allowances;
 
+    /// @notice Emit upon exercise request (buyer -> seller).
+    /// @dev Prior to exercise execution a user may trigger an update request
+    /// which will alter the total `amount`.
     event RequestExercise(address indexed buyer, address indexed seller, uint amount, uint secret);
 
     constructor() public Ownable() {}
@@ -184,6 +189,12 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         return options;
     }
 
+    /**
+    * @notice Get the secret for a particular exercise request identified
+    * by the seller and the caller.
+    * @param seller The account for which the caller has an outstanding request.
+    * @return The generated satoshi secret nonce.
+    **/
     function getSecret(address seller) external view returns (uint) {
         return _requests[seller][msg.sender].secret;
     }
@@ -275,6 +286,14 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         return _balances[account];
     }
 
+    /**
+    * @notice Return the outstanding obligations for an account. Unlike `balanceOf`
+    * this does not account for pool balances - unsold obligations always require an owner.
+    * @dev It is a user's responsibility to withdraw sold obligations - thereby redeeming
+    * locked collateral - from a liquidity pool.
+    * @param account An account which owns obligations.
+    * @return The total balance of the account.
+    **/
     function balanceObl(address account) external view returns (uint256) {
         return _obligations[account];
     }
