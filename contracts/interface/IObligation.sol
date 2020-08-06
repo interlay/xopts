@@ -7,6 +7,7 @@ import { Bitcoin } from "../types/Bitcoin.sol";
 interface IObligation {
 
     function initialize(
+        uint8 _decimals,
         uint256 _expiryTime,
         uint256 _windowSize,
         uint256 _strikePrice,

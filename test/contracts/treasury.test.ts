@@ -1,11 +1,11 @@
 import chai from "chai";
-import { Treasury } from "../typechain/Treasury";
+import { Treasury } from "../../typechain/Treasury";
 import { ethers } from "@nomiclabs/buidler";
 import { Signer } from "ethers";
-import { deploy1, deploy0 } from "../lib/contracts";
-import { TreasuryFactory } from "../typechain/TreasuryFactory";
-import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
-import { MockCollateral } from "../typechain/MockCollateral";
+import { deploy1, deploy0 } from "../../lib/contracts";
+import { TreasuryFactory } from "../../typechain/TreasuryFactory";
+import { MockCollateralFactory } from "../../typechain/MockCollateralFactory";
+import { MockCollateral } from "../../typechain/MockCollateral";
 
 const { expect } = chai;
 

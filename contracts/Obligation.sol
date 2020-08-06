@@ -13,7 +13,7 @@ import { Bitcoin } from "./types/Bitcoin.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
 
 /// @title Obligation ERC20
-/// @notice Represents a writer's obligation to sell the 
+/// @notice Represents a writer's obligation to sell the
 /// supported collateral backing currency in return for
 /// the underlying currency - in this case BTC.
 /// @author Interlay
@@ -34,7 +34,12 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     string constant ERR_SUB_WITHDRAW_AVAILABLE = "Insufficient available";
     string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
 
-    uint constant satoshiExp = 10;
+    // 1 BTC = 10**10 Satoshis
+    uint constant SATOSHI_DECIMALS = 10;
+
+    string public name;
+    string public symbol;
+    uint8 public decimals;
 
     // set price at which options can be sold when exercised
     uint256 public strikePrice;
@@ -82,6 +87,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     * @param _treasury Backing currency
     **/
     function initialize(
+        uint8 _decimals,
         uint _expiryTime,
         uint _windowSize,
         uint _strikePrice,
@@ -90,6 +96,13 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
         require(_windowSize > 0, ERR_WINDOW_ZERO);
         require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
+
+        // ERC20
+        name = "Obligation";
+        symbol = "OBL";
+        decimals = _decimals;
+
+        // Obligation
         expiryTime = _expiryTime;
         windowSize = _windowSize;
         strikePrice = _strikePrice;
@@ -200,7 +213,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     }
 
     /**
-    * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`. 
+    * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`.
     * @dev Only callable by the parent option contract.
     * @param buyer Account that bought the options.
     * @param seller Account that wrote the options.
@@ -353,16 +366,16 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     }
 
     /**
-    * @notice Calculates the expected input amount for the specified satoshi amount.
+    * @notice Calculates the expected input amount of option tokens for the specified satoshi amount. The amount of option tokens is the same as the amount of collateral tokens required, i.e., |OPT| = |COL|.
     * @dev The `strikePrice` and collateral should use the same precision.
     * @param satoshis The number of satoshis to exercise.
     **/
     function calculateAmountIn(uint satoshis) public view returns (uint) {
-        return satoshis.mul(strikePrice).div(10**satoshiExp);
+        return satoshis.mul(strikePrice).div(10**SATOSHI_DECIMALS);
     }
 
     /**
-    * @notice Calculates the expected satoshi amount for the specified input amount.
+    * @notice Calculates the expected satoshi amount for the specified input amount of option tokens. The amount of option tokens is the same as the amount of collateral tokens required, i.e., |OPT| = |COL|.
     * @dev This will underflow if the collateral's precision is less than 10.
     * @param amount The number of tokens to exercise.
     **/
@@ -371,6 +384,6 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         // ((4500*10**6)*10**10)/(9000*10**6) = 5000000000.0 = 0.5 BTC
         // ((4500*10**18)*10**10)/(9000*10**18) = 5000000000.0 = 0.5 BTC
         // ((1200*10**18)*10**10)/(2390*10**18) = 5020920502.092051 ~= 0.502 BTC
-        return amount.mul(10**satoshiExp).div(strikePrice);
+        return amount.mul(10**SATOSHI_DECIMALS).div(strikePrice);
     }
 }

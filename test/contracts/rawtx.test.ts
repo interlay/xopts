@@ -2,10 +2,10 @@ import { ethers } from "@nomiclabs/buidler";
 import { Signer } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { MockBtcReferee } from "../typechain/MockBtcReferee";
-import { MockBtcRefereeFactory } from "../typechain/MockBtcRefereeFactory";
+import { MockBtcReferee } from "../../typechain/MockBtcReferee";
+import { MockBtcRefereeFactory } from "../../typechain/MockBtcRefereeFactory";
 import * as bitcoin from 'bitcoinjs-lib';
-import { btcToSatoshi } from "../lib/conversion";
+import { btcToSatoshi } from "../../lib/conversion";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -53,7 +53,7 @@ describe("Tx Validation", () => {
                   "ff02acfad806000000001976a914679775af720fa9bf3602150ee699ad7e2a24d96888ac4e90" +
                   "b76e200000001976a914e5ea7e9aae7df252796864912f0df41b4b956f4488ace3c01300";
 
-  it("should successfully extract p2pkh output", async () => { 
+  it("should successfully extract p2pkh output", async () => {
     let payment = bitcoin.payments.p2pkh({address: "mpxhLRAzfGc6tH55kzG9NfZ3b2VZdo3Gq9", network: bitcoin.networks.testnet})
 
     let result = await btcReferee.extractOutputValue(p2pkhTx, '0x' + payment.hash?.toString('hex'));
@@ -81,7 +81,7 @@ describe("Tx Validation", () => {
                    "96f7394cafa1871b7e918d4347a26649fb0dc05d9bb12e8f94300047070121025b5424e82f8c4313f6" +
                    "ec880724aab8cd78ed059b3115fd5075b63b3c3524134b250a1b00";
 
-  it("should successfully extract p2wpkh output", async () => {    
+  it("should successfully extract p2wpkh output", async () => {
     let payment = bitcoin.payments.p2wpkh({address: "tb1q4kspwcf42cqp66hrhw407djna4dgpw9lsnfx5e", network: bitcoin.networks.testnet})
 
     let result = await btcReferee.extractOutputValue(p2wpkhTx, '0x' + payment.hash?.toString('hex'));

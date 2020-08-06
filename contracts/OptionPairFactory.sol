@@ -6,7 +6,7 @@ import "@nomiclabs/buidler/console.sol";
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@uniswap/v2-periphery/contracts/interfaces/IERC20.sol";
 import { IUniswapV2Pair } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import { IUniswapV2Factory } from "./lib/IUniswapV2Factory.sol";
 import { IReferee } from "./interface/IReferee.sol";
@@ -67,6 +67,7 @@ contract OptionPairFactory is IOptionPairFactory {
     }
 
     function _createOption(
+        uint8 decimals,
         uint256 expiryTime,
         uint256 windowSize,
         address referee,
@@ -80,6 +81,7 @@ contract OptionPairFactory is IOptionPairFactory {
             option := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         IOption(option).initialize(
+            decimals,
             expiryTime,
             windowSize,
             referee,
@@ -90,6 +92,7 @@ contract OptionPairFactory is IOptionPairFactory {
     }
 
     function _createObligation(
+        uint8 decimals,
         uint256 expiryTime,
         uint256 windowSize,
         uint256 strikePrice,
@@ -102,6 +105,7 @@ contract OptionPairFactory is IOptionPairFactory {
             obligation := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         IObligation(obligation).initialize(
+            decimals,
             expiryTime,
             windowSize,
             strikePrice,
@@ -128,12 +132,16 @@ contract OptionPairFactory is IOptionPairFactory {
         address collateral,
         address referee
     ) external override returns (address option, address obligation) {
+        // load treasury for collateral type or create
+        // a new treasury if it does not exist yet
         address treasury = getTreasury[collateral];
         if (treasury == address(0)) {
             // TODO: treasury create2?
             treasury = address(new Treasury(collateral));
         }
 
+        // deterministic creation of option pair to ensure
+        // that liquidity ends up in the same pool
         bytes32 salt = keccak256(abi.encodePacked(
             expiryTime,
             windowSize,
@@ -142,8 +150,13 @@ contract OptionPairFactory is IOptionPairFactory {
             referee
         ));
 
-        obligation = _createObligation(expiryTime, windowSize, strikePrice, treasury, salt);
-        option = _createOption(expiryTime, windowSize, referee, treasury, obligation, salt);
+        // query the decimals of the collateral token to
+        // ensure the option and obligation use the same
+        // decmials precision.
+        uint8 decimals = IERC20(collateral).decimals();
+
+        obligation = _createObligation(decimals, expiryTime, windowSize, strikePrice, treasury, salt);
+        option = _createOption(decimals, expiryTime, windowSize, referee, treasury, obligation, salt);
         Ownable(obligation).transferOwnership(option);
 
         getObligation[option] = obligation;
