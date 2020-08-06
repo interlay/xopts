@@ -6,7 +6,7 @@ import "@nomiclabs/buidler/console.sol";
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "@uniswap/v2-periphery/contracts/interfaces/IERC20.sol";
 import { IUniswapV2Pair } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import { IUniswapV2Factory } from "./lib/IUniswapV2Factory.sol";
 import { IReferee } from "./interface/IReferee.sol";
@@ -153,7 +153,7 @@ contract OptionPairFactory is IOptionPairFactory {
         // query the decimals of the collateral token to
         // ensure the option and obligation use the same
         // decmials precision.
-        uint8 decimals = ERC20(collateral).decimals();
+        uint8 decimals = IERC20(collateral).decimals();
 
         obligation = _createObligation(decimals, expiryTime, windowSize, strikePrice, treasury, salt);
         option = _createOption(decimals, expiryTime, windowSize, referee, treasury, obligation, salt);
