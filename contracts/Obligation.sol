@@ -42,6 +42,9 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     string public symbol;
     uint8 public decimals;
 
+    // always incrementing nonce for replay protection
+    uint256 private _nonce;
+
     // set price at which options can be sold when exercised
     uint256 public strikePrice;
 
@@ -176,10 +179,11 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             buyer,
             seller,
             amount,
-            // append height to avoid replay
+            // append nonce to avoid replay
             // attacks on the same option
-            block.number
+            _nonce
         ));
+        _nonce = _nonce.add(1);
         uint secret = uint256(uint8(salt[0]));
         _requests[seller][buyer].secret = secret;
 
