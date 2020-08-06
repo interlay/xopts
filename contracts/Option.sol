@@ -33,7 +33,6 @@ contract Option is IOption, IERC20, European, Ownable {
 
     // btc relay or oracle
     address public override referee;
-    address public override treasury;
     address public override obligation;
 
     // account balances
@@ -50,19 +49,18 @@ contract Option is IOption, IERC20, European, Ownable {
     /**
     * @notice Initializes the option-side contract with the
     * expected parameters.
+    * @param _decimals Option precision
     * @param _expiryTime Unix expiry date
     * @param _windowSize Settlement window
     * @param _referee Inclusion verifier
-    * @param _treasury Backing currency
     * @param _obligation Obligation ERC20
     **/
     function initialize(
         uint8 _decimals,
         uint256 _expiryTime,
         uint256 _windowSize,
-        address _referee,
-        address _treasury,
-        address _obligation
+        address _obligation,
+        address _referee
     ) external override onlyOwner {
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
         require(_windowSize > 0, ERR_WINDOW_ZERO);
@@ -76,7 +74,6 @@ contract Option is IOption, IERC20, European, Ownable {
         expiryTime = _expiryTime;
         windowSize = _windowSize;
         referee = _referee;
-        treasury = _treasury;
         obligation = _obligation;
     }
 

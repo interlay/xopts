@@ -29,7 +29,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     string constant ERR_INVALID_OUTPUT_AMOUNT = "Invalid output amount";
     string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
     string constant ERR_INSUFFICIENT_OBLIGATIONS = "Seller has insufficient obligations";
-    string constant ERR_INVALID_SECRET = "Buyer has encoded an incorrect secret";
+    string constant ERR_INVALID_REQUEST = "Cannot exercise without an amount";
     string constant ERR_SUB_WITHDRAW_BALANCE = "Insufficient pool balance";
     string constant ERR_SUB_WITHDRAW_AVAILABLE = "Insufficient available";
     string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
@@ -76,6 +76,8 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     /// @dev Prior to exercise execution a user may trigger an update request
     /// which will alter the total `amount`.
     event RequestExercise(address indexed buyer, address indexed seller, uint amount, uint secret);
+
+    event ExecuteExercise(address indexed buyer, address indexed seller, uint amount, uint secret);
 
     constructor() public Ownable() {}
 
@@ -161,7 +163,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
 
     function _burn(address account, uint amount) internal {
         // we only allow the owner to withdraw
-        _obligations[account] = _obligations[account].sub(amount);
+        _obligations[account] = _obligations[account].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE);
 
         totalSupply = totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
@@ -221,6 +223,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     **/
     function executeExercise(address buyer, address seller, uint satoshis) external override onlyOwner canExercise {
         uint amount = _requests[seller][buyer].amount;
+        require(amount > 0, ERR_INVALID_REQUEST);
         uint secret = _requests[seller][buyer].secret;
 
         // final amount must equal exactly for the secret to be valid
@@ -235,6 +238,8 @@ contract Obligation is IObligation, IERC20, European, Ownable {
 
         // transfers from the treasury to the buyer
         ITreasury(treasury).release(seller, buyer, amount);
+
+        emit ExecuteExercise(buyer, seller, options, secret);
     }
 
     /**
