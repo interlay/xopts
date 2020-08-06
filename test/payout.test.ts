@@ -40,15 +40,43 @@ describe("Payment", () => {
 
   it("should validate amountIn", async () => {
     const tests: args[] = [
+      // 9000 strike, 0.5 BTC
       {
+        // 18 decimals (e.g. Dai, USDC)
         strike: "9000000000000000000000",
         amount: "4500000000000000000000",
         satoshis: "5000000000",
       },
       {
+        // 6 decimals (e.g. USDT)
+        strike: "9000000000",
+        amount: "4500000000",
+        satoshis: "5000000000",
+      },
+      {
+        // 0 decimals
         strike: "9000",
         amount: "4500",
         satoshis: "5000000000",
+      },
+      // 10000 strike, 0.25 BTC
+      {
+        // 18 decimals (e.g. Dai, USDC)
+        strike: "10000000000000000000000",
+        amount: "2500000000000000000000",
+        satoshis: "2500000000",
+      },
+      {
+        // 6 decimals (e.g. USDT)
+        strike: "10000000000",
+        amount: "2500000000",
+        satoshis: "2500000000",
+      },
+      {
+        // 0 decimals
+        strike: "10000",
+        amount: "2500",
+        satoshis: "2500000000",
       }
     ];
 
