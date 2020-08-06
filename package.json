@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "npm run compile && npx buidler typechain",
+    "build": "npx buidler compile && npx buidler typechain",
     "compile": "npx buidler compile",
     "test": "npx buidler test",
     "deploy": "npx buidler run scripts/deploy.ts",
