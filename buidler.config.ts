@@ -3,7 +3,7 @@ import { usePlugin } from "@nomiclabs/buidler/config";
 // Plugins
 usePlugin("@nomiclabs/buidler-ganache");
 usePlugin("@nomiclabs/buidler-waffle");
-usePlugin("@interlay/buidler-typechain");
+usePlugin("@nodefactory/buidler-typechain");
 usePlugin('buidler-gas-reporter');
 
 // environment
