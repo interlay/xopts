@@ -37,6 +37,10 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     // 1 BTC = 10**10 Satoshis
     uint constant SATOSHI_DECIMALS = 10;
 
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+
     // set price at which options can be sold when exercised
     uint256 public strikePrice;
 
@@ -83,6 +87,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     * @param _treasury Backing currency
     **/
     function initialize(
+        uint8 _decimals,
         uint _expiryTime,
         uint _windowSize,
         uint _strikePrice,
@@ -91,6 +96,13 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
         require(_windowSize > 0, ERR_WINDOW_ZERO);
         require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
+
+        // ERC20
+        name = "Obligation";
+        symbol = "OBL";
+        decimals = _decimals;
+
+        // Obligation
         expiryTime = _expiryTime;
         windowSize = _windowSize;
         strikePrice = _strikePrice;

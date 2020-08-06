@@ -7,6 +7,7 @@ import { Bitcoin } from "../types/Bitcoin.sol";
 interface IOption {
 
     function initialize(
+        uint8 _decimals,
         uint256 _expiryTime,
         uint256 _windowSize,
         address _referee,
@@ -34,5 +35,4 @@ interface IOption {
     ) external;
 
     function refund(uint amount) external;
-
 }

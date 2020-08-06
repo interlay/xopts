@@ -27,6 +27,10 @@ contract Option is IOption, IERC20, European, Ownable {
     string constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
     string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
 
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+
     // btc relay or oracle
     address public override referee;
     address public override treasury;
@@ -53,6 +57,7 @@ contract Option is IOption, IERC20, European, Ownable {
     * @param _obligation Obligation ERC20
     **/
     function initialize(
+        uint8 _decimals,
         uint256 _expiryTime,
         uint256 _windowSize,
         address _referee,
@@ -61,6 +66,13 @@ contract Option is IOption, IERC20, European, Ownable {
     ) external override onlyOwner {
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
         require(_windowSize > 0, ERR_WINDOW_ZERO);
+
+        // ERC20
+        name = "Obligation";
+        symbol = "OBL";
+        decimals = _decimals;
+
+        // Option
         expiryTime = _expiryTime;
         windowSize = _windowSize;
         referee = _referee;
@@ -71,9 +83,9 @@ contract Option is IOption, IERC20, European, Ownable {
     /**
     * @notice Mints option tokens `from` a writer and transfers them `to` a
     * participant - designed to immediately add liquidity to a pool. This contract
-    * will then call the owned Obligation contract to mint the `from` tokens. To 
+    * will then call the owned Obligation contract to mint the `from` tokens. To
     * prevent misappropriation of funds we expect this function to be called atomically
-    * after depositing in the treasury. The `OptionLib` contract should provide helpers 
+    * after depositing in the treasury. The `OptionLib` contract should provide helpers
     * to facilitate this.
     * @dev Can only be called by the parent factory contract.
     * @dev Once the expiry date has lapsed this function is no longer valid.
@@ -117,7 +129,7 @@ contract Option is IOption, IERC20, European, Ownable {
     }
 
     /**
-    * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`. 
+    * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`.
     * Requires a transaction inclusion proof which is verified by our chain relay.
     * @dev Can only be called by the parent factory contract.
     * @param seller Account to exercise against

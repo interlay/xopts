@@ -7,6 +7,8 @@ import { OptionFactory } from "../../typechain/OptionFactory";
 import { ObligationFactory } from "../../typechain/ObligationFactory";
 import { BigNumber, BigNumberish } from "ethers";
 import { OptionPairFactory } from "../../typechain/OptionPairFactory";
+import { MockCollateralFactory } from "../../typechain";
+import { MockCollateral } from "../../typechain/MockCollateral";
 
 const { expect } = chai;
 
@@ -24,14 +26,16 @@ describe("Conversion for number of obligation and option tokens with number of s
   let alice: Signer;
 
   let optionFactory: OptionPairFactory;
+  let collateral: MockCollateral;
 
   beforeEach("should deploy option factory", async () => {
     [alice] = await ethers.getSigners();
     optionFactory = await deploy0(alice, OptionPairFactoryFactory);
+    collateral = await deploy0(alice, MockCollateralFactory);
   });
 
   const deployPair = async (strikePrice: BigNumberish) => {
-    const optionAddress = await createPair(optionFactory, getTimeNow() + 1000, 1000, strikePrice, constants.AddressZero, constants.AddressZero);
+    const optionAddress = await createPair(optionFactory, getTimeNow() + 1000, 1000, strikePrice, collateral.address, constants.AddressZero);
     const option = OptionFactory.connect(optionAddress, alice);
     const obligationAddress = await optionFactory.getObligation(option.address);
     const obligation = ObligationFactory.connect(obligationAddress, alice);
