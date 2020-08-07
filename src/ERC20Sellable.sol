@@ -1,9 +1,9 @@
-pragma solidity ^0.5.15;
+pragma solidity ^0.6.0;
 
 import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IterableBalances} from "./IterableBalances.sol";
 import {IRelay} from "./lib/IRelay.sol";
@@ -14,7 +14,7 @@ import {IERC20Buyable} from "./IERC20Buyable.sol";
 import {IERC20Sellable} from "./IERC20Sellable.sol";
 import {Bitcoin} from "./lib/BitcoinTypes.sol";
 
-contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
+contract ERC20Sellable is IERC20Sellable, IERC20, Context, Expirable, Ownable {
     using SafeMath for uint;
     using IterableBalances for IterableBalances.Map;
 
@@ -82,19 +82,19 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         _buyable = new ERC20Buyable(expiry);
     }
 
-    function totalSupply() external view returns (uint256) {
+    function totalSupply() external override view returns (uint256) {
         return _totalSupply;
     }
 
-    function totalSupplyUnsold() external view returns (uint256) {
+    function totalSupplyUnsold() external override view returns (uint256) {
         return _totalSupplyUnsold;
     }
 
-    function getBuyable() external view returns (address) {
+    function getBuyable() external override view returns (address) {
         return address(_buyable);
     }
 
-    function underwriteOption(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external notExpired onlyOwner {
+    function underwriteOption(address account, uint256 amount, bytes20 btcHash, Bitcoin.Script format) external override notExpired onlyOwner {
         _mint(account, amount);
         _setBtcAddress(account, btcHash, format);
         emit Underwrite(account, amount);
@@ -118,17 +118,17 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         _btcAddresses[account].format = format;
     }
 
-    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external {
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external override {
         address caller = _msgSender();
         require(_balancesTotal[caller] > 0, ERR_INSUFFICIENT_BALANCE);
         _setBtcAddress(caller, btcHash, format);
     }
 
-    function getBtcAddress(address account) external view returns (bytes20 btcHash, Bitcoin.Script format) {
+    function getBtcAddress(address account) external override view returns (bytes20 btcHash, Bitcoin.Script format) {
         return (_btcAddresses[account].btcHash, _btcAddresses[account].format);
     }
 
-    function insureOption(address buyer, address seller, uint256 satoshis) external notExpired onlyOwner {
+    function insureOption(address buyer, address seller, uint256 satoshis) external override notExpired onlyOwner {
         require(_btcAddresses[seller].btcHash != 0, ERR_NO_BTC_ADDRESS);
         // require the satoshis * strike price
         uint256 options = _calculateInsure(satoshis);
@@ -144,23 +144,38 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         uint256 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
         bytes calldata rawtx
-    ) external notExpired onlyOwner returns (uint) {
+    ) external override notExpired onlyOwner returns (uint) {
         uint amount = _buyable.exerciseOption(buyer, seller);
+        _balancesTotal[seller] = _balancesTotal[seller].sub(amount);
+        _totalSupply = _totalSupply.sub(amount);
+
+        bytes20 btcAddress = _btcAddresses[seller].btcHash;
         uint btcAmount = _calculateExercise(amount);
 
         // verify & validate tx, use default confirmations
-        require(_relay.verifyTx(height, index, txid, proof, 0, false), ERR_VERIFY_TX);
-        bytes20 btcAddress = _btcAddresses[seller].btcHash;
-        require(_validator.validateTx(rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
+        _verifyTx(btcAddress, btcAmount, height, index, txid, header, proof, rawtx);
 
-        _balancesTotal[seller] = _balancesTotal[seller].sub(amount);
-        _totalSupply = _totalSupply.sub(amount);
         return amount;
     }
 
-    function refundOption(address account) external hasExpired onlyOwner returns (uint) {
+    function _verifyTx(
+        bytes20 btcAddress,
+        uint256 btcAmount,
+        uint256 height,
+        uint256 index,
+        bytes32 txid,
+        bytes memory header,
+        bytes memory proof,
+        bytes memory rawtx
+    ) internal view {
+        require(_relay.verifyTx(uint32(height), index, txid, header, proof, 0, false), ERR_VERIFY_TX);
+        require(_validator.validateTx(rawtx, btcAddress, btcAmount), ERR_VALIDATE_TX);
+    }
+
+    function refundOption(address account) external override hasExpired onlyOwner returns (uint) {
         uint256 balance = _burn(account);
         require(balance > 0, ERR_INSUFFICIENT_BALANCE);
         return balance;
@@ -175,7 +190,7 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         return balance;
     }
 
-    function getOptionSellers() external view returns (address[] memory sellers, uint256[] memory options) {
+    function getOptionSellers() external override view returns (address[] memory sellers, uint256[] memory options) {
         IterableBalances.Map storage map = _balancesUnsold;
 
         uint length = map.size();
@@ -192,7 +207,7 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         return (sellers, options);
     }
 
-    function getDetails() external view returns(
+    function getDetails() external override view returns(
         uint expiry,
         uint premium,
         uint strikePrice,
@@ -205,16 +220,16 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
             _premium,
             _strikePrice,
             _totalSupply,
-            _buyable.totalSupply(),
+            IERC20(address(_buyable)).totalSupply(),
             _totalSupplyUnsold
         );
     }
 
-    function allowance(address owner, address spender) external view returns (uint256) {
+    function allowance(address owner, address spender) external override view returns (uint256) {
         return _allowances[owner][spender];
     }
 
-    function approve(address spender, uint256 amount) external returns (bool) {
+    function approve(address spender, uint256 amount) external override returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -227,20 +242,20 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
         emit Approval(owner, spender, amount);
     }
 
-    function balanceOf(address account) external view returns (uint256) {
+    function balanceOf(address account) external override view returns (uint256) {
         return _balancesUnsold.get(account);
     }
 
-    function totalBalanceOf(address account) external view returns (uint256) {
+    function totalBalanceOf(address account) external override view returns (uint256) {
         return _balancesTotal[account];
     }
 
-    function transfer(address recipient, uint256 amount) external notExpired returns (bool) {
+    function transfer(address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) external notExpired returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         return true;
@@ -282,7 +297,7 @@ contract ERC20Sellable is IERC20Sellable, Context, Expirable, Ownable {
     * @dev Computes the premium per option
     * @param amount: asset to exchange
     */
-    function calculatePremium(uint256 amount) external view returns (uint256) {
+    function calculatePremium(uint256 amount) external override view returns (uint256) {
         return amount.mul(_premium);
     }
 

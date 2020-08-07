@@ -1,8 +1,6 @@
-pragma solidity ^0.5.15;
+pragma solidity ^0.6.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-contract IERC20Buyable is IERC20 {
+interface IERC20Buyable {
 
     /**
     * @dev Claim options by paying the premium

@@ -1,20 +1,21 @@
-pragma solidity ^0.5.15;
+pragma solidity ^0.6.0;
 
 import {IRelay} from "./IRelay.sol";
 
 contract MockRelay is IRelay {
     function verifyTx(
-        uint256 height,
+        uint32 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
         uint256 confirmations,
         bool insecure
-    ) external view returns(bool) {
+    ) external override view returns(bool) {
         return true;
     }
 
-    function getBestBlock() external view returns (bytes32 digest, uint256 score, uint256 height) {
-        return (bytes32(0), 0, 0);
+    function getBestBlock() external override view returns (bytes32 digest, uint32 height) {
+        return (bytes32(0), 0);
     }
 }

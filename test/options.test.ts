@@ -72,6 +72,7 @@ describe("Options", () => {
     height: 0,
     index: 0,
     txid: "0x0000000000000000000000000000000000000000000000000000000000000000",
+    header: "0x00000000000000000000000000000000",
     proof: "0x00000000000000000000000000000000",
     rawtx: "0x00000000000000000000000000000000",
   }
@@ -175,7 +176,7 @@ describe("Options", () => {
     expect((await buyableContract.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // alice exercises and burns options to redeem collateral
-    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
+    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.header, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(collateralAmount);
   });
 
@@ -210,7 +211,7 @@ describe("Options", () => {
     expect((await buyableContract.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // alice exercises and burns options to redeem collateral
-    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, charlieAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
+    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, charlieAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.header, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(collateralAmount);
   }).timeout(100000);
 
@@ -234,7 +235,7 @@ describe("Options", () => {
     expect((await buyableContract.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // alice exercises and burns options to redeem collateral
-    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
+    await call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.header, mockTx.proof, mockTx.rawtx);
     expect((await collateral.balanceOf(aliceAddress)).toNumber()).to.eq(strikePrice * underlyingAmount);
 
     // bob cannot refund his options / authored tokens until after expiry
@@ -278,7 +279,7 @@ describe("Options", () => {
     await ethers.provider.send("evm_increaseTime", [50000]);
 
     // alice can no longer exercise her options
-    let aliceExercises = call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.proof, mockTx.rawtx);
+    let aliceExercises = call(optionPool, OptionPoolFactory, alice).exerciseOption(sellableContract.address, bobAddress, mockTx.height, mockTx.index, mockTx.txid, mockTx.header, mockTx.proof, mockTx.rawtx);
     await expect(aliceExercises).to.be.revertedWith(ErrorCode.ERR_EXPIRED);
 
     expect((await collateral.balanceOf(bobAddress)).toNumber()).to.eq(premium * underlyingAmount);

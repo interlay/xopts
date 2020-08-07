@@ -1,4 +1,4 @@
-pragma solidity ^0.5.15;
+pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -96,13 +96,14 @@ contract OptionPool is Context {
         uint256 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
         bytes calldata rawtx
     ) external {
         require(_options.exists(option), ERR_INVALID_OPTION);
         address buyer = _msgSender();
         uint amount = IERC20Sellable(option).exerciseOption(
-            buyer, seller, height, index, txid, proof, rawtx
+            buyer, seller, height, index, txid, header, proof, rawtx
         );
         _collateral.transfer(buyer, amount);
     }
@@ -127,7 +128,7 @@ contract OptionPool is Context {
             address key = list.getKeyAtIndex(i);
             IERC20Sellable sell = IERC20Sellable(key);
             IERC20Buyable buy = IERC20Buyable(sell.getBuyable());
-            uint256 purchased = buy.balanceOf(user);
+            uint256 purchased = IERC20(address(buy)).balanceOf(user);
             if (purchased != 0) {
                 optionContracts[i] = key;
                 purchasedOptions[i] = purchased;
@@ -154,7 +155,7 @@ contract OptionPool is Context {
         for (uint i = 0; i < length; i++) {
             address key = list.getKeyAtIndex(i);
             IERC20Sellable sell = IERC20Sellable(key);
-            uint256 unsold = sell.balanceOf(user);
+            uint256 unsold = IERC20(address(sell)).balanceOf(user);
             uint256 total = sell.totalBalanceOf(user);
 
             if (unsold != 0 || total != 0) {

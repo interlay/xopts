@@ -1,9 +1,9 @@
-pragma solidity ^0.5.15;
+pragma solidity ^0.6.0;
 
 import {ITxValidator} from "./ITxValidator.sol";
-import {BytesLib} from "@summa-tx/bitcoin-spv-sol/contracts/BytesLib.sol";
-import {Parser} from "@interlay/btc-relay-sol/src/Parser.sol";
-import {Script} from "@interlay/btc-relay-sol/src/Script.sol";
+import {BytesLib} from "@interlay/bitcoin-spv-sol/contracts/BytesLib.sol";
+import {Parser} from "@interlay/btc-relay-sol/contracts/Parser.sol";
+import {Script} from "@interlay/btc-relay-sol/contracts/Script.sol";
 
 contract TxValidator is ITxValidator {
     using BytesLib for bytes;
@@ -17,7 +17,7 @@ contract TxValidator is ITxValidator {
         bytes calldata rawTx,
         bytes20 btcHash,
         uint256 btcAmount
-    ) external view returns(bool) {
+    ) external override view returns(bool) {
         require(btcHash != 0, ERR_INVALID_HASH);
         (, uint lenInputs) = rawTx.extractInputLength();
         bytes memory outputs = rawTx.slice(lenInputs, rawTx.length - lenInputs);

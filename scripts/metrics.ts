@@ -60,10 +60,13 @@ async function main() {
   let { buyableContract } = await getBuyableAndSellable(options[0], alice);
   let balance = await buyableContract.balanceOf(aliceAddress);
 	tx = await buyableContract.transfer(bobAddress, balance);
-  receipt = await tx.wait(0);  
+  receipt = await tx.wait(0);
   console.log(`Gas [Transfer (Sold)]: ${receipt.gasUsed?.toString()}`);
 
-	tx = await call(contract, OptionPoolFactory, bob).exerciseOption(options[0], charlieAddress, 0, 0, "0x0000000000000000000000000000000000000000000000000000000000000000", [0], [0]);
+  const header = "0x0000000000000000000000000000000000000000000000000000000000000000";
+  const proof = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+	tx = await call(contract, OptionPoolFactory, bob).exerciseOption(options[0], charlieAddress, 0, 0, header, proof, [0], [0]);
   receipt = await tx.wait(0);  
   console.log(`Gas [Exercise]: ${receipt.gasUsed?.toString()}`);
 }

@@ -1,9 +1,8 @@
-pragma solidity ^0.5.15;
+pragma solidity ^0.6.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Bitcoin} from "./lib/BitcoinTypes.sol";
 
-contract IERC20Sellable is IERC20 {
+interface IERC20Sellable {
 
     function getBuyable() external view returns (address);
 
@@ -44,6 +43,7 @@ contract IERC20Sellable is IERC20 {
         uint256 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
         bytes calldata rawtx
     ) external returns (uint);

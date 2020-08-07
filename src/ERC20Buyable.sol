@@ -1,8 +1,8 @@
-pragma solidity ^0.5.15;
+pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IterableBalances} from "./IterableBalances.sol";
 import {IRelay} from "./lib/IRelay.sol";
@@ -11,7 +11,7 @@ import {Expirable} from "./Expirable.sol";
 import {IERC20Buyable} from "./IERC20Buyable.sol";
 import {IERC20Sellable} from "./IERC20Sellable.sol";
 
-contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
+contract ERC20Buyable is IERC20Buyable, IERC20, Context, Expirable, Ownable {
     using SafeMath for uint;
     using IterableBalances for IterableBalances.Map;
 
@@ -39,11 +39,11 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
 
     constructor(uint256 expiry) public Expirable(expiry) Ownable() {}
 
-    function totalSupply() external view returns (uint256) {
+    function totalSupply() external override view returns (uint256) {
         return _totalSupply;
     }
 
-    function insureOption(address buyer, address seller, uint256 options) external notExpired onlyOwner {
+    function insureOption(address buyer, address seller, uint256 options) external override notExpired onlyOwner {
         _mint(buyer, seller, options);
         emit Insure(buyer, options);
     }
@@ -63,7 +63,7 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
     function exerciseOption(
         address buyer,
         address seller
-    ) external notExpired onlyOwner returns (uint) {
+    ) external override notExpired onlyOwner returns (uint) {
         uint amount = _burn(buyer, seller);
         require(amount > 0, ERR_INSUFFICIENT_BALANCE);
         emit Exercise(buyer, amount);
@@ -84,7 +84,7 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
         return balance;
     }
 
-    function getOptionOwnersFor(address account) external view returns (address[] memory sellers, uint256[] memory options) {
+    function getOptionOwnersFor(address account) external override view returns (address[] memory sellers, uint256[] memory options) {
         IterableBalances.Map storage map = _balances[account];
 
         uint length = map.size();
@@ -101,11 +101,11 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
         return (sellers, options);
     }
 
-    function allowance(address owner, address spender) external view returns (uint256) {
+    function allowance(address owner, address spender) external override view returns (uint256) {
         return _allowances[owner][spender];
     }
 
-    function approve(address spender, uint256 amount) external returns (bool) {
+    function approve(address spender, uint256 amount) external override returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -118,17 +118,17 @@ contract ERC20Buyable is IERC20Buyable, Context, Expirable, Ownable {
         emit Approval(owner, spender, amount);
     }
 
-    function balanceOf(address account) external view returns (uint256) {
+    function balanceOf(address account) external override view returns (uint256) {
         return _balancesTotal[account];
     }
 
-    function transfer(address recipient, uint256 amount) external notExpired returns (bool) {
+    function transfer(address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         emit Transfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) external notExpired returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         emit Transfer(sender, recipient, amount);
