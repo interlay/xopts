@@ -115,7 +115,6 @@ export class ReadOnlyContracts implements IReadContracts {
     protected optionFactory: OptionPairFactory;
     protected optionLib: OptionLib;
     protected collateral: Ierc20;
-    protected treasury: ITreasury;
     protected referee: IReferee;
     protected relay: IRelay;
 
@@ -125,7 +124,6 @@ export class ReadOnlyContracts implements IReadContracts {
         optionFactory: OptionPairFactory,
         optionLib: OptionLib,
         collateral: Ierc20,
-        treasury: ITreasury,
         referee: IReferee,
         relay: IRelay,
         signer: SignerOrProvider,
@@ -133,7 +131,6 @@ export class ReadOnlyContracts implements IReadContracts {
         this.optionFactory = optionFactory;
         this.optionLib = optionLib;
         this.collateral = collateral;
-        this.treasury = treasury;
         this.referee = referee;
         this.relay = relay;
         this.signer = signer;
@@ -146,15 +143,12 @@ export class ReadOnlyContracts implements IReadContracts {
         const _optionFactory = OptionPairFactoryFactory.connect(contracts.optionFactory, signer);
         const _optionLib = OptionLibFactory.connect(contracts.optionLib, signer);
         const _collateral = Ierc20Factory.connect(contracts.collateral, signer);
-        const _treasuryAddress = await _optionFactory.getTreasury(_collateral.address);
-        const _treasury = ITreasuryFactory.connect(_treasuryAddress, signer);
         const _referee = IRefereeFactory.connect(contracts.referee, signer);
         const _relay = IRelayFactory.connect(contracts.relay, signer);
         return new ReadOnlyContracts(
             _optionFactory,
             _optionLib,
             _collateral,
-            _treasury,
             _referee,
             _relay,
             signer
@@ -174,15 +168,17 @@ export class ReadOnlyContracts implements IReadContracts {
     async getPair(
         optionAddress: string,
     ): Promise<IReadOptionPair> {
-        const obligationAddress = await this.optionFactory.getObligation(optionAddress);
         const option = OptionFactory.connect(optionAddress, this.signer);
+        const obligationAddress = await this.optionFactory.getObligation(optionAddress);
         const obligation = ObligationFactory.connect(obligationAddress, this.signer);
+        const treasuryAddress = await obligation.treasury();
+        const treasury = ITreasuryFactory.connect(treasuryAddress, this.signer);
         return new ReadOnlyOptionPair(
             option,
             obligation,
             this.optionLib,
             this.collateral,
-            this.treasury,
+            treasury,
         );
     }
 
@@ -201,14 +197,13 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
         optionFactory: OptionPairFactory,
         optionLib: OptionLib,
         collateral: Ierc20,
-        treasury: ITreasury,
         referee: IReferee,
         relay: IRelay,
         signer: Signer,
         account: string,
         confirmations?: number,
     ) {
-        super(optionFactory, optionLib, collateral, treasury, referee, relay, signer);
+        super(optionFactory, optionLib, collateral, referee, relay, signer);
         this.account = account;
         this.confirmations = confirmations;
     }
@@ -221,8 +216,6 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
         const _optionFactory = OptionPairFactoryFactory.connect(contracts.optionFactory, signer);
         const _optionLib = OptionLibFactory.connect(contracts.optionLib, signer);
         const _collateral = Ierc20Factory.connect(contracts.collateral, signer);
-        const _treasuryAddress = await _optionFactory.getTreasury(_collateral.address);
-        const _treasury = ITreasuryFactory.connect(_treasuryAddress, signer);
         const _referee = IRefereeFactory.connect(contracts.referee, signer);
         const _relay = IRelayFactory.connect(contracts.relay, signer);
         const account = await signer.getAddress();
@@ -230,7 +223,6 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
             _optionFactory,
             _optionLib,
             _collateral,
-            _treasury,
             _referee,
             _relay,
             signer,
@@ -270,15 +262,17 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
     }
 
     async getPair(optionAddress: string): Promise<IWriteOptionPair> {
-        const obligationAddress = await this.optionFactory.getObligation(optionAddress);
         const option = OptionFactory.connect(optionAddress, this.signer);
+        const obligationAddress = await this.optionFactory.getObligation(optionAddress);
         const obligation = ObligationFactory.connect(obligationAddress, this.signer);
+        const treasuryAddress = await obligation.treasury();
+        const treasury = ITreasuryFactory.connect(treasuryAddress, this.signer);
         return new ReadWriteOptionPair(
             option,
             obligation,
             this.optionLib,
             this.collateral,
-            this.treasury,
+            treasury,
             this.confirmations
         );
     }
