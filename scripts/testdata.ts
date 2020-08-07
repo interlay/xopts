@@ -2,8 +2,7 @@ import { ethers } from "@nomiclabs/buidler";
 import { MockCollateralFactory } from "../typechain/MockCollateralFactory";
 import { Signer, constants } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
-import { deploy0, reconnect, deploy2, createPair } from "../lib/contracts";
-import { MockBtcRefereeFactory } from "../typechain/MockBtcRefereeFactory";
+import { deploy0, reconnect, deploy2, createPair, deploy1 } from "../lib/contracts";
 import { newBigNum } from "../lib/conversion";
 import { OptionPairFactoryFactory } from "../typechain/OptionPairFactoryFactory";
 import { OptionFactory } from "../typechain/OptionFactory";
@@ -15,6 +14,7 @@ import { BigNumberish, BigNumber } from "ethers";
 import { MockCollateral } from "../typechain/MockCollateral";
 import { BtcReferee } from "../typechain/BtcReferee";
 import { OptionLib } from "../typechain/OptionLib";
+import { BtcRefereeFactory, MockRelayFactory } from "../typechain";
 
 const keyPair = bitcoin.ECPair.makeRandom();
 const payment = bitcoin.payments.p2pkh({pubkey: keyPair.publicKey, network: bitcoin.networks.testnet});
@@ -69,13 +69,21 @@ async function main() {
 	const eveAddress = await eve.getAddress();
 	const daveAddress = await dave.getAddress();
 
-	const collateral = await deploy0(alice, MockCollateralFactory);
-	const referee = await deploy0(alice, MockBtcRefereeFactory);
-	const uniswap = await deployUniswapFactory(alice, await alice.getAddress());
-  
-	// 0x151eA753f0aF1634B90e1658054C247eFF1C2464
-	const optionFactory = await deploy0(alice, OptionPairFactoryFactory);
-	const optionLib = await deploy2(alice, OptionLibFactory, uniswap.address, constants.AddressZero);
+	const collateral = await deploy0(signers[0], MockCollateralFactory);
+	await collateral.mint(await signers[0].getAddress(), newBigNum(100_000, 18));
+	const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
+	// TODO: make conditional
+	const uniswapFactory = await deployUniswapFactory(alice, aliceAddress);
+	const optionLib = await deploy2(signers[0], OptionLibFactory, uniswapFactory.address, constants.AddressZero);
+	const relay = await deploy0(signers[0], MockRelayFactory);
+	const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
+
+	console.log("MockCollateral:", collateral.address);
+	console.log("OptionPairFactory:", optionFactory.address);
+	console.log("OptionLib:", optionLib.address);
+	console.log("UniswapFactory:", uniswapFactory.address);
+	console.log("MockRelay:", relay.address);
+	console.log("BTCReferee:", referee.address);
 
     // get collateral for everyone
 	await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, newBigNum(100_000, 18));
