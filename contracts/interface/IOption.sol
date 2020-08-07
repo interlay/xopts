@@ -10,14 +10,11 @@ interface IOption {
         uint8 _decimals,
         uint256 _expiryTime,
         uint256 _windowSize,
-        address _referee,
-        address _treasury,
-        address _obligation
+        address _obligation,
+        address _referee
     ) external;
 
     function referee() external returns (address);
-
-    function treasury() external returns (address);
 
     function obligation() external returns (address);
 

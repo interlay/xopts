@@ -22,7 +22,7 @@ export const ErrorCode = {
     ERR_INVALID_OUTPUT_AMOUNT: "Invalid output amount",
     ERR_NO_BTC_ADDRESS: "Insurer lacks BTC address",
     ERR_INSUFFICIENT_OBLIGATIONS: "Seller has insufficient obligations",
-    ERR_INVALID_SECRET: "Buyer has encoded an incorrect secret",
+    ERR_INVALID_REQUEST: "Cannot exercise without an amount",
     ERR_SUB_WITHDRAW_BALANCE: "Insufficient pool balance",
     ERR_SUB_WITHDRAW_AVAILABLE: "Insufficient available",
     ERR_ZERO_STRIKE_PRICE: "Requires non-zero strike price",

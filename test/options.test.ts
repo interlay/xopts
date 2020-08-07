@@ -17,20 +17,16 @@ import { deployUniswapFactory, estimateInput } from "../lib/uniswap";
 import { Ierc20 } from "../typechain/Ierc20";
 import { Ierc20Factory } from "../typechain/Ierc20Factory";
 import { Obligation } from "../typechain/Obligation";
-import { Treasury } from "../typechain/Treasury";
-import { TreasuryFactory } from "../typechain/TreasuryFactory";
 import { IUniswapV2Factory } from "../typechain/IUniswapV2Factory";
 import BTCRefereeArtifact from "../artifacts/BTCReferee.json";
 import { getCreate2OptionAddress, getCreate2ObligationAddress } from "../lib/addresses";
 import { evmSnapFastForward } from "../lib/mock";
 import { BigNumber, BigNumberish } from "ethers";
+import { deployPair, getTimeNow } from "./common";
+import { newBigNum } from "../lib/conversion";
 
 chai.use(solidity);
 const { expect } = chai;
-
-function getTimeNow() {
-  return Math.round((new Date()).getTime() / 1000);
-}
 
 type Contracts = {
   uniswapFactory: IUniswapV2Factory;
@@ -73,10 +69,6 @@ async function getPair(optionFactory: OptionPairFactory, optionAddress: string, 
     option: OptionFactory.connect(optionAddress, signer),
     obligation: ObligationFactory.connect(obligationAddress, signer),
   }
-}
-
-function newBigNumber(value: number, decimals: number) {
-  return BigNumber.from(value).mul(BigNumber.from(10).pow(decimals));
 }
 
 describe('Sanity Checks', () => {
@@ -154,31 +146,6 @@ describe('Sanity Checks', () => {
   });
 });
 
-async function deployPair(
-  optionFactory: OptionPairFactory,
-  expiryTime: number,
-  windowSize: number,
-  strikePrice: BigNumberish,
-  collateral: string,
-  btcReferee: string,
-  signer: Signer,
-) {
-  const optionAddress = await createPair(optionFactory, expiryTime, windowSize, strikePrice, collateral, btcReferee);
-  const option = OptionFactory.connect(optionAddress, signer);
-
-  const obligationAddress = await optionFactory.getObligation(option.address);
-  const obligation = ObligationFactory.connect(obligationAddress, signer);
-
-  const treasuryAddress = await optionFactory.getTreasury(collateral);
-  const treasury = TreasuryFactory.connect(treasuryAddress, signer);
-
-  return {
-    option,
-    obligation,
-    treasury,
-  };
-}
-
 describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
   let alice: Signer;
   let bob: Signer;
@@ -199,12 +166,12 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
-  const strikePrice = newBigNumber(9000, 18);
-  const amountOut = newBigNumber(4500, 18);
-  const amountOutSat = newBigNumber(1, 10).div(2);
-  const premiumAmount = newBigNumber(200, 18);
-  const collateralAmount = newBigNumber(9000, 18);
-  const amountInMax = newBigNumber(2000, 18);
+  const strikePrice = newBigNum(9000, 18);
+  const amountOut = newBigNum(4500, 18);
+  const amountOutSat = newBigNum(1, 10).div(2);
+  const premiumAmount = newBigNum(200, 18);
+  const collateralAmount = newBigNum(9000, 18);
+  const amountInMax = newBigNum(2000, 18);
 
   before(async () => {
     [ alice, bob, charlie ] = await ethers.getSigners();
@@ -320,12 +287,12 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
-  const strikePrice = newBigNumber(9000, 6);
-  const amountOut = newBigNumber(4500, 6);
-  const amountOutSat = newBigNumber(1, 10).div(2);
-  const premiumAmount = newBigNumber(200, 6);
-  const collateralAmount = newBigNumber(9000, 6);
-  const amountInMax = newBigNumber(2000, 6);
+  const strikePrice = newBigNum(9000, 6);
+  const amountOut = newBigNum(4500, 6);
+  const amountOutSat = newBigNum(1, 10).div(2);
+  const premiumAmount = newBigNum(200, 6);
+  const collateralAmount = newBigNum(9000, 6);
+  const amountInMax = newBigNum(2000, 6);
 
   before(async () => {
     [ alice, bob, charlie ] = await ethers.getSigners();
@@ -441,11 +408,11 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]", () => {
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
-  const strikePrice = newBigNumber(300, 18);
-  const amountOut = newBigNumber(4500, 18);
-  const premiumAmount = newBigNumber(200, 18);
-  const collateralAmount = newBigNumber(9000, 18);
-  const amountInMax = newBigNumber(2000, 18);
+  const strikePrice = newBigNum(300, 18);
+  const amountOut = newBigNum(4500, 18);
+  const premiumAmount = newBigNum(200, 18);
+  const collateralAmount = newBigNum(9000, 18);
+  const amountInMax = newBigNum(2000, 18);
 
   before(async () => {
     [ alice, bob, charlie ] = await ethers.getSigners();
@@ -531,17 +498,16 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]", () =>
 
   let option: Option;
   let obligation: Obligation;
-  let treasury: Treasury;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
-  const strikePrice = newBigNumber(8000, 18);
-  const amountOut = newBigNumber(2000, 18);
-  const premiumAmount = newBigNumber(123, 18);
-  const collateralAmount = newBigNumber(10_000, 18);
-  const amountInMax = newBigNumber(4000, 18);
-  const collateralPremium = newBigNumber(3000, 18);
-  const obligationAmount = newBigNumber(5_000, 18);
+  const strikePrice = newBigNum(8000, 18);
+  const amountOut = newBigNum(2000, 18);
+  const premiumAmount = newBigNum(123, 18);
+  const collateralAmount = newBigNum(10_000, 18);
+  const amountInMax = newBigNum(4000, 18);
+  const collateralPremium = newBigNum(3000, 18);
+  const obligationAmount = newBigNum(5_000, 18);
 
   before(async () => {
     [ alice, bob, charlie, eve ] = await ethers.getSigners();
@@ -551,7 +517,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]", () =>
       bob.getAddress(),
       eve.getAddress(),
     ]);
-    ({ option, obligation, treasury } = await deployPair(
+    ({ option, obligation } = await deployPair(
       optionFactory, expiryTime, windowSize, strikePrice, collateral.address, btcReferee.address, charlie
     ));
   });
@@ -660,17 +626,16 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]", () =>
 
   let option: Option;
   let obligation: Obligation;
-  let treasury: Treasury;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
-  const strikePrice = newBigNumber(8000, 18);
-  const amountOut = newBigNumber(2000, 18);
-  const premiumAmount = newBigNumber(123, 18);
-  const collateralAmount = newBigNumber(10_000, 18);
-  const amountInMax = newBigNumber(4000, 18);
-  const collateralPremium = newBigNumber(3000, 18);
-  const obligationAmount = newBigNumber(5_000, 18);
+  const strikePrice = newBigNum(8000, 18);
+  const amountOut = newBigNum(2000, 18);
+  const premiumAmount = newBigNum(123, 18);
+  const collateralAmount = newBigNum(10_000, 18);
+  const amountInMax = newBigNum(4000, 18);
+  const collateralPremium = newBigNum(3000, 18);
+  const obligationAmount = newBigNum(5_000, 18);
 
   before(async () => {
     [ alice, bob, charlie, eve ] = await ethers.getSigners();
@@ -680,7 +645,7 @@ describe("Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]", () =>
       bob.getAddress(),
       eve.getAddress(),
     ]);
-    ({ option, obligation, treasury } = await deployPair(
+    ({ option, obligation } = await deployPair(
       optionFactory, expiryTime, windowSize, strikePrice, collateral.address, btcReferee.address, charlie
     ));
   });

@@ -43,10 +43,11 @@ contract OptionLib is UniswapV2Router02 {
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
 
         // lock collateral for exercising
-        address treasury = IOption(tokenA).treasury();
+        address obligation = IOption(tokenA).obligation();
+        address treasury = IObligation(obligation).treasury();
         TransferHelper.safeTransferFrom(collateral, msg.sender, treasury, amountA);
         // deposit 'unlocked' balance for writing
-        ITreasury(treasury).deposit(IOption(tokenA).obligation(), msg.sender);
+        ITreasury(treasury).deposit(obligation, msg.sender);
         // mint options and obligations - locking collateral
         IOption(tokenA).mint(msg.sender, pair, amountA, btcHash, format);
 

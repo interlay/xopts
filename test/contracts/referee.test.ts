@@ -10,7 +10,7 @@ import { btcToSatoshi } from "../../lib/conversion";
 chai.use(solidity);
 const { expect } = chai;
 
-describe("Tx Validation", () => {
+describe("BTCReferee.sol", () => {
   let signers: Signer[];
   let btcReferee: MockBtcReferee;
 
