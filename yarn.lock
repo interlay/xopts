@@ -431,30 +431,10 @@
     "@openzeppelin/contracts" "3.1.0"
     bitcoinjs-lib "^5.1.7"
 
-"@interlay/buidler-typechain@0.1.3":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@interlay/buidler-typechain/-/buidler-typechain-0.1.3.tgz#30024bf8d17ce390e523399e131e858f2f7fbfcb"
-  integrity sha512-kfXhrtC/2M+w/7I93z5ZEROmSeUT51TKtXCU5VjHBvD5UbVEGsfXnedHlD+nPHEHCF2sTBO3uFSKfE0f/E2UHg==
-
-"@interlay/ethers-v5@1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@interlay/ethers-v5/-/ethers-v5-1.0.3.tgz#2f149fce9884edf68801af32b9fb9454019f57e0"
-  integrity sha512-TQ6snm7fD6uEqlSEoYqN+dNKQ0RA0ogWrPhg7K0CK/8YvSaqXG+4DjVWhh19XO/29UcZRHkLzoOE/sr4ogB43Q==
-  dependencies:
-    ethers "^5.0.2"
-
-"@interlay/typechain@2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@interlay/typechain/-/typechain-2.0.1.tgz#46fb10bed1e9efc8f126c912a6593201efa2c49d"
-  integrity sha512-fRuZJErkIHx9zRaAku70CqNz+BfBLK52NRYabjN/ezAIc8roY1hvL4LaAztl01+amTFxMsuVTHH58TdJIbU/6g==
-  dependencies:
-    command-line-args "^4.0.7"
-    debug "^4.1.1"
-    fs-extra "^7.0.0"
-    js-sha3 "^0.8.0"
-    lodash "^4.17.15"
-    ts-essentials "^6.0.3"
-    ts-generator "^0.0.8"
+"@nodefactory/buidler-typechain@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@nodefactory/buidler-typechain/-/buidler-typechain-0.2.0.tgz#7ff6cc999047d4dedd49644780f3bbeaf3e1bafa"
+  integrity sha512-B+XZ0a2gjX/NId2FN4uWPKETH11vXShGLXA3d1MzraUwLfp5jW5prW4l0U21zG03FOLo22nnJgoPffG4YmFfJQ==
 
 "@nodelib/fs.scandir@2.1.3":
   version "2.1.3"
@@ -776,6 +756,13 @@
   integrity sha512-XIB2XbzHTN6ieIjfIMV9hlVcfPU26s2vafYWQcZHWXHOxiaRZYEDKEwdl129Zyg50+foYV2jCgtrqSA6qNuNSA==
   dependencies:
     defer-to-connect "^1.0.1"
+
+"@typechain/ethers-v5@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-1.0.0.tgz#9156c9a2b078f9bb00a339631221e42c26b218df"
+  integrity sha512-CWxLmlmfM7NMT6OSq8UXZM7mSkHU1xrbNi40Hvj26S97jKnwERmNbiERgy4fXXOdVqb+zCshnZQ9X+P5WndLMA==
+  dependencies:
+    ethers "^5.0.2"
 
 "@types/bignumber.js@^5.0.0":
   version "5.0.0"
@@ -8759,6 +8746,19 @@ type@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/type/-/type-2.0.0.tgz#5f16ff6ef2eb44f260494dae271033b29c09a9c3"
   integrity sha512-KBt58xCHry4Cejnc2ISQAF7QY+ORngsWfxezO68+12hKV6lQY8P/psIkcbjeHWn7MqcgciWJyCCevFMJdIXpow==
+
+typechain@2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/typechain/-/typechain-2.0.0.tgz#62143b48cdf8f95a777f1b76617af077b2d44eee"
+  integrity sha512-O+hsAUwtBpqCfoq46Grm52OEdm0GBEu78LxrEzkkGdwUdCoCZpNb2HPzPoNB1MXiRnNhEOGMFyf05UbT2/bUEw==
+  dependencies:
+    command-line-args "^4.0.7"
+    debug "^4.1.1"
+    fs-extra "^7.0.0"
+    js-sha3 "^0.8.0"
+    lodash "^4.17.15"
+    ts-essentials "^6.0.3"
+    ts-generator "^0.0.8"
 
 typedarray-to-buffer@^3.1.5:
   version "3.1.5"
