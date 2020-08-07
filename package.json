@@ -14,7 +14,7 @@
     "ganache": "npx buidler run scripts/ganache.ts",
     "tsc": "tsc && cp typechain/*.d.ts dist/typechain/",
     "clean": "rm -rf artifacts cache typechain dist",
-    "docs": "npx solidity-docgen --solc-module=node_modules/solc -t docs -o docs/contracts"
+    "docs": "npx solidity-docgen --solc-module=./node_modules/solc -t docs -o docs/contracts"
   },
   "repository": {
     "type": "git",
