@@ -7,6 +7,7 @@ import "@nomiclabs/buidler/console.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IWriterRegistry } from "./interface/IWriterRegistry.sol";
 import { Obligation } from "./Obligation.sol";
 import { IObligation } from "./interface/IObligation.sol";
 import { IOption } from "./interface/IOption.sol";
@@ -146,7 +147,7 @@ contract Option is IOption, IERC20, European, Ownable {
     ) external override canExercise {
         address buyer = msg.sender;
 
-        (bytes20 btcHash,) = IObligation(obligation).getBtcAddress(seller);
+        (bytes20 btcHash,) = IWriterRegistry(obligation).getBtcAddress(seller);
 
         // verify & validate tx, use default confirmations
         uint output = IReferee(referee)

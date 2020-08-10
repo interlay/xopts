@@ -8,6 +8,7 @@ export interface Addresses {
     optionLib: string;
     relay: string;
     referee: string;
+    writerRegistry: string;
 }
 
 type Networks = "buidler" | "ganache";
@@ -19,6 +20,7 @@ export const Deployments: Record<Networks, Addresses> = {
         optionLib: "0xf784709d2317D872237C4bC22f867d1BAe2913AB",
         relay: "0x3619DbE27d7c1e7E91aA738697Ae7Bc5FC3eACA5",
         referee: "0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8",
+        writerRegistry: "0x1A1FEe7EeD918BD762173e4dc5EfDB8a78C924A8",
     },
     ganache: {
         collateral: "0x151eA753f0aF1634B90e1658054C247eFF1C2464",
@@ -26,6 +28,7 @@ export const Deployments: Record<Networks, Addresses> = {
         optionLib: "0x71dBe5Bd681c86d12211629EB19fE836149c6bf8",
         relay: "0xA7102d753442D827A853FeFE3DD88E182aea622D",
         referee: "0x5429c8fafa53b09386E41F07CbA2479C170faf0b",
+        writerRegistry: "0x5Ee87DE59a4701B3d073be6244cdf7ddE32c8D49",
     }
 }
 

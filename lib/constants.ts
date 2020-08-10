@@ -20,22 +20,20 @@ export const ErrorCode = {
 
     // Obligation
     ERR_INVALID_OUTPUT_AMOUNT: "Invalid output amount",
-    ERR_NO_BTC_ADDRESS: "Insurer lacks BTC address",
+    ERR_NO_BTC_ADDRESS: "Account lacks BTC address",
     ERR_INSUFFICIENT_OBLIGATIONS: "Seller has insufficient obligations",
     ERR_INVALID_REQUEST: "Cannot exercise without an amount",
     ERR_SUB_WITHDRAW_BALANCE: "Insufficient pool balance",
     ERR_SUB_WITHDRAW_AVAILABLE: "Insufficient available",
     ERR_ZERO_STRIKE_PRICE: "Requires non-zero strike price",
 
-    // OptionPairFactory
-    ERR_INVALID_OPTION: "Option does not exist",
-    ERR_ZERO_AMOUNT: "Requires non-zero amount",
-    // ERR_NO_BTC_ADDRESS: "Insurer lacks BTC address",
-
     // Treasury
     ERR_INSUFFICIENT_DEPOSIT: "Insufficient deposit amount",
     ERR_INSUFFICIENT_LOCKED: "Insufficient collateral locked",
     ERR_INSUFFICIENT_UNLOCKED: "Insufficient collateral unlocked",
+
+    // WriterRegistry
+    ERR_NO_BTC_HASH: "Cannot set empty BTC address",
 
     // BTCReferee
     ERR_INVALID_OUT_HASH: "Invalid output hash",
