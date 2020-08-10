@@ -35,6 +35,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     string constant ERR_SUB_WITHDRAW_BALANCE = "Insufficient pool balance";
     string constant ERR_SUB_WITHDRAW_AVAILABLE = "Insufficient available";
     string constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
+    string constant ERR_NO_DUPLICATE_PAYMENT = "Duplicate payment disallowed";
 
     // 1 BTC = 10**10 Satoshis
     uint constant SATOSHI_DECIMALS = 10;
@@ -43,8 +44,9 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     string public symbol;
     uint8 public decimals;
 
-    // always incrementing nonce for replay protection
-    uint256 private _nonce;
+    // always incrementing nonces for replay protection
+    mapping (address => uint) internal _secrets;
+    mapping (address => mapping (uint => bool)) internal _nullifier;
 
     // set price at which options can be sold when exercised
     uint256 public strikePrice;
@@ -165,6 +167,18 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     /**
     * @notice Initiate physical settlement, locking obligations owned by the specified seller.
+    *
+    * In order to prevent replay attacks, where an adversary would submit duplicate proofs, we adopt 
+    * a construction that requires a payer to supply an additional amount of Satoshi to be taken by
+    * the option writer as premium. Each request increments this amount which incentivises fewer 
+    * larger payments and prevents spamming. Note that this does not mitigate the reuse of payments
+    * not tracked by this contract. It is therefore the seller's responsibility to ensure that their
+    * address is 'fresh' in the sense that account has received no prior payments that could be reused.
+    * For maximum security we would ideally utilize `OP_RETURN` to embed the seller's Bitcoin
+    * address but few wallet providers support signing custom transactions. Therefore an advantage
+    * of this 'amount-only' construction is that we can easily support embedding payments in the
+    * [URI format](https://en.bitcoin.it/wiki/BIP_0021).
+    *
     * @dev Only callable by the parent option contract.
     * @param buyer Account that bought the options.
     * @param seller Account that wrote the options.
@@ -178,18 +192,28 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             ERR_INSUFFICIENT_OBLIGATIONS
         );
 
+        uint secret = _secrets[buyer].add(1);
         bytes32 salt = keccak256(abi.encodePacked(
             expiryTime,
             windowSize,
             strikePrice,
             buyer,
             seller,
-            // append nonce to avoid replay
-            // attacks on the same option
-            _nonce
+            // append nonce to
+            // avoid collisions
+            secret
         ));
-        _nonce = _nonce.add(1);
-        uint secret = uint256(uint8(salt[0]));
+        // TODO: cap secret?
+        _secrets[buyer] = secret;
+
+        uint output = satoshis.add(secret);
+        require(
+            !_nullifier[seller][output],
+            ERR_NO_DUPLICATE_PAYMENT
+        );
+        // prevent this output amount from
+        // being redeemed again
+        _nullifier[seller][output] = true;
 
         _requests[buyer][salt].amount = options;
         _requests[buyer][salt].secret = secret;
@@ -253,7 +277,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
         // final amount must equal exactly for the secret to be valid
         uint secret = _requests[buyer][id].secret;
-        uint options = calculateAmountIn(satoshis.sub(secret));
+        uint options = calculateAmountIn(satoshis.sub(secret, ERR_INVALID_OUTPUT_AMOUNT));
         require(amount == options, ERR_INVALID_OUTPUT_AMOUNT);
 
         address seller = _requests[buyer][id].seller;

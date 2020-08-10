@@ -26,6 +26,7 @@ export const ErrorCode = {
     ERR_SUB_WITHDRAW_BALANCE: "Insufficient pool balance",
     ERR_SUB_WITHDRAW_AVAILABLE: "Insufficient available",
     ERR_ZERO_STRIKE_PRICE: "Requires non-zero strike price",
+    ERR_NO_DUPLICATE_PAYMENT: "Duplicate payment disallowed",
 
     // Treasury
     ERR_INSUFFICIENT_DEPOSIT: "Insufficient deposit amount",

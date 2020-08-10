@@ -108,6 +108,17 @@ describe("Obligation.sol", () => {
     });
   });
 
+  it("should not request exercise with duplicate payment", async () => {
+    await treasury.mock.lock.returns();
+    await obligation.mint(bobAddress, amountIn.mul(2), btcHash, Script.p2sh);
+
+    return evmSnapFastForward(1000, async () => {
+      await obligation.requestExercise(aliceAddress, bobAddress, amountOutSat);
+      const result = obligation.requestExercise(aliceAddress, bobAddress, amountOutSat.sub(1));
+      await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_DUPLICATE_PAYMENT);
+    });
+  });
+
   it("should not execute exercise without request", async () => {
     await referee.mock.verifyTx.returns(100);
 
@@ -118,7 +129,7 @@ describe("Obligation.sol", () => {
   });
 
   it("should not execute exercise with invalid output amount / secret", async () => {
-    await referee.mock.verifyTx.returns(amountOutSat);
+    await referee.mock.verifyTx.returns(0);
     await treasury.mock.lock.returns();
     await obligation.mint(bobAddress, amountIn, btcHash, Script.p2sh);
 
