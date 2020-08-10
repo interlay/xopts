@@ -9,7 +9,7 @@ import { ErrorCode, Script } from '../lib/constants';
 import { MockCollateral } from "../typechain/MockCollateral";
 import { OptionLibFactory } from "../typechain/OptionLibFactory";
 import { OptionLib } from "../typechain/OptionLib";
-import { deploy0, reconnect, createPair } from "../lib/contracts";
+import { deploy0, reconnect, createPair, getRequestEvent } from "../lib/contracts";
 import { Option } from "../typechain/Option";
 import { OptionPairFactory } from "../typechain/OptionPairFactory";
 import { ObligationFactory } from "../typechain/ObligationFactory";
@@ -21,7 +21,7 @@ import { IUniswapV2Factory } from "../typechain/IUniswapV2Factory";
 import BTCRefereeArtifact from "../artifacts/BTCReferee.json";
 import { getCreate2OptionAddress, getCreate2ObligationAddress } from "../lib/addresses";
 import { evmSnapFastForward } from "../lib/mock";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumberish } from "ethers";
 import { deployPair, getTimeNow } from "./common";
 import { newBigNum } from "../lib/conversion";
 
@@ -243,20 +243,20 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
   it("bob should exercise options against alice after expiry", async () => {
     return evmSnapFastForward(1000, async () => {
 
-      await reconnect(option, OptionFactory, bob)
+      const requestTx = await reconnect(option, OptionFactory, bob)
         .requestExercise(aliceAddress, amountOutSat);
+      const requestEvent = await getRequestEvent(obligation, bobAddress, aliceAddress, await requestTx.wait(0));
 
-      const secret = await reconnect(obligation, ObligationFactory, bob).getSecret(aliceAddress);
-      await btcReferee.mock.verifyTx.returns(amountOutSat.add(secret));
+      await btcReferee.mock.verifyTx.returns(amountOutSat.add(requestEvent.secret));
 
-      await reconnect(option, OptionFactory, bob)
+      await reconnect(obligation, ObligationFactory, bob)
         .executeExercise(
-          aliceAddress,
+          requestEvent.id,
           0,
           0,
-          Buffer.alloc(32, 0),
-          Buffer.alloc(32, 0),
-          Buffer.alloc(32, 0)
+          constants.HashZero,
+          constants.HashZero,
+          constants.HashZero
         );
 
       const optionBalance = await option.balanceOf(bobAddress);
@@ -364,20 +364,20 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
   it("bob should exercise options against alice after expiry", async () => {
     return evmSnapFastForward(1000, async () => {
 
-      await reconnect(option, OptionFactory, bob)
+      const requestTx = await reconnect(option, OptionFactory, bob)
         .requestExercise(aliceAddress, amountOutSat);
+      const requestEvent = await getRequestEvent(obligation, bobAddress, aliceAddress, await requestTx.wait(0));
 
-      const secret = await reconnect(obligation, ObligationFactory, bob).getSecret(aliceAddress);
-      await btcReferee.mock.verifyTx.returns(amountOutSat.add(secret));
+      await btcReferee.mock.verifyTx.returns(amountOutSat.add(requestEvent.secret));
 
-      await reconnect(option, OptionFactory, bob)
+      await reconnect(obligation, ObligationFactory, bob)
         .executeExercise(
-          aliceAddress,
+          requestEvent.id,
           0,
           0,
-          Buffer.alloc(32, 0),
-          Buffer.alloc(32, 0),
-          Buffer.alloc(32, 0)
+          constants.HashZero,
+          constants.HashZero,
+          constants.HashZero
         );
 
       const optionBalance = await option.balanceOf(bobAddress);
@@ -471,7 +471,7 @@ describe("Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]", () => {
     const obligationBalance = await obligation.balanceObl(aliceAddress);
     expect(obligationBalance).to.eq(collateralAmount);
     await evmSnapFastForward(2000, async () => {
-      await reconnect(option, OptionFactory, alice).refund(collateralAmount);
+      await reconnect(obligation, ObligationFactory, alice).refund(collateralAmount);
       const obligationBalance = await obligation.balanceObl(aliceAddress);
       expect(obligationBalance).to.eq(constants.Zero);
       const collateralBalance = await collateral.balanceOf(aliceAddress);

@@ -3,6 +3,7 @@ import { BigNumberish, Signer, Contract, EventFilter, ContractTransaction } from
 import { createPair } from "../lib/contracts";
 import { OptionFactory, ObligationFactory, TreasuryFactory } from "../typechain";
 import { EventFragment } from "ethers/lib/utils";
+import { Obligation } from "../typechain/Obligation";
 
 export function getTimeNow() {
     return Math.round((new Date()).getTime() / 1000);
@@ -24,11 +25,4 @@ export async function deployPair(
   const obligation = ObligationFactory.connect(obligationAddress, signer);
 
   return {option, obligation};
-}
-
-export async function getEvent<T extends any[]>(fragment: EventFragment, args: T, tx: ContractTransaction, contract: Contract) {
-  const receipt = await tx.wait(0);
-  const topics = contract.interface.encodeFilterTopics(fragment, args);
-  const log = receipt.logs.find(log => log.topics.every((val, i) => val === topics[i]));
-  return contract.interface.decodeEventLog(fragment, log.data);
 }

@@ -1,4 +1,4 @@
-import { ethers, Signer, ContractTransaction } from "ethers";
+import { ethers, Signer, ContractTransaction, Contract, ContractReceipt } from "ethers";
 import { Obligation } from "../typechain/Obligation";
 import { OptionPairFactory } from "../typechain/OptionPairFactory";
 import { BigNumberish, BytesLike, BigNumber } from "ethers";
@@ -22,6 +22,7 @@ import { encodeBtcAddress } from "./encode";
 import { Addresses, Deployments } from "./addresses";
 import { IWriterRegistry } from "../typechain/IWriterRegistry";
 import { IWriterRegistryFactory } from "../typechain/IWriterRegistryFactory";
+import { EventFragment } from "ethers/lib/utils";
 
 interface Connectable<C> {
     connect: (addr: string, signer?: Signer) => C;
@@ -45,6 +46,17 @@ export function deploy1<A extends Callable, B>(signer: Signer, factory: new (sig
 
 export function deploy2<A extends Callable, B, C>(signer: Signer, factory: new (signer: Signer) => { deploy: (b: B, c: C) => Promise<A> }, arg0: B, arg1: C) {
     return (new factory(signer)).deploy(arg0, arg1);
+}
+
+export async function getEvent<T extends any[]>(fragment: EventFragment, args: T, receipt: ContractReceipt, contract: Contract) {
+    const topics = contract.interface.encodeFilterTopics(fragment, args);
+    const log = receipt.logs.find(log => log.topics.every((val, i) => val === topics[i]));
+    return contract.interface.decodeEventLog(fragment, log.data);
+}
+
+export function getRequestEvent(obligation: Obligation, buyer: string, seller: string, receipt: ContractReceipt) {
+    const fragment = obligation.interface.events["RequestExercise(address,address,bytes32,uint256,uint256)"];
+    return getEvent(fragment, [buyer, seller], receipt, obligation);
 }
 
 export async function createPair(
@@ -335,10 +347,10 @@ export interface IWriteOptionPair extends IReadOptionPair {
     requestExercise(
         seller: string,
         satoshis: BigNumberish,
-    ): Promise<BigNumber>;
+    ): Promise<{ id: BytesLike, secret: BigNumber }>;
 
     executeExercise(
-        seller: string,
+        id: string,
         height: BigNumberish,
         index: BigNumberish,
         txid: BytesLike,
@@ -476,29 +488,33 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair implements IWriteOpt
     async requestExercise(
         seller: string,
         satoshis: BigNumberish
-    ): Promise<BigNumber> {
-        await this.option.requestExercise(seller, satoshis)
+    ): Promise<{ id: BytesLike, secret: BigNumber }> {
+        const receipt = await this.option.requestExercise(seller, satoshis)
             .then(tx => tx.wait(this.confirmations));
-        return this.obligation.getSecret(seller);
+        const event = await getRequestEvent(this.obligation, this.account, seller, receipt);
+        return {
+            id: event.id,
+            secret: event.secret,
+        };
     }
 
     // prove inclusion and claim collateral
     async executeExercise(
-        seller: string,
+        id: string,
         height: BigNumberish,
         index: BigNumberish,
         txid: BytesLike,
         proof: BytesLike,
         rawtx: BytesLike
     ): Promise<void> {
-        await this.option.executeExercise(
-            seller, height, index, txid, proof, rawtx
+        await this.obligation.executeExercise(
+            id, height, index, txid, proof, rawtx
         ).then(tx => tx.wait(this.confirmations));
     }
 
     // claim written collateral after expiry
     async refund(amount: BigNumberish): Promise<void> {
-        await this.option.refund(amount)
+        await this.obligation.refund(amount)
             .then(tx => tx.wait(this.confirmations));
     }
 }

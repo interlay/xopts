@@ -1,12 +1,13 @@
 import chai from "chai";
 import { ethers } from "@nomiclabs/buidler";
-import { Signer, constants, BigNumber } from "ethers";
-import { deploy0, reconnect } from "../../lib/contracts";
+import { Signer, constants, BigNumber, ContractTransaction } from "ethers";
+import { deploy0, reconnect, getEvent, getRequestEvent } from "../../lib/contracts";
 import { ObligationFactory } from "../../typechain/ObligationFactory";
 import { Obligation } from "../../typechain/Obligation";
-import { getTimeNow, getEvent } from "../common";
+import { getTimeNow } from "../common";
 import { MockContract, deployMockContract } from "ethereum-waffle";
 import TreasuryArtifact from '../../artifacts/Treasury.json';
+import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
 import { ErrorCode, Script } from "../../lib/constants";
 import { evmSnapFastForward } from "../../lib/mock";
 import { newBigNum } from "../../lib/conversion";
@@ -26,6 +27,7 @@ describe("Obligation.sol", () => {
 
   let obligation: Obligation;
   let treasury: MockContract;
+  let referee: MockContract;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -42,7 +44,8 @@ describe("Obligation.sol", () => {
     ]);
     obligation = await deploy0(alice, ObligationFactory);
     treasury = await deployMockContract(alice, TreasuryArtifact.abi);
-    await obligation.initialize(18, expiryTime, windowSize, strikePrice, treasury.address);
+    referee = await deployMockContract(alice, BTCRefereeArtifact.abi);
+    await obligation.initialize(18, expiryTime, windowSize, strikePrice, referee.address, treasury.address);
   });
 
   it("should create with owner", async () => {
@@ -51,7 +54,7 @@ describe("Obligation.sol", () => {
   });
 
   it("should fail to initialize as expired", async () => {
-    const result = obligation.initialize(18, getTimeNow(), 1000, 9000, treasury.address);
+    const result = obligation.initialize(18, getTimeNow(), 1000, 9000, referee.address, treasury.address);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INIT_EXPIRED);
   });
 
@@ -81,7 +84,7 @@ describe("Obligation.sol", () => {
     expect(result.format).to.eq(Script.p2sh);
 
     const fragment = obligation.interface.events["Transfer(address,address,uint256)"];
-    const event = await getEvent(fragment, [constants.AddressZero, aliceAddress], tx, obligation);
+    const event = await getEvent(fragment, [constants.AddressZero, aliceAddress], await tx.wait(0), obligation);
     expect(event.value).to.eq(BigNumber.from(1000));
   });
 
@@ -100,26 +103,29 @@ describe("Obligation.sol", () => {
 
     return evmSnapFastForward(1000, async () => {
       const tx = await obligation.requestExercise(aliceAddress, bobAddress, amountOutSat);
-      const fragment = obligation.interface.events["RequestExercise(address,address,uint256,uint256)"];
-      const event = await getEvent(fragment, [aliceAddress, bobAddress], tx, obligation);
+      const event = await getRequestEvent(obligation, aliceAddress, bobAddress, await tx.wait(0));
       expect(event.amount).to.eq(amountIn); 
     });
   });
 
   it("should not execute exercise without request", async () => {
+    await referee.mock.verifyTx.returns(100);
+
     return evmSnapFastForward(1000, async () => {
-      const result = obligation.executeExercise(aliceAddress, bobAddress, amountOutSat);
+      const result = obligation.executeExercise(constants.HashZero, 0, 0, constants.HashZero, constants.HashZero, constants.HashZero);
       await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_REQUEST);
     });
   });
 
   it("should not execute exercise with invalid output amount / secret", async () => {
+    await referee.mock.verifyTx.returns(amountOutSat);
     await treasury.mock.lock.returns();
     await obligation.mint(bobAddress, amountIn, btcHash, Script.p2sh);
 
     return evmSnapFastForward(1000, async () => {
-      await obligation.requestExercise(aliceAddress, bobAddress, amountOutSat);
-      const result = obligation.executeExercise(aliceAddress, bobAddress, amountOutSat);
+      const requestTx = await obligation.requestExercise(aliceAddress, bobAddress, amountOutSat);
+      const requestEvent = await getRequestEvent(obligation, aliceAddress, bobAddress, await requestTx.wait(0));
+      const result = obligation.executeExercise(requestEvent.id, 0, 0, constants.HashZero, constants.HashZero, constants.HashZero);
       await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUTPUT_AMOUNT);
     });
   });
@@ -128,25 +134,26 @@ describe("Obligation.sol", () => {
     await treasury.mock.lock.returns();
     await treasury.mock.release.returns();
     await obligation.mint(bobAddress, amountIn, btcHash, Script.p2sh);
-
+    
     return evmSnapFastForward(1000, async () => {
-      await obligation.requestExercise(aliceAddress, bobAddress, amountOutSat);
-      const secret = await obligation.getSecret(bobAddress);
-      const tx = await obligation.executeExercise(aliceAddress, bobAddress, amountOutSat.add(secret));
-      const fragment = obligation.interface.events["ExecuteExercise(address,address,uint256,uint256)"];
-      const event = await getEvent(fragment, [aliceAddress, bobAddress], tx, obligation);
+      const requestTx = await obligation.requestExercise(aliceAddress, bobAddress, amountOutSat);
+      const requestEvent = await getRequestEvent(obligation, aliceAddress, bobAddress, await requestTx.wait(0));
+      await referee.mock.verifyTx.returns(amountOutSat.add(requestEvent.secret));
+      const tx = await obligation.executeExercise(requestEvent.id, 0, 0, constants.HashZero, constants.HashZero, constants.HashZero);
+      const fragment = obligation.interface.events["ExecuteExercise(address,address,uint256)"];
+      const event = await getEvent(fragment, [aliceAddress, bobAddress], await tx.wait(0), obligation);
       expect(event.amount).to.eq(amountIn); 
     });
   });
 
   it("should not refund before expiry", async () => {
-    const result = obligation.refund(bobAddress, 0);
+    const result = reconnect(obligation, ObligationFactory, bob).refund(0);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
   });
 
   it("should not refund during window", async () => {
     return evmSnapFastForward(1000, async () => {
-      const result = obligation.refund(bobAddress, 0);
+      const result = reconnect(obligation, ObligationFactory, bob).refund(0);
       await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
     });
   });
@@ -155,7 +162,7 @@ describe("Obligation.sol", () => {
     await treasury.mock.release.returns();
 
     return evmSnapFastForward(2000, async () => {
-      const result = obligation.refund(bobAddress, amountIn);
+      const result = reconnect(obligation, ObligationFactory, bob).refund(amountIn);
       await expect(result).to.be.revertedWith(ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE);
     });
   });
@@ -166,7 +173,7 @@ describe("Obligation.sol", () => {
     await obligation.mint(bobAddress, amountIn, btcHash, Script.p2sh);
 
     return evmSnapFastForward(2000, async () => {
-      await obligation.refund(bobAddress, amountIn);
+      await reconnect(obligation, ObligationFactory, bob).refund(amountIn);
       const obligationBalance = await obligation.balanceObl(bobAddress);
       expect(obligationBalance).to.eq(constants.Zero);
     });

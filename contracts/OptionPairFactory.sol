@@ -34,7 +34,6 @@ contract OptionPairFactory is IOptionPairFactory {
         uint256 expiryTime,
         uint256 windowSize,
         address obligation,
-        address referee,
         bytes32 salt
     ) internal returns (address option) {
         bytes memory bytecode = type(Option).creationCode;
@@ -46,8 +45,7 @@ contract OptionPairFactory is IOptionPairFactory {
             decimals,
             expiryTime,
             windowSize,
-            obligation,
-            referee
+            obligation
         );
         return option;
     }
@@ -57,6 +55,7 @@ contract OptionPairFactory is IOptionPairFactory {
         uint256 expiryTime,
         uint256 windowSize,
         uint256 strikePrice,
+        address referee,
         address treasury,
         bytes32 salt
     ) internal returns (address obligation) {
@@ -70,6 +69,7 @@ contract OptionPairFactory is IOptionPairFactory {
             expiryTime,
             windowSize,
             strikePrice,
+            referee,
             treasury
         );
         return obligation;
@@ -116,8 +116,8 @@ contract OptionPairFactory is IOptionPairFactory {
         // decmials precision.
         uint8 decimals = IERC20(collateral).decimals();
 
-        obligation = _createObligation(decimals, expiryTime, windowSize, strikePrice, treasury, salt);
-        option = _createOption(decimals, expiryTime, windowSize, obligation, referee, salt);
+        obligation = _createObligation(decimals, expiryTime, windowSize, strikePrice, referee, treasury, salt);
+        option = _createOption(decimals, expiryTime, windowSize, obligation, salt);
         Ownable(obligation).transferOwnership(option);
 
         getObligation[option] = obligation;

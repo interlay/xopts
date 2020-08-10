@@ -1,11 +1,10 @@
 import chai from "chai";
 import { ethers } from "@nomiclabs/buidler";
 import { Signer, constants, BigNumber } from "ethers";
-import { deploy0 } from "../../lib/contracts";
-import { getTimeNow, getEvent } from "../common";
+import { deploy0, getEvent } from "../../lib/contracts";
+import { getTimeNow } from "../common";
 import { MockContract, deployMockContract } from "ethereum-waffle";
 import ObligationArtifact from '../../artifacts/Obligation.json';
-import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
 import { ErrorCode, Script } from "../../lib/constants";
 import { Option } from "../../typechain/Option";
 import { OptionFactory } from "../../typechain";
@@ -25,7 +24,6 @@ describe("Option.sol", () => {
 
   let option: Option;
   let obligation: MockContract;
-  let referee: MockContract;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -36,12 +34,11 @@ describe("Option.sol", () => {
       alice.getAddress(),
       bob.getAddress(),
     ]);
-    [option, obligation, referee] = await Promise.all([
+    [option, obligation] = await Promise.all([
       deploy0(alice, OptionFactory),
       deployMockContract(alice, ObligationArtifact.abi),
-      deployMockContract(alice, BTCRefereeArtifact.abi),
     ]);
-    await option.initialize(18, expiryTime, windowSize, obligation.address, referee.address);
+    await option.initialize(18, expiryTime, windowSize, obligation.address);
   });
 
   it("should create with owner", async () => {
@@ -50,7 +47,7 @@ describe("Option.sol", () => {
   });
 
   it("should fail to initialize as expired", async () => {
-    const result = option.initialize(18, getTimeNow(), 1000, obligation.address, referee.address);
+    const result = option.initialize(18, getTimeNow(), 1000, obligation.address);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INIT_EXPIRED);
   });
 
@@ -59,7 +56,7 @@ describe("Option.sol", () => {
     const tx = await option.mint(aliceAddress, aliceAddress, 1000, btcHash, Script.p2sh);
 
     const fragment = option.interface.events["Transfer(address,address,uint256)"];
-    const event = await getEvent(fragment, [constants.AddressZero, aliceAddress], tx, obligation);
+    const event = await getEvent(fragment, [constants.AddressZero, aliceAddress], await tx.wait(0), obligation);
     expect(event.value).to.eq(BigNumber.from(1000));
 
     const optionBalance = await option.balanceOf(aliceAddress);
@@ -86,27 +83,6 @@ describe("Option.sol", () => {
       expect(optionBalance).to.eq(constants.Zero);
       const optionSupply = await option.totalSupply();
       expect(optionSupply).to.eq(constants.Zero)  
-    });
-  });
-
-  it("should not refund before expiry", async () => {
-    await obligation.mock.refund.returns();
-    const result = option.refund(0);
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
-  });
-
-  it("should not refund during window", async () => {
-    await obligation.mock.refund.returns();
-    return evmSnapFastForward(1000, async () => {
-      const result = option.refund(0);
-      await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
-    });
-  });
-
-  it("should refund after window", async () => {
-    await obligation.mock.refund.returns();
-    return evmSnapFastForward(2000, async () => {
-      await option.refund(0);
     });
   });
 

@@ -10,11 +10,8 @@ interface IOption {
         uint8 _decimals,
         uint256 _expiryTime,
         uint256 _windowSize,
-        address _obligation,
-        address _referee
+        address _obligation
     ) external;
-
-    function referee() external returns (address);
 
     function obligation() external returns (address);
 
@@ -22,14 +19,4 @@ interface IOption {
 
     function requestExercise(address seller, uint satoshis) external;
 
-    function executeExercise(
-        address seller,
-        uint256 height,
-        uint256 index,
-        bytes32 txid,
-        bytes calldata proof,
-        bytes calldata rawtx
-    ) external;
-
-    function refund(uint amount) external;
 }
