@@ -21,8 +21,8 @@ import { Treasury } from "./Treasury.sol";
 contract OptionPairFactory is IOptionPairFactory {
     using SafeMath for uint256;
 
-    /// @notice Emitted whenever this factory creates a new option pair.
-    event Create(address indexed option, address indexed obligation, uint256 expiryTime, uint256 windowSize, uint256 strikePrice);
+    /// @notice Emit upon successful creation of a new option pair.
+    event CreatePair(address indexed option, address indexed obligation, uint256 expiryTime, uint256 windowSize, uint256 strikePrice);
 
     mapping(address => address) public getObligation;
     mapping(address => address) public getTreasury;
@@ -125,7 +125,7 @@ contract OptionPairFactory is IOptionPairFactory {
         getCollateral[option] = collateral;
         options.push(option);
 
-        emit Create(option, obligation, expiryTime, windowSize, strikePrice);
+        emit CreatePair(option, obligation, expiryTime, windowSize, strikePrice);
     }
 
     function allOptions() external override view returns (address[] memory) {
