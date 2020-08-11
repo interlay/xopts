@@ -147,7 +147,7 @@ contract Option is IOption, IERC20, European, Ownable {
     ) external override canExercise {
         address buyer = msg.sender;
 
-        (bytes20 btcHash,) = IWriterRegistry(obligation).getBtcAddress(seller);
+        (bytes20 btcHash, Bitcoin.Script format) = IWriterRegistry(obligation).getBtcAddress(seller);
 
         // verify & validate tx, use default confirmations
         uint output = IReferee(referee)
@@ -157,7 +157,8 @@ contract Option is IOption, IERC20, European, Ownable {
                 txid,
                 proof,
                 rawtx,
-                btcHash
+                btcHash,
+                format
             );
 
         // burn seller's obligations

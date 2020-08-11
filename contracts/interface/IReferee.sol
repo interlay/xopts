@@ -2,6 +2,8 @@
 
 pragma solidity ^0.6.0;
 
+import { Bitcoin } from "../types/Bitcoin.sol";
+
 interface IReferee {
 
     /**
@@ -12,6 +14,7 @@ interface IReferee {
     * @param proof Bitcoin inclusion proof
     * @param rawtx Bitcoin raw tx
     * @param btcHash Bitcoin address hash
+    * @param format Bitcoin script format
     * @return Bitcoin output satoshis
     **/
     function verifyTx(
@@ -20,7 +23,8 @@ interface IReferee {
         bytes32 txid,
         bytes calldata proof,
         bytes calldata rawtx,
-        bytes20 btcHash
+        bytes20 btcHash,
+        Bitcoin.Script format
     ) external view returns(uint256);
 
 }
