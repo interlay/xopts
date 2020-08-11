@@ -57,7 +57,7 @@ describe("Obligation.sol", () => {
 
   it("should fail to set an empty btc address", async () => {
     const result = obligation.setBtcAddress(constants.AddressZero, Script.p2sh);
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_BTC_ADDRESS);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_BTC_HASH);
   });
 
   it("should set a btc address", async () => {
@@ -69,7 +69,7 @@ describe("Obligation.sol", () => {
 
   it("should fail to mint obligations with no btc address", async () => {
     const result = obligation.mint(aliceAddress, 1000, constants.AddressZero, Script.p2sh);
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_BTC_ADDRESS);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_BTC_HASH);
   });
 
   it("should mint obligations with btc address", async () => {
@@ -171,6 +171,13 @@ describe("Obligation.sol", () => {
       expect(obligationBalance).to.eq(constants.Zero);
     });
   });
+
+  it("should not set btc address after expiry", async () => {
+    return evmSnapFastForward(2000, async () => {
+      const result = obligation.setBtcAddress(btcHash, Script.p2pkh);
+      await expect(result).to.be.revertedWith(ErrorCode.ERR_EXPIRED);
+    });
+  }); 
 
   it("should sell obligations and withdraw", async () => {
     await treasury.mock.lock.returns();

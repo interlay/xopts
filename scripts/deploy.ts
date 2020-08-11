@@ -8,6 +8,7 @@ import { deployUniswapFactory } from "../lib/uniswap";
 import { MockRelayFactory } from "../typechain/MockRelayFactory";
 import { constants } from "ethers";
 import { newBigNum } from "../lib/conversion";
+import { WriterRegistryFactory } from "../typechain";
 
 // ROPSTEN
 
@@ -29,6 +30,7 @@ async function main() {
 	const optionLib = await deploy2(signers[0], OptionLibFactory, uniswapFactory.address, constants.AddressZero);
 	const relay = await deploy0(signers[0], MockRelayFactory);
 	const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
+	const writerRegistry = await deploy0(signers[0], WriterRegistryFactory);
 
 	console.log("MockCollateral:", collateral.address);
 	console.log("OptionPairFactory:", optionFactory.address);
@@ -36,6 +38,7 @@ async function main() {
 	console.log("UniswapFactory:", uniswapFactory.address);
 	console.log("MockRelay:", relay.address);
 	console.log("BTCReferee:", referee.address);
+	console.log("WriterRegistry:", writerRegistry.address);
 
 	var date = new Date();
 	let current_time = Math.round(date.getTime() / 1000);

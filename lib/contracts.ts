@@ -20,6 +20,8 @@ import { ObligationFactory } from "../typechain/ObligationFactory";
 import * as bitcoin from 'bitcoinjs-lib';
 import { encodeBtcAddress } from "./encode";
 import { Addresses, Deployments } from "./addresses";
+import { IWriterRegistry } from "../typechain/IWriterRegistry";
+import { IWriterRegistryFactory } from "../typechain/IWriterRegistryFactory";
 
 interface Connectable<C> {
     connect: (addr: string, signer?: Signer) => C;
@@ -117,6 +119,7 @@ export class ReadOnlyContracts implements IReadContracts {
     protected collateral: Ierc20;
     protected referee: IReferee;
     protected relay: IRelay;
+    protected writerRegistry: IWriterRegistry;
 
     readonly signer: SignerOrProvider;
 
@@ -126,6 +129,7 @@ export class ReadOnlyContracts implements IReadContracts {
         collateral: Ierc20,
         referee: IReferee,
         relay: IRelay,
+        writerRegistry: IWriterRegistry,
         signer: SignerOrProvider,
     ) {
         this.optionFactory = optionFactory;
@@ -133,6 +137,7 @@ export class ReadOnlyContracts implements IReadContracts {
         this.collateral = collateral;
         this.referee = referee;
         this.relay = relay;
+        this.writerRegistry = writerRegistry;
         this.signer = signer;
     }
 
@@ -145,12 +150,14 @@ export class ReadOnlyContracts implements IReadContracts {
         const _collateral = Ierc20Factory.connect(contracts.collateral, signer);
         const _referee = IRefereeFactory.connect(contracts.referee, signer);
         const _relay = IRelayFactory.connect(contracts.relay, signer);
+        const _writerRegistry = IWriterRegistryFactory.connect(contracts.writerRegistry, signer);
         return new ReadOnlyContracts(
             _optionFactory,
             _optionLib,
             _collateral,
             _referee,
             _relay,
+            _writerRegistry,
             signer
         );
     }
@@ -199,11 +206,12 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
         collateral: Ierc20,
         referee: IReferee,
         relay: IRelay,
+        writerRegistry: IWriterRegistry,
         signer: Signer,
         account: string,
         confirmations?: number,
     ) {
-        super(optionFactory, optionLib, collateral, referee, relay, signer);
+        super(optionFactory, optionLib, collateral, referee, relay, writerRegistry, signer);
         this.account = account;
         this.confirmations = confirmations;
     }
@@ -218,6 +226,7 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
         const _collateral = Ierc20Factory.connect(contracts.collateral, signer);
         const _referee = IRefereeFactory.connect(contracts.referee, signer);
         const _relay = IRelayFactory.connect(contracts.relay, signer);
+        const _writerRegistry = IWriterRegistryFactory.connect(contracts.writerRegistry, signer);
         const account = await signer.getAddress();
         return new ReadWriteContracts(
             _optionFactory,
@@ -225,6 +234,7 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
             _collateral,
             _referee,
             _relay,
+            _writerRegistry,
             signer,
             account,
             confirmations,
@@ -279,7 +289,7 @@ export class ReadWriteContracts extends ReadOnlyContracts implements IWriteContr
 
     // persistent btcAddress across options
     async getBtcAddress(): Promise<BtcAddress> {
-        const { btcHash, format } = await this.optionFactory.getBtcAddress();
+        const { btcHash, format } = await this.writerRegistry.getBtcAddress(this.account);
         return { btcHash, format };
     }
 }

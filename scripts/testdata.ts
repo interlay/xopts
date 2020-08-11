@@ -14,7 +14,7 @@ import { BigNumberish, BigNumber } from "ethers";
 import { MockCollateral } from "../typechain/MockCollateral";
 import { BtcReferee } from "../typechain/BtcReferee";
 import { OptionLib } from "../typechain/OptionLib";
-import { BtcRefereeFactory, MockRelayFactory } from "../typechain";
+import { BtcRefereeFactory, MockRelayFactory, WriterRegistryFactory } from "../typechain";
 
 const keyPair = bitcoin.ECPair.makeRandom();
 const payment = bitcoin.payments.p2pkh({pubkey: keyPair.publicKey, network: bitcoin.networks.testnet});
@@ -77,6 +77,7 @@ async function main() {
 	const optionLib = await deploy2(signers[0], OptionLibFactory, uniswapFactory.address, constants.AddressZero);
 	const relay = await deploy0(signers[0], MockRelayFactory);
 	const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
+	const writerRegistry = await deploy0(signers[0], WriterRegistryFactory);
 
 	console.log("MockCollateral:", collateral.address);
 	console.log("OptionPairFactory:", optionFactory.address);
@@ -84,6 +85,7 @@ async function main() {
 	console.log("UniswapFactory:", uniswapFactory.address);
 	console.log("MockRelay:", relay.address);
 	console.log("BTCReferee:", referee.address);
+	console.log("WriterRegistry:", writerRegistry.address);
 
     // get collateral for everyone
 	await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, newBigNum(100_000, 18));

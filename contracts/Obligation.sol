@@ -11,13 +11,14 @@ import { European } from "./European.sol";
 import { IObligation } from "./interface/IObligation.sol";
 import { Bitcoin } from "./types/Bitcoin.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
+import { WriterRegistry } from "./WriterRegistry.sol";
 
 /// @title Obligation ERC20
 /// @notice Represents a writer's obligation to sell the
 /// supported collateral backing currency in return for
 /// the underlying currency - in this case BTC.
 /// @author Interlay
-contract Obligation is IObligation, IERC20, European, Ownable {
+contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     using SafeMath for uint;
 
     string constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
@@ -27,7 +28,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     string constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
 
     string constant ERR_INVALID_OUTPUT_AMOUNT = "Invalid output amount";
-    string constant ERR_NO_BTC_ADDRESS = "Insurer lacks BTC address";
+    string constant ERR_NO_BTC_ADDRESS = "Account lacks BTC address";
     string constant ERR_INSUFFICIENT_OBLIGATIONS = "Seller has insufficient obligations";
     string constant ERR_INVALID_REQUEST = "Cannot exercise without an amount";
     string constant ERR_SUB_WITHDRAW_BALANCE = "Insufficient pool balance";
@@ -54,9 +55,6 @@ contract Obligation is IObligation, IERC20, European, Ownable {
     // accounting to track and ensure correct payouts
     mapping (address => mapping (address => Request)) internal _requests;
     mapping (address => uint) internal _locked;
-
-    // payout addresses for obligation holders
-    mapping (address => Bitcoin.Address) _payouts;
 
     mapping (address => uint) internal _balances;
     mapping (address => uint) internal _obligations;
@@ -111,32 +109,13 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         treasury = _treasury;
     }
 
-    function _setBtcAddress(address account, bytes20 btcHash, Bitcoin.Script format) internal {
-        require(
-            btcHash != 0,
-            ERR_NO_BTC_ADDRESS
-        );
-        _payouts[account].btcHash = btcHash;
-        _payouts[account].format = format;
-    }
-
     /**
-    * @notice Set the payout address for an account
-    * @param btcHash: recipient address for exercising
-    * @param format: recipient script format
+    * @notice Set the payout address for an account before expiry.
+    * @param btcHash Recipient address for exercising
+    * @param format Recipient script format
     **/
     function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external override notExpired {
         _setBtcAddress(msg.sender, btcHash, format);
-    }
-
-    /**
-    * @notice Get the configured BTC address for an account
-    * @param account Minter address
-    * @return btcHash Address hash
-    * @return format Expected payment format
-    **/
-    function getBtcAddress(address account) external view override returns (bytes20 btcHash, Bitcoin.Script format) {
-        return (_payouts[account].btcHash, _payouts[account].format);
     }
 
     /**
@@ -346,7 +325,7 @@ contract Obligation is IObligation, IERC20, European, Ownable {
         _balances[sender] = _balances[sender].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE);
         _balances[recipient] = _balances[recipient].add(amount);
 
-        if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash != 0) {
+        if (_btcAddresses[sender].btcHash != 0 && _btcAddresses[recipient].btcHash != 0) {
             // simple transfer, lock recipient collateral
             // Note: the market must have 'unlocked' funds
             ITreasury(treasury).lock(recipient, amount);
@@ -355,13 +334,13 @@ contract Obligation is IObligation, IERC20, European, Ownable {
             // transfer ownership
             _obligations[sender] = _obligations[sender].sub(amount);
             _obligations[recipient] = _obligations[recipient].add(amount);
-        } else if (_payouts[sender].btcHash != 0 && _payouts[recipient].btcHash == 0) {
+        } else if (_btcAddresses[sender].btcHash != 0 && _btcAddresses[recipient].btcHash == 0) {
             // selling obligations to a pool
             _poolSupply[recipient] = _poolSupply[recipient].add(amount);
             _poolBalance[recipient][sender] = _poolBalance[recipient][sender].add(amount);
         } else {
             // buying obligations from a pool
-            require(_payouts[recipient].btcHash != 0, ERR_NO_BTC_ADDRESS);
+            require(_btcAddresses[recipient].btcHash != 0, ERR_NO_BTC_ADDRESS);
             // call to treasury should revert if insufficient locked
             ITreasury(treasury).lock(recipient, amount);
             _obligations[recipient] = _obligations[recipient].add(amount);
