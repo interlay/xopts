@@ -59,8 +59,6 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     mapping (address => uint) internal _balances;
     mapping (address => uint) internal _obligations;
 
-    // TODO: add seller array
-
     uint256 public override totalSupply;
 
     // model trading pools to enable withdrawals
@@ -131,6 +129,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         _balances[account] = _balances[account].add(amount);
         _obligations[account] = _obligations[account].add(amount);
         totalSupply = totalSupply.add(amount);
+        _writers.push(account);
 
         _setBtcAddress(account, btcHash, format);
 
@@ -334,6 +333,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             // transfer ownership
             _obligations[sender] = _obligations[sender].sub(amount);
             _obligations[recipient] = _obligations[recipient].add(amount);
+            _writers.push(recipient);
         } else if (_btcAddresses[sender].btcHash != 0 && _btcAddresses[recipient].btcHash == 0) {
             // selling obligations to a pool
             _poolSupply[recipient] = _poolSupply[recipient].add(amount);
@@ -344,6 +344,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             // call to treasury should revert if insufficient locked
             ITreasury(treasury).lock(recipient, amount);
             _obligations[recipient] = _obligations[recipient].add(amount);
+            _writers.push(recipient);
         }
 
         emit Transfer(sender, recipient, amount);
