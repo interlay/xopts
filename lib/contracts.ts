@@ -376,7 +376,7 @@ export class ReadOnlyOptionPair implements IReadOptionPair {
         const [expiryTime, windowSize, strikePrice] = await Promise.all([
             this.option.expiryTime(),
             this.option.windowSize(),
-            this.option.strikePrice(),
+            this.obligation.strikePrice(),
         ]);
         return ({ expiryTime, windowSize, strikePrice });
     }
