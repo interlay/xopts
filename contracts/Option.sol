@@ -7,12 +7,10 @@ import '@nomiclabs/buidler/console.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IWriterRegistry} from './interface/IWriterRegistry.sol';
 import {Obligation} from './Obligation.sol';
 import {IObligation} from './interface/IObligation.sol';
 import {IOption} from './interface/IOption.sol';
 import {European} from './European.sol';
-import {IReferee} from './interface/IReferee.sol';
 import {Bitcoin} from './types/Bitcoin.sol';
 
 /// @title Option ERC20
@@ -37,8 +35,6 @@ contract Option is IOption, IERC20, European, Ownable {
     string public symbol;
     uint8 public decimals;
 
-    // btc relay or oracle
-    address public override referee;
     address public override obligation;
 
     // account balances
@@ -60,15 +56,13 @@ contract Option is IOption, IERC20, European, Ownable {
      * @param _decimals Option precision
      * @param _expiryTime Unix expiry date
      * @param _windowSize Settlement window
-     * @param _referee Inclusion verifier
      * @param _obligation Obligation ERC20
      **/
     function initialize(
         uint8 _decimals,
         uint256 _expiryTime,
         uint256 _windowSize,
-        address _obligation,
-        address _referee
+        address _obligation
     ) external override onlyOwner {
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
         require(_windowSize > 0, ERR_WINDOW_ZERO);
@@ -81,7 +75,6 @@ contract Option is IOption, IERC20, European, Ownable {
         // Option
         expiryTime = _expiryTime;
         windowSize = _windowSize;
-        referee = _referee;
         obligation = _obligation;
     }
 
@@ -145,55 +138,6 @@ contract Option is IOption, IERC20, European, Ownable {
         );
         // burn options to prevent double spends
         _burn(msg.sender, options);
-    }
-
-    /**
-     * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`.
-     * Requires a transaction inclusion proof which is verified by our chain relay.
-     * @dev Can only be called by the parent factory contract.
-     * @param seller Account to exercise against
-     * @param height Bitcoin block height
-     * @param index Bitcoin tx index
-     * @param txid Bitcoin transaction id
-     * @param proof Bitcoin inclusion proof
-     * @param rawtx Bitcoin raw tx
-     **/
-    function executeExercise(
-        address seller,
-        uint256 height,
-        uint256 index,
-        bytes32 txid,
-        bytes calldata proof,
-        bytes calldata rawtx
-    ) external override canExercise {
-        address buyer = msg.sender;
-
-        (bytes20 btcHash, Bitcoin.Script format) = IWriterRegistry(obligation)
-            .getBtcAddress(seller);
-
-        // verify & validate tx, use default confirmations
-        uint256 output = IReferee(referee).verifyTx(
-            height,
-            index,
-            txid,
-            proof,
-            rawtx,
-            btcHash,
-            format
-        );
-
-        // burn seller's obligations
-        IObligation(obligation).executeExercise(buyer, seller, output);
-    }
-
-    /**
-     * @notice Refund written collateral after `expiryTime + windowSize`.
-     * @dev Can only be called by the parent factory contract.
-     * @param amount Amount of collateral
-     **/
-    function refund(uint256 amount) external override canRefund {
-        // nothing to do here, forward
-        IObligation(obligation).refund(msg.sender, amount);
     }
 
     /// @dev See {IERC20-allowance}

@@ -40,7 +40,6 @@ contract OptionPairFactory is IOptionPairFactory {
         uint256 expiryTime,
         uint256 windowSize,
         address obligation,
-        address referee,
         bytes32 salt
     ) internal returns (address option) {
         bytes memory bytecode = type(Option).creationCode;
@@ -53,8 +52,7 @@ contract OptionPairFactory is IOptionPairFactory {
             decimals,
             expiryTime,
             windowSize,
-            obligation,
-            referee
+            obligation
         );
         return option;
     }
@@ -64,6 +62,7 @@ contract OptionPairFactory is IOptionPairFactory {
         uint256 expiryTime,
         uint256 windowSize,
         uint256 strikePrice,
+        address referee,
         address treasury,
         bytes32 salt
     ) internal returns (address obligation) {
@@ -78,6 +77,7 @@ contract OptionPairFactory is IOptionPairFactory {
             expiryTime,
             windowSize,
             strikePrice,
+            referee,
             treasury
         );
         return obligation;
@@ -131,6 +131,7 @@ contract OptionPairFactory is IOptionPairFactory {
             expiryTime,
             windowSize,
             strikePrice,
+            referee,
             treasury,
             salt
         );
@@ -139,7 +140,6 @@ contract OptionPairFactory is IOptionPairFactory {
             expiryTime,
             windowSize,
             obligation,
-            referee,
             salt
         );
         Ownable(obligation).transferOwnership(option);

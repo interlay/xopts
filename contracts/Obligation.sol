@@ -12,6 +12,7 @@ import {IObligation} from './interface/IObligation.sol';
 import {Bitcoin} from './types/Bitcoin.sol';
 import {ITreasury} from './interface/ITreasury.sol';
 import {WriterRegistry} from './WriterRegistry.sol';
+import {IReferee} from './interface/IReferee.sol';
 
 /// @title Obligation ERC20
 /// @notice Represents a writer's obligation to sell the
@@ -56,15 +57,19 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     // set price at which options can be sold when exercised
     uint256 public strikePrice;
 
+    // btc relay or oracle
+    address public override referee;
+
     address public override treasury;
 
     struct Request {
-        uint256 secret;
         uint256 amount;
+        uint256 secret;
+        address seller;
     }
 
     // accounting to track and ensure correct payouts
-    mapping(address => mapping(address => Request)) internal _requests;
+    mapping(address => mapping(bytes32 => Request)) internal _requests;
     mapping(address => uint256) internal _locked;
 
     mapping(address => uint256) internal _balances;
@@ -83,6 +88,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     event RequestExercise(
         address indexed buyer,
         address indexed seller,
+        bytes32 id,
         uint256 amount,
         uint256 secret
     );
@@ -91,8 +97,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     event ExecuteExercise(
         address indexed buyer,
         address indexed seller,
-        uint256 amount,
-        uint256 secret
+        uint256 amount
     );
 
     /// @notice Emit once collateral is reclaimed by a writer after `expiryTime + windowSize`.
@@ -110,6 +115,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param _expiryTime Unix expiry date
      * @param _windowSize Settlement window
      * @param _strikePrice Strike price
+     * @param _referee Inclusion verifier
      * @param _treasury Backing currency
      **/
     function initialize(
@@ -117,6 +123,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         uint256 _expiryTime,
         uint256 _windowSize,
         uint256 _strikePrice,
+        address _referee,
         address _treasury
     ) external override onlyOwner {
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
@@ -132,6 +139,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         expiryTime = _expiryTime;
         windowSize = _windowSize;
         strikePrice = _strikePrice;
+        referee = _referee;
         treasury = _treasury;
     }
 
@@ -205,8 +213,6 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             _locked[seller] <= _obligations[seller],
             ERR_INSUFFICIENT_OBLIGATIONS
         );
-        uint256 amount = _requests[seller][buyer].amount.add(options);
-        _requests[seller][buyer].amount = amount;
 
         bytes32 salt = keccak256(
             abi.encodePacked(
@@ -215,51 +221,84 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
                 strikePrice,
                 buyer,
                 seller,
-                amount,
                 // append height to avoid replay
                 // attacks on the same option
                 block.number
             )
         );
         uint256 secret = uint256(uint8(salt[0]));
-        _requests[seller][buyer].secret = secret;
 
-        emit RequestExercise(buyer, seller, amount, secret);
+        _requests[buyer][salt].amount = options;
+        _requests[buyer][salt].secret = secret;
+        _requests[buyer][salt].seller = seller;
+
+        emit RequestExercise(buyer, seller, salt, options, secret);
         return options;
     }
 
     /**
      * @notice Get the secret for a particular exercise request identified
      * by the seller and the caller.
-     * @param seller The account for which the caller has an outstanding request.
+     * @param id The outstanding request ID.
      * @return The generated satoshi secret nonce.
      **/
-    function getSecret(address seller) external view returns (uint256) {
-        return _requests[seller][msg.sender].secret;
+    function getSecret(bytes32 id) external view returns (uint256) {
+        return _requests[msg.sender][id].secret;
     }
 
     /**
      * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`.
-     * @dev Only callable by the parent option contract.
-     * @param buyer Account that bought the options.
-     * @param seller Account that wrote the options.
-     * @param satoshis Input amount.
+     * Requires a transaction inclusion proof which is verified by our chain relay.
+     * @param id Unique request id
+     * @param height Bitcoin block height
+     * @param index Bitcoin tx index
+     * @param txid Bitcoin transaction id
+     * @param proof Bitcoin inclusion proof
+     * @param rawtx Bitcoin raw tx
      **/
     function executeExercise(
+        bytes32 id,
+        uint256 height,
+        uint256 index,
+        bytes32 txid,
+        bytes calldata proof,
+        bytes calldata rawtx
+    ) external override canExercise {
+        address buyer = msg.sender;
+        address seller = _requests[buyer][id].seller;
+        bytes20 btcHash = _btcAddresses[seller].btcHash;
+        Bitcoin.Script format = _btcAddresses[seller].format;
+
+        // verify & validate tx, use default confirmations
+        uint256 satoshis = IReferee(referee).verifyTx(
+            height,
+            index,
+            txid,
+            proof,
+            rawtx,
+            btcHash,
+            format
+        );
+
+        _verifyReceipt(buyer, id, satoshis);
+    }
+
+    function _verifyReceipt(
         address buyer,
-        address seller,
+        bytes32 id,
         uint256 satoshis
-    ) external override onlyOwner canExercise {
-        uint256 amount = _requests[seller][buyer].amount;
+    ) internal {
+        uint256 amount = _requests[buyer][id].amount;
         require(amount > 0, ERR_INVALID_REQUEST);
-        uint256 secret = _requests[seller][buyer].secret;
 
         // final amount must equal exactly for the secret to be valid
+        uint256 secret = _requests[buyer][id].secret;
         uint256 options = calculateAmountIn(satoshis.sub(secret));
         require(amount == options, ERR_INVALID_OUTPUT_AMOUNT);
 
+        address seller = _requests[buyer][id].seller;
         _locked[seller] = _locked[seller].sub(amount);
-        delete _requests[seller][buyer];
+        delete _requests[buyer][id];
 
         // remove seller's obligations
         _burn(seller, amount);
@@ -267,21 +306,16 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         // transfers from the treasury to the buyer
         ITreasury(treasury).release(seller, buyer, amount);
 
-        emit ExecuteExercise(buyer, seller, options, secret);
+        emit ExecuteExercise(buyer, seller, amount);
     }
 
     /**
      * @notice Refund written collateral after `expiryTime + windowSize`.
-     * @dev Only callable by the parent option contract.
-     * @param seller Minter address
-     * @param amount Amount of collateral
+     * @dev Caller must own obligations.
+     * @param amount Amount of collateral.
      **/
-    function refund(address seller, uint256 amount)
-        external
-        override
-        onlyOwner
-        canRefund
-    {
+    function refund(uint256 amount) external override canRefund {
+        address seller = msg.sender;
         _burn(seller, amount);
 
         // transfers from the treasury to the seller
