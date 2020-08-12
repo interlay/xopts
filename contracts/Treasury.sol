@@ -6,6 +6,7 @@ import "@nomiclabs/buidler/console.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { ITreasury } from "./interface/ITreasury.sol";
 
 /// @title Treasury ERC20
@@ -13,7 +14,7 @@ import { ITreasury } from "./interface/ITreasury.sol";
 /// @notice This contract manages locking and unlocking of collateral.
 /// @dev This should not be ownable since it may be shared across factories.
 /// @dev All operations MUST be called atomically to prevent misappropriation.
-contract Treasury is ITreasury {
+contract Treasury is ITreasury, ReentrancyGuard {
     using SafeMath for uint256;
 
     string constant ERR_INSUFFICIENT_DEPOSIT = "Insufficient deposit amount";
@@ -52,7 +53,7 @@ contract Treasury is ITreasury {
     /// to prevent misapproriation.
     /// @param market Address of the market
     /// @param account Address of the supplier
-    function deposit(address market, address account) external override {
+    function deposit(address market, address account) external override nonReentrant {
         uint balance = IERC20(collateral).balanceOf(address(this));
         uint amount = balance.sub(reserve);
         require(amount > 0, ERR_INSUFFICIENT_DEPOSIT);
@@ -65,7 +66,7 @@ contract Treasury is ITreasury {
     /// @dev Reverts if if there is insufficient funds 'unlocked'.
     /// @param account Ethereum address that locks collateral
     /// @param amount The amount to be locked
-    function lock(address account, uint amount) external override {
+    function lock(address account, uint amount) external override nonReentrant {
         _unlocked[msg.sender][account] = _unlocked[msg.sender][account].sub(amount, ERR_INSUFFICIENT_UNLOCKED);
         _locked[msg.sender][account] = _locked[msg.sender][account].add(amount);
     }
@@ -78,7 +79,7 @@ contract Treasury is ITreasury {
     /// @param from Ethereum address that locked collateral
     /// @param to Ethereum address to receive collateral
     /// @param amount The amount to be unlocked
-    function release(address from, address to, uint amount) external override {
+    function release(address from, address to, uint amount) external override nonReentrant {
         _locked[msg.sender][from] = _locked[msg.sender][from].sub(amount, ERR_INSUFFICIENT_LOCKED);
         IERC20(collateral).transfer(to, amount);
         reserve = IERC20(collateral).balanceOf(address(this));
