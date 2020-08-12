@@ -1,7 +1,7 @@
 import UniswapV2Factory from '@uniswap/v2-core/build/UniswapV2Factory.json';
 import { deployContract } from 'ethereum-waffle';
 import { Wallet, Signer, Contract, BigNumberish } from 'ethers';
-import { ethers } from "@nomiclabs/buidler";
+import ethers from 'ethers';
 import { IUniswapV2PairFactory } from '../typechain/IUniswapV2PairFactory';
 import { IUniswapV2Pair } from '../typechain/IUniswapV2Pair';
 import { BigNumber } from 'ethers';
