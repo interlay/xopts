@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.0;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 
 /**
  * @dev Contract module which provides a timed access control mechanism,
@@ -10,12 +10,12 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
  * It must be used through inheritance which provides several modifiers.
  */
 contract European {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
-    string constant ERR_INIT_EXPIRED = "Cannot init expired";
-    string constant ERR_EXPIRED = "Contract has expired";
-    string constant ERR_NOT_EXPIRED = "Contract not expired";
-    string constant ERR_WINDOW_ZERO = "Window cannot be zero";
+    string internal constant ERR_INIT_EXPIRED = 'Cannot init expired';
+    string internal constant ERR_EXPIRED = 'Contract has expired';
+    string internal constant ERR_NOT_EXPIRED = 'Contract not expired';
+    string internal constant ERR_WINDOW_ZERO = 'Window cannot be zero';
 
     // expiry timestamp
     uint256 public expiryTime;
@@ -24,8 +24,8 @@ contract European {
     uint256 public windowSize;
 
     /**
-    * @dev Throws if called before the configured timestamp
-    */
+     * @dev Throws if called before the configured timestamp
+     */
     modifier hasExpired() {
         // solium-disable-next-line security/no-block-members
         require(block.timestamp > expiryTime, ERR_NOT_EXPIRED);
@@ -33,8 +33,8 @@ contract European {
     }
 
     /**
-    * @dev Throws if called after the configured timestamp
-    */
+     * @dev Throws if called after the configured timestamp
+     */
     modifier notExpired() {
         // solium-disable-next-line security/no-block-members
         require(block.timestamp <= expiryTime, ERR_EXPIRED);
@@ -42,8 +42,8 @@ contract European {
     }
 
     /**
-    * @dev Throws if called after the exercise window has expired
-    */
+     * @dev Throws if called after the exercise window has expired
+     */
     modifier canExercise() {
         // solium-disable-next-line security/no-block-members
         require(block.timestamp > expiryTime, ERR_NOT_EXPIRED);
@@ -53,8 +53,8 @@ contract European {
     }
 
     /**
-    * @dev Throws if called before the exercise window has expired
-    */
+     * @dev Throws if called before the exercise window has expired
+     */
     modifier canRefund() {
         // solium-disable-next-line security/no-block-members
         require(block.timestamp > expiryTime.add(windowSize), ERR_NOT_EXPIRED);

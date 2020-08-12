@@ -2,10 +2,9 @@
 
 pragma solidity ^0.6.0;
 
-import { Bitcoin } from "../types/Bitcoin.sol";
+import {Bitcoin} from '../types/Bitcoin.sol';
 
 interface IOptionPairFactory {
-
     function createPair(
         uint256 expiry,
         uint256 window,
@@ -15,5 +14,4 @@ interface IOptionPairFactory {
     ) external returns (address option, address obligation);
 
     function allOptions() external view returns (address[] memory);
-
 }
