@@ -2,26 +2,26 @@
 
 pragma solidity ^0.6.0;
 
-import "@nomiclabs/buidler/console.sol";
+import '@nomiclabs/buidler/console.sol';
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { BytesLib } from "@interlay/bitcoin-spv-sol/contracts/BytesLib.sol";
-import { Parser } from "@interlay/btc-relay-sol/contracts/Parser.sol";
-import { Script } from "@interlay/btc-relay-sol/contracts/Script.sol";
-import { IReferee } from "./interface/IReferee.sol";
-import { IRelay } from "./interface/IRelay.sol";
-import { Bitcoin } from "./types/Bitcoin.sol";
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {BytesLib} from '@interlay/bitcoin-spv-sol/contracts/BytesLib.sol';
+import {Parser} from '@interlay/btc-relay-sol/contracts/Parser.sol';
+import {Script} from '@interlay/btc-relay-sol/contracts/Script.sol';
+import {IReferee} from './interface/IReferee.sol';
+import {IRelay} from './interface/IRelay.sol';
+import {Bitcoin} from './types/Bitcoin.sol';
 
 contract BTCReferee is IReferee {
-    using SafeMath for uint;
+    using SafeMath for uint256;
     using BytesLib for bytes;
     using Parser for bytes;
     using Script for bytes;
 
-    string constant ERR_INVALID_OUT_HASH = "Invalid output hash";
-    string constant ERR_TX_NOT_INCLUDED = "Cannot verify tx inclusion";
+    string internal constant ERR_INVALID_OUT_HASH = 'Invalid output hash';
+    string internal constant ERR_TX_NOT_INCLUDED = 'Cannot verify tx inclusion';
 
-    address relay;
+    address public relay;
 
     constructor(address _relay) public {
         relay = _relay;
@@ -40,13 +40,13 @@ contract BTCReferee is IReferee {
         bytes memory rawTx,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) internal pure returns(uint256 amount) {
-        (, uint lenInputs) = rawTx.extractInputLength();
+    ) internal pure returns (uint256 amount) {
+        (, uint256 lenInputs) = rawTx.extractInputLength();
         bytes memory outputs = rawTx.slice(lenInputs, rawTx.length - lenInputs);
-        (uint numOutputs, ) = outputs.extractOutputLength();
+        (uint256 numOutputs, ) = outputs.extractOutputLength();
 
         // sum total over all outputs
-        for (uint i = 0; i < numOutputs; i++) {
+        for (uint256 i = 0; i < numOutputs; i++) {
             bytes memory output = outputs.extractOutputAtIndex(i);
             bytes memory script = output.extractOutputScript();
             bytes20 _btcHash;
@@ -75,7 +75,7 @@ contract BTCReferee is IReferee {
         bytes calldata rawTx,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) external override virtual view returns(uint256) {
+    ) external virtual override view returns (uint256) {
         require(btcHash != 0, ERR_INVALID_OUT_HASH);
         require(_isIncluded(height, index, txid, proof), ERR_TX_NOT_INCLUDED);
         return _extractOutputValue(rawTx, btcHash, format);

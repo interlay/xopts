@@ -15,7 +15,18 @@
     "ganache": "npx buidler run scripts/ganache.ts",
     "tsc": "tsc && cp typechain/*.d.ts dist/typechain/",
     "clean": "rm -rf artifacts cache typechain dist",
-    "docs": "npx solidity-docgen --solc-module=./node_modules/solc -t docs -o docs/contracts"
+    "docs": "npx solidity-docgen --solc-module=./node_modules/solc -t docs -o docs/contracts",
+    "lint::typescript": "eslint './**/*.ts' --ext .ts",
+    "prettier::typescript": "prettier --write './**/*.ts'",
+    "lint::solidity": "solhint 'contracts/**/*.sol'",
+    "prettier::solidity": "prettier --write 'contracts/**/*.sol'",
+    "lint": "yarn run lint::typescript && yarn run lint::solidity",
+    "prettier": "yarn run prettier::typescript && yarn run prettier::solidity"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn run prettier"
+    }
   },
   "repository": {
     "type": "git",
@@ -50,15 +61,24 @@
     "@types/chai": "^4.2.8",
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
+    "@typescript-eslint/eslint-plugin": "^2.21.0",
+    "@typescript-eslint/parser": "^2.21.0",
     "@uniswap/sdk": "^2.0.6",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "buidler-gas-reporter": "^0.1.3",
     "chai": "^4.2.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
     "ethereum-waffle": "^3.0.0",
     "fast-check": "^2.1.0",
     "husky": "^4.2.5",
+    "prettier": "^2.0.5",
+    "prettier-plugin-solidity": "^1.0.0-alpha.56",
     "solc": "0.6.6",
+    "solhint": "^3.1.0",
+    "solhint-plugin-prettier": "^0.0.4",
     "solidity-docgen": "^0.5.4",
     "ts-generator": "0.0.8",
     "ts-node": "^8.9.0",

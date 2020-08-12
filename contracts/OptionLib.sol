@@ -2,17 +2,25 @@
 
 pragma solidity ^0.6.0;
 
-import "@nomiclabs/buidler/console.sol";
+import '@nomiclabs/buidler/console.sol';
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { IUniswapV2Pair } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import { UniswapV2Router02 } from "@uniswap/v2-periphery/contracts/UniswapV2Router02.sol";
-import { UniswapV2Library } from "@uniswap/v2-periphery/contracts/libraries/UniswapV2Library.sol";
-import { TransferHelper } from '@uniswap/lib/contracts/libraries/TransferHelper.sol';
-import { IOption } from "./interface/IOption.sol";
-import { IObligation } from "./interface/IObligation.sol";
-import { ITreasury } from "./interface/ITreasury.sol";
-import { Bitcoin } from "./types/Bitcoin.sol";
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {
+    IUniswapV2Pair
+} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+import {
+    UniswapV2Router02
+} from '@uniswap/v2-periphery/contracts/UniswapV2Router02.sol';
+import {
+    UniswapV2Library
+} from '@uniswap/v2-periphery/contracts/libraries/UniswapV2Library.sol';
+import {
+    TransferHelper
+} from '@uniswap/lib/contracts/libraries/TransferHelper.sol';
+import {IOption} from './interface/IOption.sol';
+import {IObligation} from './interface/IObligation.sol';
+import {ITreasury} from './interface/ITreasury.sol';
+import {Bitcoin} from './types/Bitcoin.sol';
 
 /// @title OptionLib Helper
 /// @author Interlay
@@ -21,9 +29,15 @@ import { Bitcoin } from "./types/Bitcoin.sol";
 contract OptionLib is UniswapV2Router02 {
     using SafeMath for uint256;
 
-    string constant ERR_EXPECTED_COLLATERAL = "Expected collateral address";
+    string
+        internal constant ERR_EXPECTED_COLLATERAL = 'Expected collateral address';
 
-    constructor(address _factory, address _WETH) public UniswapV2Router02(_factory, _WETH) {}
+    constructor(address _factory, address _weth)
+        public
+        UniswapV2Router02(_factory, _weth)
+    {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
     /// @notice Atomically deposit collateral into a treasury and add liquidity to a
     /// Uniswap pair based on the specified premium.
@@ -31,21 +45,40 @@ contract OptionLib is UniswapV2Router02 {
         address tokenA, // options
         address tokenB, // premium
         address collateral,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) external returns (uint amountA, uint amountB, uint liquidity) {
+    )
+        external
+        returns (
+            uint256 amountA,
+            uint256 amountB,
+            uint256 liquidity
+        )
+    {
         // options, premium
-        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
+        (amountA, amountB) = _addLiquidity(
+            tokenA,
+            tokenB,
+            amountADesired,
+            amountBDesired,
+            amountAMin,
+            amountBMin
+        );
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
 
         // lock collateral for exercising
         address obligation = IOption(tokenA).obligation();
         address treasury = IObligation(obligation).treasury();
-        TransferHelper.safeTransferFrom(collateral, msg.sender, treasury, amountA);
+        TransferHelper.safeTransferFrom(
+            collateral,
+            msg.sender,
+            treasury,
+            amountA
+        );
         // deposit 'unlocked' balance for writing
         ITreasury(treasury).deposit(obligation, msg.sender);
         // mint options and obligations - locking collateral
@@ -59,24 +92,31 @@ contract OptionLib is UniswapV2Router02 {
     /// @notice Atomically deposit collateral into a treasury and purchase `amountOut`
     /// obligations from a Uniswap pool.
     function lockAndBuy(
-        uint amountOut,
-        uint amountInMax,
+        uint256 amountOut,
+        uint256 amountInMax,
         address[] calldata path
-    ) external returns (uint[] memory amounts) {
+    ) external returns (uint256[] memory amounts) {
         address obligation = path[1];
         address treasury = IObligation(obligation).treasury();
         address collateral = ITreasury(treasury).collateral();
         require(path[0] == collateral, ERR_EXPECTED_COLLATERAL);
 
-        TransferHelper.safeTransferFrom(collateral, msg.sender, treasury, amountOut);
+        TransferHelper.safeTransferFrom(
+            collateral,
+            msg.sender,
+            treasury,
+            amountOut
+        );
         ITreasury(treasury).deposit(obligation, msg.sender);
 
         amounts = UniswapV2Library.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= amountInMax, 'EXCESSIVE_INPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
-            collateral, msg.sender, UniswapV2Library.pairFor(factory, collateral, obligation), amounts[0]
+            collateral,
+            msg.sender,
+            UniswapV2Library.pairFor(factory, collateral, obligation),
+            amounts[0]
         );
         _swap(amounts, path, msg.sender);
     }
-
 }

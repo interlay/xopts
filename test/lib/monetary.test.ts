@@ -1,10 +1,10 @@
-import Big, { BigSource } from 'big.js';
-import { expect } from 'chai';
+import Big, {BigSource} from 'big.js';
+import {expect} from 'chai';
 import * as fc from 'fast-check';
 
 import * as monetary from '../../lib/monetary';
 
-const fcBig = () => fc.integer().map(v => new Big(v))
+const fcBig = (): fc.Arbitrary<Big> => fc.integer().map((v) => new Big(v));
 
 describe('currencies', () => {
   describe('BTC', () => {
@@ -43,22 +43,22 @@ describe('currencies', () => {
   });
 });
 
-class DummyCurrency implements monetary.ICurrency {
+class DummyCurrency implements monetary.Currency {
   decimals = 10;
   name = 'dummy';
 }
 const DummyC = new DummyCurrency();
 
-
-class DummyERC extends monetary.ERC20 {
-}
+class DummyERC extends monetary.ERC20 {}
 const DummyERCT = new DummyERC('dummy', 5);
 
 class DummyAmount extends monetary.MonetaryAmount<DummyCurrency> {
-  constructor(amount: BigSource, decimals?: number) { super(DummyC, amount, decimals); }
+  constructor(amount: BigSource, decimals?: number) {
+    super(DummyC, amount, decimals);
+  }
   withAmount(amount: BigSource): this {
-      const Cls = this.constructor as new (amount: BigSource) => this;
-      return new Cls(amount);
+    const Cls = this.constructor as new (amount: BigSource) => this;
+    return new Cls(amount);
   }
 }
 
@@ -73,11 +73,16 @@ describe('MonetaryAmount', () => {
 
       it('should work with any number of decimals', () => {
         fc.assert(
-          fc.property(fc.integer().filter(v => v >= 0 && v <= 50), decimals => {
-            const rawAmount = new Big(5);
-            const amount = new DummyAmount(rawAmount, decimals);
-            expect(amount.toBig(decimals).toString()).to.eq(rawAmount.toString());
-          })
+          fc.property(
+            fc.integer().filter((v) => v >= 0 && v <= 50),
+            (decimals) => {
+              const rawAmount = new Big(5);
+              const amount = new DummyAmount(rawAmount, decimals);
+              expect(amount.toBig(decimals).toString()).to.eq(
+                rawAmount.toString()
+              );
+            }
+          )
         );
       });
     });
@@ -85,7 +90,7 @@ describe('MonetaryAmount', () => {
     describe('toString', () => {
       it('should format raw value by default', () => {
         fc.assert(
-          fc.property(fcBig(), rawAmount => {
+          fc.property(fcBig(), (rawAmount) => {
             const amount = new DummyAmount(rawAmount);
             expect(amount.toString()).to.eq(rawAmount.toString());
           })
@@ -94,7 +99,7 @@ describe('MonetaryAmount', () => {
 
       it('should return largest unit in human readable format', () => {
         fc.assert(
-          fc.property(fc.integer(), rawAmount => {
+          fc.property(fc.integer(), (rawAmount) => {
             const humanAmount = rawAmount / Math.pow(10, 10);
             const amount = new DummyAmount(rawAmount);
             expect(amount.toString(true)).to.eq(humanAmount.toLocaleString());
@@ -111,7 +116,9 @@ describe('MonetaryAmount', () => {
               const amountA = new DummyAmount(rawAmountA);
               const amountB = new DummyAmount(rawAmountB);
               const added = amountA.add(amountB);
-              expect(added.toBig().toString()).to.eq(rawAmountA.add(rawAmountB).toString());
+              expect(added.toBig().toString()).to.eq(
+                rawAmountA.add(rawAmountB).toString()
+              );
               expect(amountA.toString()).to.eq(rawAmountA.toString());
               expect(amountB.toString()).to.eq(rawAmountB.toString());
             })
@@ -126,7 +133,9 @@ describe('MonetaryAmount', () => {
               const amountA = new DummyAmount(rawAmountA);
               const amountB = new DummyAmount(rawAmountB);
               const added = amountA.sub(amountB);
-              expect(added.toBig().toString()).to.eq(rawAmountA.sub(rawAmountB).toString());
+              expect(added.toBig().toString()).to.eq(
+                rawAmountA.sub(rawAmountB).toString()
+              );
               expect(amountA.toString()).to.eq(rawAmountA.toString());
               expect(amountB.toString()).to.eq(rawAmountB.toString());
             })
@@ -140,7 +149,9 @@ describe('MonetaryAmount', () => {
             fc.property(fcBig(), fc.integer(), (rawAmount, multiplier) => {
               const amount = new DummyAmount(rawAmount);
               const multiplied = amount.mul(multiplier);
-              expect(multiplied.toBig().toString()).to.eq(rawAmount.mul(multiplier).toString());
+              expect(multiplied.toBig().toString()).to.eq(
+                rawAmount.mul(multiplier).toString()
+              );
               expect(amount.toString()).to.eq(rawAmount.toString());
             })
           );
@@ -150,12 +161,18 @@ describe('MonetaryAmount', () => {
       describe('div', () => {
         it('should divide and create new value', () => {
           fc.assert(
-            fc.property(fcBig(), fc.integer().filter(v => v !== 0), (rawAmount, divisor) => {
-              const amount = new DummyAmount(rawAmount);
-              const divided = amount.div(divisor);
-              expect(divided.toBig().toString()).to.eq(rawAmount.div(divisor).toString());
-              expect(amount.toString()).to.eq(rawAmount.toString());
-            })
+            fc.property(
+              fcBig(),
+              fc.integer().filter((v) => v !== 0),
+              (rawAmount, divisor) => {
+                const amount = new DummyAmount(rawAmount);
+                const divided = amount.div(divisor);
+                expect(divided.toBig().toString()).to.eq(
+                  rawAmount.div(divisor).toString()
+                );
+                expect(amount.toString()).to.eq(rawAmount.toString());
+              }
+            )
           );
         });
 
@@ -166,54 +183,88 @@ describe('MonetaryAmount', () => {
     });
   });
 
+  type toBTCAmount = 'toSatoshi' | 'toMSatoshi' | 'toBTC';
+
   describe('BTCAmount', () => {
-    const cases: [string, number][] = [['fromSatoshi', 100_000_000], ['fromMSatoshi', 100_000], ['fromBTC', 1]];
-    cases.forEach(([name, decimalMul]) => {
-      describe(name, () => {
+    const cases: [
+      (amount: BigSource) => monetary.BTCAmount,
+      toBTCAmount,
+      number
+    ][] = [
+      [monetary.BTCAmount.fromSatoshi, 'toSatoshi', 100_000_000],
+      [monetary.BTCAmount.fromMSatoshi, 'toMSatoshi', 100_000],
+      [monetary.BTCAmount.fromBTC, 'toBTC', 1]
+    ];
+    cases.forEach(([from, toName, decimalMul]) => {
+      describe(from.name, () => {
         it('should be symmetric with toSatoshi', () => {
           fc.assert(
-            fc.property(fc.integer().map(v => new Big(v)), rawAmount => {
-              const amount = monetary.BTCAmount[name](rawAmount);
-              const toName = name.replace('from', 'to'); // fromSatoshi -> toSatoshi
-              expect(amount[toName]().toString()).to.eq(rawAmount.toString());
-            })
+            fc.property(
+              fc.integer().map((v) => new Big(v)),
+              (rawAmount) => {
+                const amount = from(rawAmount);
+                // fromSatoshi -> toSatoshi
+                expect(amount[toName]().toString()).to.eq(rawAmount.toString());
+              }
+            )
           );
         });
 
         it('should be convertible to BTC', () => {
           fc.assert(
-            fc.property(fc.integer().map(v => new Big(v)), rawAmount => {
-              const amount = monetary.BTCAmount[name](rawAmount);
-              expect(amount.toBTC().toString()).to.eq(
-                rawAmount.div(decimalMul).toString());
-            })
+            fc.property(
+              fc.integer().map((v) => new Big(v)),
+              (rawAmount) => {
+                const amount = from(rawAmount);
+                expect(amount.toBTC().toString()).to.eq(
+                  rawAmount.div(decimalMul).toString()
+                );
+              }
+            )
           );
         });
       });
     });
   });
 
+  type toETHAmount = 'toWei' | 'toGWei' | 'toEther';
+
   describe('ETHAmount', () => {
-    const cases: [string, number][] = [['fromWei', Math.pow(10, 18)], ['fromGWei', Math.pow(10, 9)], ['fromEther', 1]];
-    cases.forEach(([name, decimalMul]) => {
-      describe(name, () => {
+    const cases: [
+      (amount: BigSource) => monetary.ETHAmount,
+      toETHAmount,
+      number
+    ][] = [
+      [monetary.ETHAmount.fromWei, 'toWei', Math.pow(10, 18)],
+      [monetary.ETHAmount.fromGWei, 'toGWei', Math.pow(10, 9)],
+      [monetary.ETHAmount.fromEther, 'toEther', 1]
+    ];
+    cases.forEach(([from, toName, decimalMul]) => {
+      describe(from.name, () => {
         it('should be symmetric with toWei', () => {
           fc.assert(
-            fc.property(fc.integer().map(v => new Big(v)), rawAmount => {
-              const amount = monetary.ETHAmount[name](rawAmount);
-              const toName = name.replace('from', 'to'); // fromWei -> toWei
-              expect(amount[toName]().toString()).to.eq(rawAmount.toString());
-            })
+            fc.property(
+              fc.integer().map((v) => new Big(v)),
+              (rawAmount) => {
+                const amount = from(rawAmount);
+                // fromWei -> toWei
+                expect(amount[toName]().toString()).to.eq(rawAmount.toString());
+              }
+            )
           );
         });
 
         it('should be convertible to Ether', () => {
           fc.assert(
-            fc.property(fc.integer().map(v => new Big(v)), rawAmount => {
-              const amount = monetary.ETHAmount[name](rawAmount);
-              expect(amount.toEther().toString()).to.eq(
-                rawAmount.div(decimalMul).toString());
-            })
+            fc.property(
+              fc.integer().map((v) => new Big(v)),
+              (rawAmount) => {
+                const amount = from(rawAmount);
+                expect(amount.toEther().toString()).to.eq(
+                  rawAmount.div(decimalMul).toString()
+                );
+              }
+            )
           );
         });
       });
@@ -225,13 +276,17 @@ describe('MonetaryAmount', () => {
       it('should delegate to parent', () => {
         const rawAmount = new Big(10);
         const amount = new monetary.ERC20Amount(DummyERCT, rawAmount, 0);
-        const expected = rawAmount.mul(new Big(10).pow(DummyERCT.decimals)).toString();
+        const expected = rawAmount
+          .mul(new Big(10).pow(DummyERCT.decimals))
+          .toString();
         expect(amount.toString()).to.eq(expected);
       });
     });
 
+    type amountOp = 'add' | 'sub';
+
     describe('arithmetic', () => {
-      ['add', 'sub'].forEach(op => {
+      (['add', 'sub'] as Array<amountOp>).forEach((op) => {
         describe(op, () => {
           it(`should ${op} tokens`, () => {
             const dai = new monetary.ERC20('dai');
@@ -243,12 +298,18 @@ describe('MonetaryAmount', () => {
           });
 
           it('should fail with different currencies', () => {
-            const amountA = new monetary.ERC20Amount(new monetary.ERC20('dai'), 30);
-            const amountB = new monetary.ERC20Amount(new monetary.ERC20('comp'), 10);
+            const amountA = new monetary.ERC20Amount(
+              new monetary.ERC20('dai'),
+              30
+            );
+            const amountB = new monetary.ERC20Amount(
+              new monetary.ERC20('comp'),
+              10
+            );
             expect(() => amountA[op](amountB)).to.throw(`cannot ${op}`);
           });
         });
       });
-    })
+    });
   });
 });
