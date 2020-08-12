@@ -1,14 +1,17 @@
 import { ethers } from "@nomiclabs/buidler";
-import { Signer } from "ethers";
+import { Signer, constants } from "ethers";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
 import { MockBtcReferee } from "../../typechain/MockBtcReferee";
 import { MockBtcRefereeFactory } from "../../typechain/MockBtcRefereeFactory";
 import * as bitcoin from 'bitcoinjs-lib';
 import { btcToSatoshi } from "../../lib/conversion";
+import { Script } from "../../lib/constants";
 
 chai.use(solidity);
 const { expect } = chai;
+
+const NETWORK = bitcoin.networks.testnet;
 
 describe("BTCReferee.sol", () => {
   let signers: Signer[];
@@ -32,18 +35,20 @@ describe("BTCReferee.sol", () => {
                  "55332103d41e3ec0c2ce0b255bc1dc15ce61770112f20e8a5e66c083825b813f77bafd8752ae800f1b00";
 
   it("should successfully extract p2sh output", async () => {
-    let payment = bitcoin.payments.p2sh({address: "2MsxEm5ugk4hR9naBiA8gNH6syFdAcjALHQ", network: bitcoin.networks.testnet})
+    const payment = bitcoin.payments.p2sh({address: "2MsxEm5ugk4hR9naBiA8gNH6syFdAcjALHQ", network: NETWORK});
+    const btcHash = payment.hash!;
 
-    let result = await btcReferee.extractOutputValue(p2shTx, '0x' + payment.hash?.toString('hex'));
+    const result = await btcReferee.extractOutputValue(p2shTx, btcHash, Script.p2sh);
     expect(result).to.eq(btcToSatoshi(0.38900688));
   });
 
-  // it("should revert on invalid p2sh amount", async () => {
-  //   let payment = bitcoin.payments.p2sh({address: "2MsxEm5ugk4hR9naBiA8gNH6syFdAcjALHQ", network: bitcoin.networks.testnet})
+  it("should not extract incorrect script (p2sh)", async () => {
+    const payment = bitcoin.payments.p2sh({address: "2MsxEm5ugk4hR9naBiA8gNH6syFdAcjALHQ", network: NETWORK});
+    const btcHash = payment.hash!;
 
-  //   let result = btcReferee.extractOutputValue(p2shTx, '0x' + payment.hash?.toString('hex'), );
-  //   await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUT_AMOUNT);
-  // });
+    const result = await btcReferee.extractOutputValue(p2shTx, btcHash, Script.p2pkh);
+    expect(result).to.eq(constants.Zero);
+  });
 
   // d9c9213136854a53211f1c80d202b743dfe971867558fd2c5628fe781a7f7ba9
   const p2pkhTx = "0x0200000001f76fec5260faa8f39fbd8f17f5acb2bd50260fa715347201657fceaefc14a102" +
@@ -54,18 +59,20 @@ describe("BTCReferee.sol", () => {
                   "b76e200000001976a914e5ea7e9aae7df252796864912f0df41b4b956f4488ace3c01300";
 
   it("should successfully extract p2pkh output", async () => {
-    let payment = bitcoin.payments.p2pkh({address: "mpxhLRAzfGc6tH55kzG9NfZ3b2VZdo3Gq9", network: bitcoin.networks.testnet})
+    const payment = bitcoin.payments.p2pkh({address: "mpxhLRAzfGc6tH55kzG9NfZ3b2VZdo3Gq9", network: NETWORK});
+    const btcHash = payment.hash!;
 
-    let result = await btcReferee.extractOutputValue(p2pkhTx, '0x' + payment.hash?.toString('hex'));
+    const result = await btcReferee.extractOutputValue(p2pkhTx, btcHash, Script.p2pkh);
     expect(result).to.eq(btcToSatoshi(1.14883244));
   });
 
-  // it("should revert on invalid p2pkh amount", async () => {
-  //   let payment = bitcoin.payments.p2pkh({address: "mpxhLRAzfGc6tH55kzG9NfZ3b2VZdo3Gq9", network: bitcoin.networks.testnet})
+  it("should not extract incorrect script (p2pkh)", async () => {
+    const payment = bitcoin.payments.p2pkh({address: "mpxhLRAzfGc6tH55kzG9NfZ3b2VZdo3Gq9", network: NETWORK});
+    const btcHash = payment.hash!;
 
-  //   let result = btcReferee.checkTx(p2pkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(2));
-  //   await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUT_AMOUNT);
-  // });
+    const result = await btcReferee.extractOutputValue(p2shTx, btcHash, Script.p2wpkh);
+    expect(result).to.eq(constants.Zero);
+  });
 
   const p2wpkhTx = "0x02000000000103adbd70d005de0da198443510bf9ebee467430a52b32dcefab6cd30439792ca7301" +
                    "00000000fdffffffd7f39f49b86629f424eef093bf18ace94ff3dcb2cdd8889431e54980f2f70b6e00" +
@@ -82,16 +89,18 @@ describe("BTCReferee.sol", () => {
                    "ec880724aab8cd78ed059b3115fd5075b63b3c3524134b250a1b00";
 
   it("should successfully extract p2wpkh output", async () => {
-    let payment = bitcoin.payments.p2wpkh({address: "tb1q4kspwcf42cqp66hrhw407djna4dgpw9lsnfx5e", network: bitcoin.networks.testnet})
+    const payment = bitcoin.payments.p2wpkh({address: "tb1q4kspwcf42cqp66hrhw407djna4dgpw9lsnfx5e", network: NETWORK});
+    const btcHash = payment.hash!;
 
-    let result = await btcReferee.extractOutputValue(p2wpkhTx, '0x' + payment.hash?.toString('hex'));
+    const result = await btcReferee.extractOutputValue(p2wpkhTx, btcHash, Script.p2wpkh);
     expect(result).to.eq(btcToSatoshi(0.002));
   });
 
-  // it("should revert on invalid p2wpkh amount", async () => {
-  //   let payment = bitcoin.payments.p2wpkh({address: "tb1q4kspwcf42cqp66hrhw407djna4dgpw9lsnfx5e", network: bitcoin.networks.testnet})
+  it("should not extract incorrect script (p2wpkh)", async () => {
+    const payment = bitcoin.payments.p2wpkh({address: "tb1q4kspwcf42cqp66hrhw407djna4dgpw9lsnfx5e", network: NETWORK});
+    const btcHash = payment.hash!;
 
-  //   let result = btcReferee.checkTx(p2wpkhTx, '0x' + payment.hash?.toString('hex'), btcToSatoshi(0.02));
-  //   await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUT_AMOUNT);
-  // });
+    const result = await btcReferee.extractOutputValue(p2shTx, btcHash, Script.p2sh);
+    expect(result).to.eq(constants.Zero);
+  });
 });

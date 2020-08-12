@@ -10,6 +10,7 @@ import { Parser } from "@interlay/btc-relay-sol/contracts/Parser.sol";
 import { Script } from "@interlay/btc-relay-sol/contracts/Script.sol";
 import { IReferee } from "./interface/IReferee.sol";
 import { IRelay } from "./interface/IRelay.sol";
+import { Bitcoin } from "./types/Bitcoin.sol";
 
 contract BTCReferee is IReferee {
     using SafeMath for uint;
@@ -37,7 +38,8 @@ contract BTCReferee is IReferee {
 
     function _extractOutputValue(
         bytes memory rawTx,
-        bytes20 btcHash
+        bytes20 btcHash,
+        Bitcoin.Script format
     ) internal pure returns(uint256 amount) {
         (, uint lenInputs) = rawTx.extractInputLength();
         bytes memory outputs = rawTx.slice(lenInputs, rawTx.length - lenInputs);
@@ -49,13 +51,14 @@ contract BTCReferee is IReferee {
             bytes memory script = output.extractOutputScript();
             bytes20 _btcHash;
 
-            // TODO: explicitly check format
-            if (script.isP2SH()) {
+            if (format == Bitcoin.Script.p2sh && script.isP2SH()) {
                 _btcHash = script.P2SH();
-            } else if (script.isP2PKH()) {
+            } else if (format == Bitcoin.Script.p2pkh && script.isP2PKH()) {
                 _btcHash = script.P2PKH();
-            } else if (script.isP2WPKH()) {
+            } else if (format == Bitcoin.Script.p2wpkh && script.isP2WPKH()) {
                 (, _btcHash) = script.P2WPKH();
+            } else {
+                continue;
             }
 
             if (_btcHash == btcHash) {
@@ -70,10 +73,11 @@ contract BTCReferee is IReferee {
         bytes32 txid,
         bytes calldata proof,
         bytes calldata rawTx,
-        bytes20 btcHash
+        bytes20 btcHash,
+        Bitcoin.Script format
     ) external override virtual view returns(uint256) {
         require(btcHash != 0, ERR_INVALID_OUT_HASH);
         require(_isIncluded(height, index, txid, proof), ERR_TX_NOT_INCLUDED);
-        return _extractOutputValue(rawTx, btcHash);
+        return _extractOutputValue(rawTx, btcHash, format);
     }
 }
