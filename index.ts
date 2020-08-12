@@ -1,9 +1,11 @@
 export {ethers, BigNumber} from 'ethers';
 export {Script} from './lib/constants';
+export {ReadOnlyContracts, ReadWriteContracts} from './lib/contracts';
 export {
-  ReadOnlyContracts,
-  ReadWriteContracts,
   ReadOnlyOptionPair,
-  ReadWriteOptionPair
-} from './lib/contracts';
+  ReadWriteOptionPair,
+  ObligationSide,
+  OptionSide
+} from './lib/pair';
+export {BitcoinPriceFeed, CoinbaseFeed} from './lib/feed';
 export {Deployments} from './lib/addresses';

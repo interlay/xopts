@@ -74,6 +74,8 @@
     "ethereum-waffle": "^3.0.0",
     "fast-check": "^2.1.0",
     "husky": "^4.2.5",
+    "nock": "^13.0.4",
+    "node-fetch": "^2.6.0",
     "prettier": "^2.0.5",
     "prettier-plugin-solidity": "^1.0.0-alpha.56",
     "solc": "0.6.6",

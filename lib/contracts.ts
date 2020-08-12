@@ -1,28 +1,30 @@
 import {ethers, Signer, Contract, ContractReceipt} from 'ethers';
 import {Obligation} from '../typechain/Obligation';
 import {OptionPairFactory} from '../typechain/OptionPairFactory';
-import {BigNumberish, BytesLike, BigNumber} from 'ethers';
-import {Option} from '../typechain/Option';
+import {BigNumberish} from 'ethers';
 import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
 import {OptionFactory} from '../typechain/OptionFactory';
 import {OptionLibFactory} from '../typechain/OptionLibFactory';
 import {OptionLib} from '../typechain/OptionLib';
-import {Script} from './constants';
 import {Ierc20} from '../typechain/Ierc20';
 import {Ierc20Factory} from '../typechain/Ierc20Factory';
 import {IRelay} from '../typechain/IRelay';
 import {IReferee} from '../typechain/IReferee';
 import {IRelayFactory} from '../typechain/IRelayFactory';
 import {IRefereeFactory} from '../typechain/IRefereeFactory';
-import {ITreasury} from '../typechain/ITreasury';
 import {ITreasuryFactory} from '../typechain/ITreasuryFactory';
 import {ObligationFactory} from '../typechain/ObligationFactory';
-import * as bitcoin from 'bitcoinjs-lib';
-import {encodeBtcAddress} from './encode';
 import {Addresses, Deployments} from './addresses';
 import {IWriterRegistry} from '../typechain/IWriterRegistry';
 import {IWriterRegistryFactory} from '../typechain/IWriterRegistryFactory';
 import {EventFragment, Result} from 'ethers/lib/utils';
+import {
+  ReadOnlyOptionPair,
+  WriteOptionPair,
+  BtcAddress,
+  ReadOptionPair,
+  ReadWriteOptionPair
+} from './pair';
 
 interface Connectable<C> {
   connect: (addr: string, signer: SignerOrProvider) => C;
@@ -144,238 +146,6 @@ async function resolve(provider: Provider): Promise<Optional<Addresses>> {
       return Deployments.ganache;
     default:
       return;
-  }
-}
-
-type BtcAddress = {
-  btcHash: BytesLike;
-  format: Script;
-};
-
-export interface ReadOptionPair {
-  getDetails(): Promise<{
-    expiryTime: BigNumber;
-    windowSize: BigNumber;
-    strikePrice: BigNumber;
-  }>;
-
-  getBtcAddress(account: string, network: bitcoin.Network): Promise<string>;
-
-  balanceOf(account: string): Promise<BigNumber>;
-}
-
-export interface WriteOptionPair extends ReadOptionPair {
-  write(
-    premium: BigNumberish,
-    amount: BigNumberish,
-    btcAddress?: BtcAddress
-  ): Promise<void>;
-
-  buyOptions(
-    amountOut: BigNumberish,
-    amountInMax: BigNumberish,
-    deadline: BigNumberish
-  ): Promise<void>;
-
-  sellObligations(
-    amountADesired: BigNumberish,
-    amountBDesired: BigNumberish,
-    amountAMin: BigNumberish,
-    amountBMin: BigNumberish,
-    deadline: BigNumberish
-  ): Promise<void>;
-
-  buyObligations(
-    amountOut: BigNumberish,
-    amountInMax: BigNumberish
-  ): Promise<void>;
-
-  requestExercise(seller: string, satoshis: BigNumberish): Promise<BigNumber>;
-
-  executeExercise(
-    seller: string,
-    height: BigNumberish,
-    index: BigNumberish,
-    txid: BytesLike,
-    proof: BytesLike,
-    rawtx: BytesLike
-  ): Promise<void>;
-
-  refund(amount: BigNumberish): Promise<void>;
-}
-
-export class ReadOnlyOptionPair implements ReadOptionPair {
-  protected option: Option;
-  protected obligation: Obligation;
-  protected optionLib: OptionLib;
-  protected collateral: Ierc20;
-  protected treasury: ITreasury;
-
-  constructor(
-    option: Option,
-    obligation: Obligation,
-    optionLib: OptionLib,
-    collateral: Ierc20,
-    treasury: ITreasury
-  ) {
-    this.option = option;
-    this.obligation = obligation;
-    this.optionLib = optionLib;
-    this.collateral = collateral;
-    this.treasury = treasury;
-  }
-
-  async getDetails(): Promise<{
-    expiryTime: ethers.BigNumber;
-    windowSize: ethers.BigNumber;
-    strikePrice: ethers.BigNumber;
-  }> {
-    const [expiryTime, windowSize, strikePrice] = await Promise.all([
-      this.option.expiryTime(),
-      this.option.windowSize(),
-      this.obligation.strikePrice()
-    ]);
-    return {
-      expiryTime,
-      windowSize,
-      strikePrice
-    };
-  }
-
-  async getBtcAddress(
-    account: string,
-    network: bitcoin.Network
-  ): Promise<string> {
-    const {btcHash, format} = await this.obligation.getBtcAddress(account);
-    return encodeBtcAddress(btcHash.substr(2), format, network)!;
-  }
-
-  // gets the locked collateral for a pair
-  async balanceOf(account: string): Promise<BigNumber> {
-    return this.treasury.balanceOf(this.obligation.address, account);
-  }
-}
-
-export class ReadWriteOptionPair extends ReadOnlyOptionPair
-  implements WriteOptionPair {
-  readonly account: string;
-  readonly confirmations?: number;
-
-  constructor(
-    option: Option,
-    obligation: Obligation,
-    optionLib: OptionLib,
-    collateral: Ierc20,
-    treasury: ITreasury,
-    account: string,
-    confirmations?: number
-  ) {
-    super(option, obligation, optionLib, collateral, treasury);
-    this.account = account;
-    this.confirmations = confirmations;
-  }
-
-  // back options with the default collateral
-  // this also adds liquidity to the uniswap pool
-  async write(
-    premium: BigNumberish,
-    amount: BigNumberish,
-    btcAddress: BtcAddress
-  ): Promise<void> {
-    await this.optionLib
-      .lockAndWrite(
-        this.option.address,
-        this.collateral.address,
-        this.collateral.address,
-        amount,
-        premium,
-        amount,
-        premium,
-        btcAddress.btcHash,
-        btcAddress.format
-      )
-      .then((tx) => tx.wait(this.confirmations));
-  }
-
-  async buyOptions(
-    amountOut: BigNumberish,
-    amountInMax: BigNumberish,
-    deadline: BigNumberish
-  ): Promise<void> {
-    // buy order (i.e. specify exact number of options)
-    await this.optionLib
-      .swapTokensForExactTokens(
-        amountOut,
-        amountInMax,
-        [this.collateral.address, this.option.address],
-        this.account,
-        deadline
-      )
-      .then((tx) => tx.wait(this.confirmations));
-  }
-
-  async sellObligations(
-    amountADesired: BigNumberish,
-    amountBDesired: BigNumberish,
-    amountAMin: BigNumberish,
-    amountBMin: BigNumberish,
-    deadline: BigNumberish
-  ): Promise<void> {
-    await this.optionLib
-      .addLiquidity(
-        this.collateral.address,
-        this.obligation.address,
-        amountADesired,
-        amountBDesired,
-        amountAMin,
-        amountBMin,
-        this.account,
-        deadline
-      )
-      .then((tx) => tx.wait(this.confirmations));
-  }
-
-  async buyObligations(
-    amountOut: BigNumberish,
-    amountInMax: BigNumberish
-  ): Promise<void> {
-    await this.optionLib
-      .lockAndBuy(amountOut, amountInMax, [
-        this.collateral.address,
-        this.obligation.address
-      ])
-      .then((tx) => tx.wait(this.confirmations));
-  }
-
-  async requestExercise(
-    seller: string,
-    satoshis: BigNumberish
-  ): Promise<BigNumber> {
-    await this.obligation
-      .requestExercise(seller, satoshis)
-      .then((tx) => tx.wait(this.confirmations));
-    return this.obligation.getSecret(seller);
-  }
-
-  // prove inclusion and claim collateral
-  async executeExercise(
-    seller: string,
-    height: BigNumberish,
-    index: BigNumberish,
-    txid: BytesLike,
-    proof: BytesLike,
-    rawtx: BytesLike
-  ): Promise<void> {
-    await this.obligation
-      .executeExercise(seller, height, index, txid, proof, rawtx)
-      .then((tx) => tx.wait(this.confirmations));
-  }
-
-  // claim written collateral after expiry
-  async refund(amount: BigNumberish): Promise<void> {
-    await this.obligation
-      .refund(amount)
-      .then((tx) => tx.wait(this.confirmations));
   }
 }
 
