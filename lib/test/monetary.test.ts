@@ -1,8 +1,10 @@
-import Big from 'big.js';
+import Big, { BigSource } from 'big.js';
 import { expect } from 'chai';
 import * as fc from 'fast-check';
 
 import * as monetary from '../monetary';
+
+const fcBig = () => fc.integer().map(v => new Big(v))
 
 describe('currencies', () => {
   describe('BTC', () => {
@@ -52,13 +54,20 @@ class DummyERC extends monetary.ERC20 {
 }
 const DummyERCT = new DummyERC('dummy', 5);
 
+class DummyAmount extends monetary.MonetaryAmount<DummyCurrency> {
+  constructor(amount: BigSource, decimals?: number) { super(DummyC, amount, decimals); }
+  withAmount(amount: BigSource): this {
+      const Cls = this.constructor as new (amount: BigSource) => this;
+      return new Cls(amount);
+  }
+}
 
 describe('MonetaryAmount', () => {
   describe('Base', () => {
     describe('constructor', () => {
       it('should use currency number of decimals by default', () => {
         const rawAmount = new Big(10);
-        const amount = new monetary.MonetaryAmount<DummyCurrency>(DummyC, rawAmount);
+        const amount = new DummyAmount(rawAmount);
         expect(amount.toBig().toString()).to.eq(rawAmount.toString());
       });
 
@@ -66,7 +75,7 @@ describe('MonetaryAmount', () => {
         fc.assert(
           fc.property(fc.integer().filter(v => v >= 0 && v <= 50), decimals => {
             const rawAmount = new Big(5);
-            const amount = new monetary.MonetaryAmount<DummyCurrency>(DummyC, rawAmount, decimals);
+            const amount = new DummyAmount(rawAmount, decimals);
             expect(amount.toBig(decimals).toString()).to.eq(rawAmount.toString());
           })
         );
@@ -76,8 +85,8 @@ describe('MonetaryAmount', () => {
     describe('toString', () => {
       it('should format raw value by default', () => {
         fc.assert(
-          fc.property(fc.integer().map(v => new Big(v)), rawAmount => {
-            const amount = new monetary.MonetaryAmount<DummyCurrency>(DummyC, rawAmount);
+          fc.property(fcBig(), rawAmount => {
+            const amount = new DummyAmount(rawAmount);
             expect(amount.toString()).to.eq(rawAmount.toString());
           })
         );
@@ -87,10 +96,72 @@ describe('MonetaryAmount', () => {
         fc.assert(
           fc.property(fc.integer(), rawAmount => {
             const humanAmount = rawAmount / Math.pow(10, 10);
-            const amount = new monetary.MonetaryAmount<DummyCurrency>(DummyC, rawAmount);
+            const amount = new DummyAmount(rawAmount);
             expect(amount.toString(true)).to.eq(humanAmount.toLocaleString());
           })
         );
+      });
+    });
+
+    describe('arithmetic', () => {
+      describe('add', () => {
+        it('should add and create new value', () => {
+          fc.assert(
+            fc.property(fcBig(), fcBig(), (rawAmountA, rawAmountB) => {
+              const amountA = new DummyAmount(rawAmountA);
+              const amountB = new DummyAmount(rawAmountB);
+              const added = amountA.add(amountB);
+              expect(added.toBig().toString()).to.eq(rawAmountA.add(rawAmountB).toString());
+              expect(amountA.toString()).to.eq(rawAmountA.toString());
+              expect(amountB.toString()).to.eq(rawAmountB.toString());
+            })
+          );
+        });
+      });
+
+      describe('sub', () => {
+        it('should subtract and create new value', () => {
+          fc.assert(
+            fc.property(fcBig(), fcBig(), (rawAmountA, rawAmountB) => {
+              const amountA = new DummyAmount(rawAmountA);
+              const amountB = new DummyAmount(rawAmountB);
+              const added = amountA.sub(amountB);
+              expect(added.toBig().toString()).to.eq(rawAmountA.sub(rawAmountB).toString());
+              expect(amountA.toString()).to.eq(rawAmountA.toString());
+              expect(amountB.toString()).to.eq(rawAmountB.toString());
+            })
+          );
+        });
+      });
+
+      describe('mul', () => {
+        it('should multiply and create new value', () => {
+          fc.assert(
+            fc.property(fcBig(), fc.integer(), (rawAmount, multiplier) => {
+              const amount = new DummyAmount(rawAmount);
+              const multiplied = amount.mul(multiplier);
+              expect(multiplied.toBig().toString()).to.eq(rawAmount.mul(multiplier).toString());
+              expect(amount.toString()).to.eq(rawAmount.toString());
+            })
+          );
+        });
+      });
+
+      describe('div', () => {
+        it('should divide and create new value', () => {
+          fc.assert(
+            fc.property(fcBig(), fc.integer().filter(v => v !== 0), (rawAmount, divisor) => {
+              const amount = new DummyAmount(rawAmount);
+              const divided = amount.div(divisor);
+              expect(divided.toBig().toString()).to.eq(rawAmount.div(divisor).toString());
+              expect(amount.toString()).to.eq(rawAmount.toString());
+            })
+          );
+        });
+
+        it('should fail when dividing by zero', () => {
+          expect(() => new DummyAmount(1).div(0)).to.throw('Division by zero');
+        });
       });
     });
   });

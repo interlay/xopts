@@ -44,13 +44,9 @@ export const BTC = new Bitcoin();
 export const ETH = new Ethereum();
 
 export class ERC20 implements ICurrency {
-    private _name: string;
-    private _decimals: number;
-
-    constructor(name: string, decimals: number = 18) {
-        this._name = name;
-        this._decimals = decimals;
+    constructor(protected _name: string, protected _decimals: number = 18) {
     }
+
     get decimals() {
         return this._decimals;
     }
@@ -68,18 +64,16 @@ export interface IMonetaryAmount {
     toBig(decimals?: number): Big;
 }
 
-export class MonetaryAmount<T extends ICurrency> implements IMonetaryAmount {
-    protected _currency: T;
+export abstract class MonetaryAmount<T extends ICurrency> implements IMonetaryAmount {
     protected _amount: Big;
 
-    constructor(currency: T, amount: BigSource, decimals?: number) {
-        decimals = decimals ?? currency.decimals;
+    constructor(protected _currency: T, amount: BigSource, decimals?: number) {
+        decimals = decimals ?? _currency.decimals;
         amount = new Big(amount);
-        const exponent = currency.decimals - decimals;
+        const exponent = _currency.decimals - decimals;
         if (exponent > 0) {
             amount = amount.mul(new Big(10).pow(exponent));
         }
-        this._currency = currency;
         this._amount = amount;
     }
 
@@ -103,6 +97,38 @@ export class MonetaryAmount<T extends ICurrency> implements IMonetaryAmount {
         return result;
     }
 
+    add(amount: this): this {
+        if (!this.isSameCurrency(amount)) {
+            throw new Error(`cannot add ${this.currency.name} and ${amount.currency.name}`);
+        }
+        return this.withAmount(this._amount.add(amount._amount));
+    }
+
+    sub(amount: this): this {
+        if (!this.isSameCurrency(amount)) {
+            throw new Error(`cannot subtract ${this.currency.name} and ${amount.currency.name}`);
+        }
+        return this.withAmount(this._amount.sub(amount._amount));
+    }
+
+    protected isSameCurrency(amount: this): boolean {
+        return this.currency.name === amount.currency.name;
+    }
+
+    mul(multiplier: BigSource): this {
+        return this.withAmount(this._amount.mul(multiplier));
+    }
+
+    div(divisor: BigSource): this {
+        return this.withAmount(this._amount.div(divisor));
+    }
+
+    // NOTE: needs override if constructor is overriden
+    withAmount(amount: BigSource): this {
+        const Cls = this.constructor as new (currency: ICurrency, amount: BigSource) => this;
+        return new Cls(this.currency, amount);
+    }
+
     get currency(): T {
         return this._currency;
     }
@@ -112,6 +138,11 @@ export class MonetaryAmount<T extends ICurrency> implements IMonetaryAmount {
 export class BTCAmount extends MonetaryAmount<Bitcoin> {
     constructor(amount: BigSource, decimals?: number) {
         super(BTC, amount, decimals);
+    }
+
+    withAmount(amount: BigSource): this {
+        const Cls = this.constructor as new (amount: BigSource) => this;
+        return new Cls(amount);
     }
 
     static fromSatoshi(amount: BigSource): BTCAmount {
@@ -144,6 +175,11 @@ export class ETHAmount extends MonetaryAmount<Ethereum> {
         super(ETH, amount, decimals);
     }
 
+    withAmount(amount: BigSource): this {
+        const Cls = this.constructor as new (amount: BigSource) => this;
+        return new Cls(amount);
+    }
+
     static fromWei(amount: BigSource): ETHAmount {
         return new ETHAmount(amount, ETHUnit.Wei);
     }
@@ -170,4 +206,8 @@ export class ETHAmount extends MonetaryAmount<Ethereum> {
 }
 
 export class ERC20Amount extends MonetaryAmount<ERC20> {
+    withAmount(amount: BigSource): this {
+        const Cls = this.constructor as new (currency: ICurrency, amount: BigSource) => this;
+        return new Cls(this.currency, amount);
+    }
 }
