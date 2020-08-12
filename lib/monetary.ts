@@ -206,8 +206,4 @@ export class ETHAmount extends MonetaryAmount<Ethereum> {
 }
 
 export class ERC20Amount extends MonetaryAmount<ERC20> {
-    withAmount(amount: BigSource): this {
-        const Cls = this.constructor as new (currency: ICurrency, amount: BigSource) => this;
-        return new Cls(this.currency, amount);
-    }
 }

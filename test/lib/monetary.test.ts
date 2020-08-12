@@ -229,5 +229,26 @@ describe('MonetaryAmount', () => {
         expect(amount.toString()).to.eq(expected);
       });
     });
+
+    describe('arithmetic', () => {
+      ['add', 'sub'].forEach(op => {
+        describe(op, () => {
+          it(`should ${op} tokens`, () => {
+            const dai = new monetary.ERC20('dai');
+            const amountA = new monetary.ERC20Amount(dai, 30);
+            const amountB = new monetary.ERC20Amount(dai, 10);
+            const added = amountA[op](amountB);
+            const expected = op === 'add' ? '40' : '20';
+            expect(added.toBig().toString()).to.eq(expected);
+          });
+
+          it('should fail with different currencies', () => {
+            const amountA = new monetary.ERC20Amount(new monetary.ERC20('dai'), 30);
+            const amountB = new monetary.ERC20Amount(new monetary.ERC20('comp'), 10);
+            expect(() => amountA[op](amountB)).to.throw(`cannot ${op}`);
+          });
+        });
+      });
+    })
   });
 });
