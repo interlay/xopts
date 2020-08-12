@@ -68,12 +68,17 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     // accounts that can spend an owners funds
     mapping (address => mapping (address => uint)) internal _allowances;
 
-    /// @notice Emit upon exercise request (buyer -> seller).
-    /// @dev Prior to exercise execution a user may trigger an update request
-    /// which will alter the total `amount`.
+    /// @notice Emit upon successful exercise request.
     event RequestExercise(address indexed buyer, address indexed seller, uint amount, uint secret);
 
+    /// @notice Emit upon successful exercise execution (tx inclusion & verification).
     event ExecuteExercise(address indexed buyer, address indexed seller, uint amount, uint secret);
+
+    /// @notice Emit once collateral is reclaimed by a writer after `expiryTime + windowSize`.
+    event Refund(address indexed seller, uint amount);
+
+    /// @notice Emit once collateral is reclaimed by an obligation seller.
+    event Withdraw(address indexed seller, address pool, uint amount);
 
     constructor() public Ownable() {}
 
@@ -231,6 +236,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
         // transfers from the treasury to the seller
         ITreasury(treasury).release(seller, seller, amount);
+
+        emit Refund(seller, amount);
     }
 
     /**
@@ -254,6 +261,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
         // transfers from the treasury to the seller
         ITreasury(treasury).release(seller, seller, amount);
+
+        emit Withdraw(seller, pool, amount);
     }
 
     /// @dev See {IERC20-allowance}

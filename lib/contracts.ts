@@ -56,7 +56,7 @@ export async function createPair(
     referee: string,
     confirmations?: number,
 ): Promise<string> {
-    let topic = ethers.utils.id("Create(address,address,uint256,uint256,uint256)");
+    let topic = ethers.utils.id("CreatePair(address,address,uint256,uint256,uint256)");
     // indexed parameters are not included in log data
     return optionFactory.createPair(expiryTime, windowSize, strikePrice, collateral, referee).then(tx =>
         tx.wait(confirmations).then(receipt => ethers.utils.defaultAbiCoder.decode(
