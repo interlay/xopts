@@ -2,7 +2,7 @@ import Big, { BigSource } from 'big.js';
 import { expect } from 'chai';
 import * as fc from 'fast-check';
 
-import * as monetary from '../monetary';
+import * as monetary from '../../lib/monetary';
 
 const fcBig = () => fc.integer().map(v => new Big(v))
 

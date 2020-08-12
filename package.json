@@ -7,8 +7,8 @@
   "scripts": {
     "build": "npx buidler compile && npx buidler typechain",
     "compile": "npx buidler compile",
-    "test": "npx buidler test",
-    "test-js": "mocha -r ts-node/register lib/test/*",
+    "test": "npx buidler test test/contracts/*.test.ts",
+    "test-js": "mocha -r ts-node/register test/lib/*.test.ts",
     "deploy": "npx buidler run scripts/deploy.ts",
     "deploy::test": "npx buidler run scripts/testdata.ts",
     "buidler": "npx buidler node",
