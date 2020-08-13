@@ -1,11 +1,10 @@
 import chai from 'chai';
 import {ethers} from '@nomiclabs/buidler';
 import {Signer, constants, BigNumber} from 'ethers';
-import {deploy0} from '../../lib/contracts';
-import {getTimeNow, getEvent} from '../common';
+import {deploy0, getEvent, reconnect} from '../../lib/contracts';
+import {getTimeNow} from '../common';
 import {MockContract, deployMockContract} from 'ethereum-waffle';
 import ObligationArtifact from '../../artifacts/Obligation.json';
-import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
 import {ErrorCode, Script} from '../../lib/constants';
 import {Option} from '../../typechain/Option';
 import {OptionFactory} from '../../typechain';
@@ -23,8 +22,6 @@ describe('Option.sol', () => {
   let bobAddress: string;
 
   let option: Option;
-  let obligation: MockContract;
-  let referee: MockContract;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -35,18 +32,8 @@ describe('Option.sol', () => {
       alice.getAddress(),
       bob.getAddress()
     ]);
-    [option, obligation, referee] = await Promise.all([
-      deploy0(alice, OptionFactory),
-      deployMockContract(alice, ObligationArtifact.abi),
-      deployMockContract(alice, BTCRefereeArtifact.abi)
-    ]);
-    await option.initialize(
-      18,
-      expiryTime,
-      windowSize,
-      obligation.address,
-      referee.address
-    );
+    option = await deploy0(alice, OptionFactory);
+    await option.initialize(18, expiryTime, windowSize);
   });
 
   it('should create with owner', async () => {
@@ -55,33 +42,25 @@ describe('Option.sol', () => {
   });
 
   it('should fail to initialize as expired', async () => {
-    const result = option.initialize(
-      18,
-      getTimeNow(),
-      1000,
-      obligation.address,
-      referee.address
-    );
+    const result = option.initialize(18, getTimeNow(), 1000);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INIT_EXPIRED);
   });
 
+  it('should only allow owner to mint', async () => {
+    const result = reconnect(option, OptionFactory, bob).mint(bobAddress, 1000);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_CALLER_NOT_OWNER);
+  });
+
   it('should mint options', async () => {
-    await obligation.mock.mint.returns();
-    const tx = await option.mint(
-      aliceAddress,
-      aliceAddress,
-      1000,
-      btcHash,
-      Script.p2sh
-    );
+    const tx = await option.mint(aliceAddress, 1000);
 
     const fragment =
       option.interface.events['Transfer(address,address,uint256)'];
     const event = await getEvent(
       fragment,
       [constants.AddressZero, aliceAddress],
-      tx,
-      obligation
+      await tx.wait(0),
+      option
     );
     expect(event.value).to.eq(BigNumber.from(1000));
 
@@ -91,10 +70,17 @@ describe('Option.sol', () => {
     expect(optionSupply).to.eq(BigNumber.from(1000));
   });
 
+  it('should only allow owner to request exercise', async () => {
+    const result = reconnect(option, OptionFactory, bob).requestExercise(
+      aliceAddress,
+      1000
+    );
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_CALLER_NOT_OWNER);
+  });
+
   it('should fail to request exercise with insufficient balance', async () => {
-    await obligation.mock.requestExercise.returns(1000);
     return evmSnapFastForward(1000, async () => {
-      const result = option.requestExercise(constants.AddressZero, 1000);
+      const result = option.requestExercise(aliceAddress, 1000);
       await expect(result).to.be.revertedWith(
         ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE
       );
@@ -102,11 +88,9 @@ describe('Option.sol', () => {
   });
 
   it('should request exercise with sufficient balance', async () => {
-    await obligation.mock.mint.returns();
-    await obligation.mock.requestExercise.returns(1000);
-    await option.mint(aliceAddress, aliceAddress, 1000, btcHash, Script.p2sh);
+    await option.mint(aliceAddress, 1000);
     return evmSnapFastForward(1000, async () => {
-      await option.requestExercise(constants.AddressZero, 1000);
+      await option.requestExercise(aliceAddress, 1000);
       const optionBalance = await option.balanceOf(aliceAddress);
       expect(optionBalance).to.eq(constants.Zero);
       const optionSupply = await option.totalSupply();
@@ -114,30 +98,8 @@ describe('Option.sol', () => {
     });
   });
 
-  it('should not refund before expiry', async () => {
-    await obligation.mock.refund.returns();
-    const result = option.refund(0);
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
-  });
-
-  it('should not refund during window', async () => {
-    await obligation.mock.refund.returns();
-    return evmSnapFastForward(1000, async () => {
-      const result = option.refund(0);
-      await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
-    });
-  });
-
-  it('should refund after window', async () => {
-    await obligation.mock.refund.returns();
-    return evmSnapFastForward(2000, async () => {
-      await option.refund(0);
-    });
-  });
-
   it('should transfer options', async () => {
-    await obligation.mock.mint.returns();
-    await option.mint(aliceAddress, aliceAddress, 1000, btcHash, Script.p2sh);
+    await option.mint(aliceAddress, 1000);
 
     await option.transfer(bobAddress, 1000);
     const optionBalanceAlice = await option.balanceOf(aliceAddress);

@@ -1,4 +1,4 @@
-import {ethers, Signer} from 'ethers';
+import {ethers, Signer, Contract, ContractReceipt} from 'ethers';
 import {Obligation} from '../typechain/Obligation';
 import {OptionPairFactory} from '../typechain/OptionPairFactory';
 import {BigNumberish, BytesLike, BigNumber} from 'ethers';
@@ -22,6 +22,7 @@ import {encodeBtcAddress} from './encode';
 import {Addresses, Deployments} from './addresses';
 import {IWriterRegistry} from '../typechain/IWriterRegistry';
 import {IWriterRegistryFactory} from '../typechain/IWriterRegistryFactory';
+import {EventFragment, Result} from 'ethers/lib/utils';
 
 interface Connectable<C> {
   connect: (addr: string, signer: SignerOrProvider) => C;
@@ -67,6 +68,33 @@ export function deploy2<A extends Callable, B, C>(
   arg1: C
 ): Promise<A> {
   return new factory(signer).deploy(arg0, arg1);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getEvent<T extends any[]>(
+  fragment: EventFragment,
+  args: T,
+  receipt: ContractReceipt,
+  contract: Contract
+): Promise<Result> {
+  const topics = contract.interface.encodeFilterTopics(fragment, args);
+  const log = receipt.logs.find((log) =>
+    log.topics.every((val, i) => val === topics[i])
+  );
+  return contract.interface.decodeEventLog(fragment, log!.data);
+}
+
+export function getRequestEvent(
+  obligation: Obligation,
+  buyer: string,
+  seller: string,
+  receipt: ContractReceipt
+): Promise<Result> {
+  const fragment =
+    obligation.interface.events[
+      'RequestExercise(address,address,bytes32,uint256,uint256)'
+    ];
+  return getEvent(fragment, [buyer, seller], receipt, obligation);
 }
 
 export async function createPair(
@@ -323,7 +351,7 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     seller: string,
     satoshis: BigNumberish
   ): Promise<BigNumber> {
-    await this.option
+    await this.obligation
       .requestExercise(seller, satoshis)
       .then((tx) => tx.wait(this.confirmations));
     return this.obligation.getSecret(seller);
@@ -338,14 +366,16 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     proof: BytesLike,
     rawtx: BytesLike
   ): Promise<void> {
-    await this.option
+    await this.obligation
       .executeExercise(seller, height, index, txid, proof, rawtx)
       .then((tx) => tx.wait(this.confirmations));
   }
 
   // claim written collateral after expiry
   async refund(amount: BigNumberish): Promise<void> {
-    await this.option.refund(amount).then((tx) => tx.wait(this.confirmations));
+    await this.obligation
+      .refund(amount)
+      .then((tx) => tx.wait(this.confirmations));
   }
 }
 

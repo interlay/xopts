@@ -8,33 +8,10 @@ interface IOption {
     function initialize(
         uint8 _decimals,
         uint256 _expiryTime,
-        uint256 _windowSize,
-        address _obligation,
-        address _referee
+        uint256 _windowSize
     ) external;
 
-    function referee() external returns (address);
+    function mint(address account, uint256 amount) external;
 
-    function obligation() external returns (address);
-
-    function mint(
-        address from,
-        address to,
-        uint256 amount,
-        bytes20 btcHash,
-        Bitcoin.Script format
-    ) external;
-
-    function requestExercise(address seller, uint256 satoshis) external;
-
-    function executeExercise(
-        address seller,
-        uint256 height,
-        uint256 index,
-        bytes32 txid,
-        bytes calldata proof,
-        bytes calldata rawtx
-    ) external;
-
-    function refund(uint256 amount) external;
+    function requestExercise(address buyer, uint256 satoshis) external;
 }

@@ -39,53 +39,75 @@ contract OptionLib is UniswapV2Router02 {
         // solhint-disable-previous-line no-empty-blocks
     }
 
+    function _lock(
+        address obligation,
+        address collateral,
+        address writer,
+        uint256 optionsAmount
+    ) internal {
+        // lock collateral for exercising
+        address treasury = IObligation(obligation).treasury();
+        TransferHelper.safeTransferFrom(
+            collateral,
+            writer,
+            treasury,
+            optionsAmount
+        );
+        // deposit 'unlocked' balance for writing
+        ITreasury(treasury).deposit(obligation, writer);
+    }
+
     /// @notice Atomically deposit collateral into a treasury and add liquidity to a
     /// Uniswap pair based on the specified premium.
     function lockAndWrite(
-        address tokenA, // options
-        address tokenB, // premium
+        address obligation,
+        address premium,
         address collateral,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
+        uint256 optionsDesired,
+        uint256 premiumDesired,
+        uint256 optionsMin,
+        uint256 premiumMin,
         bytes20 btcHash,
         Bitcoin.Script format
     )
         external
         returns (
-            uint256 amountA,
-            uint256 amountB,
+            uint256 optionsAmount,
+            uint256 premiumAmount,
             uint256 liquidity
         )
     {
-        // options, premium
-        (amountA, amountB) = _addLiquidity(
-            tokenA,
-            tokenB,
-            amountADesired,
-            amountBDesired,
-            amountAMin,
-            amountBMin
-        );
-        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
+        address option = IObligation(obligation).option();
 
-        // lock collateral for exercising
-        address obligation = IOption(tokenA).obligation();
-        address treasury = IObligation(obligation).treasury();
-        TransferHelper.safeTransferFrom(
-            collateral,
-            msg.sender,
-            treasury,
-            amountA
+        // options, premium
+        (optionsAmount, premiumAmount) = _addLiquidity(
+            option,
+            premium,
+            optionsDesired,
+            premiumDesired,
+            optionsMin,
+            premiumMin
         );
-        // deposit 'unlocked' balance for writing
-        ITreasury(treasury).deposit(obligation, msg.sender);
+
+        _lock(obligation, collateral, msg.sender, optionsAmount);
+
+        address pair = UniswapV2Library.pairFor(factory, option, premium);
         // mint options and obligations - locking collateral
-        IOption(tokenA).mint(msg.sender, pair, amountA, btcHash, format);
+        IObligation(obligation).mint(
+            msg.sender,
+            pair,
+            optionsAmount,
+            btcHash,
+            format
+        );
 
         // send premium to uniswap pair
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
+        TransferHelper.safeTransferFrom(
+            premium,
+            msg.sender,
+            pair,
+            premiumAmount
+        );
         liquidity = IUniswapV2Pair(pair).mint(msg.sender);
     }
 

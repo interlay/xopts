@@ -9,7 +9,7 @@ import {ErrorCode, Script} from '../lib/constants';
 import {MockCollateral} from '../typechain/MockCollateral';
 import {OptionLibFactory} from '../typechain/OptionLibFactory';
 import {OptionLib} from '../typechain/OptionLib';
-import {deploy0, reconnect} from '../lib/contracts';
+import {deploy0, reconnect, getRequestEvent} from '../lib/contracts';
 import {Option} from '../typechain/Option';
 import {OptionPairFactory} from '../typechain/OptionPairFactory';
 import {ObligationFactory} from '../typechain/ObligationFactory';
@@ -296,20 +296,29 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
         amountOutSat
       );
 
-      const secret = await reconnect(
-        obligation,
-        ObligationFactory,
+      const requestTx = await reconnect(
+        option,
+        OptionFactory,
         bob
-      ).getSecret(aliceAddress);
-      await btcReferee.mock.verifyTx.returns(amountOutSat.add(secret));
-
-      await reconnect(option, OptionFactory, bob).executeExercise(
+      ).requestExercise(aliceAddress, amountOutSat);
+      const requestEvent = await getRequestEvent(
+        obligation,
+        bobAddress,
         aliceAddress,
+        await requestTx.wait(0)
+      );
+
+      await btcReferee.mock.verifyTx.returns(
+        amountOutSat.add(requestEvent.secret)
+      );
+
+      await reconnect(obligation, ObligationFactory, bob).executeExercise(
+        requestEvent.id,
         0,
         0,
-        Buffer.alloc(32, 0),
-        Buffer.alloc(32, 0),
-        Buffer.alloc(32, 0)
+        constants.HashZero,
+        constants.HashZero,
+        constants.HashZero
       );
 
       const optionBalance = await option.balanceOf(bobAddress);
@@ -448,20 +457,29 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
         amountOutSat
       );
 
-      const secret = await reconnect(
-        obligation,
-        ObligationFactory,
+      const requestTx = await reconnect(
+        option,
+        OptionFactory,
         bob
-      ).getSecret(aliceAddress);
-      await btcReferee.mock.verifyTx.returns(amountOutSat.add(secret));
-
-      await reconnect(option, OptionFactory, bob).executeExercise(
+      ).requestExercise(aliceAddress, amountOutSat);
+      const requestEvent = await getRequestEvent(
+        obligation,
+        bobAddress,
         aliceAddress,
+        await requestTx.wait(0)
+      );
+
+      await btcReferee.mock.verifyTx.returns(
+        amountOutSat.add(requestEvent.secret)
+      );
+
+      await reconnect(obligation, ObligationFactory, bob).executeExercise(
+        requestEvent.id,
         0,
         0,
-        Buffer.alloc(32, 0),
-        Buffer.alloc(32, 0),
-        Buffer.alloc(32, 0)
+        constants.HashZero,
+        constants.HashZero,
+        constants.HashZero
       );
 
       const optionBalance = await option.balanceOf(bobAddress);
@@ -578,7 +596,9 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
     const obligationBalance = await obligation.balanceObl(aliceAddress);
     expect(obligationBalance).to.eq(collateralAmount);
     await evmSnapFastForward(2000, async () => {
-      await reconnect(option, OptionFactory, alice).refund(collateralAmount);
+      await reconnect(obligation, ObligationFactory, alice).refund(
+        collateralAmount
+      );
       const obligationBalance = await obligation.balanceObl(aliceAddress);
       expect(obligationBalance).to.eq(constants.Zero);
       const collateralBalance = await collateral.balanceOf(aliceAddress);
