@@ -53,17 +53,18 @@ export class ERC20 implements Currency {
   }
 }
 
-export interface Monetary {
-  currency: Currency;
+export interface MonetaryAmount<C extends Currency> {
+  currency: C;
 
   toString(humanFriendly: boolean): string;
   toBig(decimals?: number): Big;
 }
 
-export abstract class MonetaryAmount<T extends Currency> implements Monetary {
+export abstract class BaseMonetaryAmount<C extends Currency>
+  implements MonetaryAmount<C> {
   protected _amount: Big;
 
-  constructor(protected _currency: T, amount: BigSource, decimals?: number) {
+  constructor(protected _currency: C, amount: BigSource, decimals?: number) {
     decimals = decimals ?? _currency.decimals;
     amount = new Big(amount);
     const exponent = _currency.decimals - decimals;
@@ -132,12 +133,12 @@ export abstract class MonetaryAmount<T extends Currency> implements Monetary {
     return new Cls(this.currency, amount);
   }
 
-  get currency(): T {
+  get currency(): C {
     return this._currency;
   }
 }
 
-export class BTCAmount extends MonetaryAmount<Bitcoin> {
+export class BTCAmount extends BaseMonetaryAmount<Bitcoin> {
   constructor(amount: BigSource, decimals?: number) {
     super(BTC, amount, decimals);
   }
@@ -172,7 +173,7 @@ export class BTCAmount extends MonetaryAmount<Bitcoin> {
   }
 }
 
-export class ETHAmount extends MonetaryAmount<Ethereum> {
+export class ETHAmount extends BaseMonetaryAmount<Ethereum> {
   constructor(amount: BigSource, decimals?: number) {
     super(ETH, amount, decimals);
   }
@@ -207,4 +208,15 @@ export class ETHAmount extends MonetaryAmount<Ethereum> {
   }
 }
 
-export class ERC20Amount extends MonetaryAmount<ERC20> {}
+export class ERC20Amount extends BaseMonetaryAmount<ERC20> {}
+
+export interface ExchangeRate<From extends Currency, To extends Currency> {
+  readonly from: From;
+  readonly to: To;
+  readonly rate: Big;
+}
+
+export class ExchangeRate<From extends Currency, To extends Currency>
+  implements ExchangeRate<From, To> {
+  constructor(readonly from: From, readonly to: To, readonly rate: Big) {}
+}
