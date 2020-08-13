@@ -219,7 +219,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
     ));
   });
 
-  it('alice should underwrite put options', async () => {
+  it('alice should write put options', async () => {
     await mint(
       collateral,
       alice,
@@ -234,7 +234,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
     );
 
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
-      option.address,
+      obligation.address,
       collateral.address,
       collateral.address,
       collateralAmount,
@@ -270,19 +270,21 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
   });
 
   it('bob cannot exercise before expiry', async () => {
-    const result = reconnect(option, OptionFactory, bob).requestExercise(
-      aliceAddress,
-      amountOutSat
-    );
+    const result = reconnect(
+      obligation,
+      ObligationFactory,
+      bob
+    ).requestExercise(aliceAddress, amountOutSat);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
   });
 
   it('bob cannot exercise more options than available', async () => {
     return evmSnapFastForward(1000, async () => {
-      const result = reconnect(option, OptionFactory, bob).requestExercise(
-        aliceAddress,
-        amountOutSat.add(1)
-      );
+      const result = reconnect(
+        obligation,
+        ObligationFactory,
+        bob
+      ).requestExercise(aliceAddress, amountOutSat.add(1));
       await expect(result).to.be.revertedWith(
         ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE
       );
@@ -291,14 +293,9 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
 
   it('bob should exercise options against alice after expiry', async () => {
     return evmSnapFastForward(1000, async () => {
-      await reconnect(option, OptionFactory, bob).requestExercise(
-        aliceAddress,
-        amountOutSat
-      );
-
       const requestTx = await reconnect(
-        option,
-        OptionFactory,
+        obligation,
+        ObligationFactory,
         bob
       ).requestExercise(aliceAddress, amountOutSat);
       const requestEvent = await getRequestEvent(
@@ -380,7 +377,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
     ));
   });
 
-  it('alice should underwrite put options', async () => {
+  it('alice should write put options', async () => {
     await mint(
       collateral,
       alice,
@@ -395,7 +392,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
     );
 
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
-      option.address,
+      obligation.address,
       collateral.address,
       collateral.address,
       collateralAmount,
@@ -431,19 +428,21 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
   });
 
   it('bob cannot exercise before expiry', async () => {
-    const result = reconnect(option, OptionFactory, bob).requestExercise(
-      aliceAddress,
-      amountOutSat
-    );
+    const result = reconnect(
+      obligation,
+      ObligationFactory,
+      bob
+    ).requestExercise(aliceAddress, amountOutSat);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_EXPIRED);
   });
 
   it('bob cannot exercise more options than credited', async () => {
     return evmSnapFastForward(1000, async () => {
-      const result = reconnect(option, OptionFactory, bob).requestExercise(
-        aliceAddress,
-        amountOutSat.add(100)
-      );
+      const result = reconnect(
+        obligation,
+        ObligationFactory,
+        bob
+      ).requestExercise(aliceAddress, amountOutSat.add(100));
       await expect(result).to.be.revertedWith(
         ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE
       );
@@ -452,14 +451,9 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
 
   it('bob should exercise options against alice after expiry', async () => {
     return evmSnapFastForward(1000, async () => {
-      await reconnect(option, OptionFactory, bob).requestExercise(
-        aliceAddress,
-        amountOutSat
-      );
-
       const requestTx = await reconnect(
-        option,
-        OptionFactory,
+        obligation,
+        ObligationFactory,
         bob
       ).requestExercise(aliceAddress, amountOutSat);
       const requestEvent = await getRequestEvent(
@@ -540,7 +534,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
     ));
   });
 
-  it('alice should underwrite put options', async () => {
+  it('alice should write put options', async () => {
     await mint(
       collateral,
       alice,
@@ -555,7 +549,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
     );
 
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
-      option.address,
+      obligation.address,
       collateral.address,
       collateral.address,
       collateralAmount,
@@ -658,7 +652,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
     ));
   });
 
-  it('alice should underwrite options', async () => {
+  it('alice should write options', async () => {
     await mint(
       collateral,
       alice,
@@ -673,7 +667,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
     );
 
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
-      option.address,
+      obligation.address,
       collateral.address,
       collateral.address,
       collateralAmount,
@@ -827,11 +821,8 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
     ));
   });
 
-  it('alice and eve should underwrite options', async () => {
-    const underwrite = async (
-      signer: Signer,
-      address: string
-    ): Promise<void> => {
+  it('alice and eve should write options', async () => {
+    const write = async (signer: Signer, address: string): Promise<void> => {
       await mint(
         collateral,
         signer,
@@ -846,7 +837,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
       );
 
       await reconnect(optionLib, OptionLibFactory, signer).lockAndWrite(
-        option.address,
+        obligation.address,
         collateral.address,
         collateral.address,
         collateralAmount,
@@ -861,8 +852,8 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
       expect(obligationBalance).to.eq(collateralAmount);
     };
 
-    await underwrite(alice, aliceAddress);
-    await underwrite(eve, eveAddress);
+    await write(alice, aliceAddress);
+    await write(eve, eveAddress);
   });
 
   it('alice and eve should sell obligations', async () => {
@@ -1002,14 +993,14 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
 //     treasury = TreasuryFactory.connect(treasuryAddress, signers[0]);
 //   });
 
-//   const underwrite = async (signer: Signer, premiumAmount: number, collateralAmount: number) => {
+//   const write = async (signer: Signer, premiumAmount: number, collateralAmount: number) => {
 //     const address = await signer.getAddress();
 //     await mint(collateral, signer, address, premiumAmount + collateralAmount);
 //     await approve(collateral, signer, optionLib.address, premiumAmount + collateralAmount);
 
 //     await reconnect(optionLib, OptionLibFactory, signer)
 //       .lockAndWrite(
-//         option.address,
+//         obligation.address,
 //         collateral.address,
 //         collateral.address,
 //         collateralAmount,
@@ -1026,7 +1017,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
 
 //   it("should write options", async () => {
 //     await Promise.all(signers.slice(1, 6).map((signer, i) =>
-//       underwrite(signer, premiumAmounts[i], collateralAmounts[i])));
+//       write(signer, premiumAmounts[i], collateralAmounts[i])));
 //   });
 
 //   const buy = async (signer: Signer, amountOut: number, amountInMax: number) => {
@@ -1056,7 +1047,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
 //     await evmSnapFastForward(1000, async () => {
 
 //       // TODO: check repeated call fails
-//       await reconnect(option, OptionFactory, signers[7])
+//       await reconnect(obligation, ObligationFactory, signers[7])
 //         .requestExercise(
 //           addresses[1],
 //           115
@@ -1065,7 +1056,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
 //           const secret = (await reconnect(obligation, ObligationFactory, signers[7]).getSecret(addresses[1])).toNumber();
 //       await btcReferee.mock.verifyTx.returns((115 / strikePrice) + secret);
 
-//       await reconnect(option, OptionFactory, signers[7])
+//       await reconnect(obligation, ObligationFactory, signers[7])
 //         .executeExercise(
 //           addresses[1],
 //           0,

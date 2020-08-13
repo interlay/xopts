@@ -1,14 +1,14 @@
 /* eslint-disable no-console */
 
-import {ethers} from '@nomiclabs/buidler';
-import {newBigNum} from '../lib/conversion';
-import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
-import {Script} from '../lib/constants';
+import { ethers } from '@nomiclabs/buidler';
+import { newBigNum } from '../lib/conversion';
+import { MockCollateralFactory } from '../typechain/MockCollateralFactory';
+import { Script } from '../lib/constants';
 import * as bitcoin from 'bitcoinjs-lib';
-import {deploy0, reconnect} from '../lib/contracts';
-import {MockBtcRefereeFactory} from '../typechain/MockBtcRefereeFactory';
-import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
-import {OptionFactory} from '../typechain/OptionFactory';
+import { deploy0, reconnect } from '../lib/contracts';
+import { MockBtcRefereeFactory } from '../typechain/MockBtcRefereeFactory';
+import { OptionPairFactoryFactory } from '../typechain/OptionPairFactoryFactory';
+import { OptionFactory } from '../typechain/OptionFactory';
 
 const payment = bitcoin.payments.p2wpkh({
   address: 'tb1q2krsjrpj3z6xm7xvj2xxjy9gcxa755y0exegh6',
@@ -66,9 +66,9 @@ async function main(): Promise<void> {
     contract,
     OptionPairFactoryFactory,
     bob
-  ).underwriteOption(options[0], newBigNum(5_000, 18), btcHash, Script.p2wpkh);
+  ).writeOption(options[0], newBigNum(5_000, 18), btcHash, Script.p2wpkh);
   receipt = await tx.wait(0);
-  console.log(`Gas [Underwrite]: ${receipt.gasUsed?.toString()}`);
+  console.log(`Gas [write]: ${receipt.gasUsed?.toString()}`);
 
   // transfer all unsold options to charlie
   const optionAddress = options[0];

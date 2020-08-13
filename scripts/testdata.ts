@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 
-import {ethers} from '@nomiclabs/buidler';
-import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
-import {Signer, constants} from 'ethers';
+import { ethers } from '@nomiclabs/buidler';
+import { MockCollateralFactory } from '../typechain/MockCollateralFactory';
+import { Signer, constants } from 'ethers';
 import * as bitcoin from 'bitcoinjs-lib';
 import {
   deploy0,
@@ -11,17 +11,17 @@ import {
   createPair,
   deploy1
 } from '../lib/contracts';
-import {newBigNum} from '../lib/conversion';
-import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
-import {OptionFactory} from '../typechain/OptionFactory';
-import {deployUniswapFactory} from '../lib/uniswap';
-import {OptionLibFactory} from '../typechain/OptionLibFactory';
-import {Script} from '../lib/constants';
-import {OptionPairFactory} from '../typechain/OptionPairFactory';
-import {BigNumberish, BigNumber} from 'ethers';
-import {MockCollateral} from '../typechain/MockCollateral';
-import {BtcReferee} from '../typechain/BtcReferee';
-import {OptionLib} from '../typechain/OptionLib';
+import { newBigNum } from '../lib/conversion';
+import { OptionPairFactoryFactory } from '../typechain/OptionPairFactoryFactory';
+import { OptionFactory } from '../typechain/OptionFactory';
+import { deployUniswapFactory } from '../lib/uniswap';
+import { OptionLibFactory } from '../typechain/OptionLibFactory';
+import { Script } from '../lib/constants';
+import { OptionPairFactory } from '../typechain/OptionPairFactory';
+import { BigNumberish, BigNumber } from 'ethers';
+import { MockCollateral } from '../typechain/MockCollateral';
+import { BtcReferee } from '../typechain/BtcReferee';
+import { OptionLib } from '../typechain/OptionLib';
 import {
   BtcRefereeFactory,
   MockRelayFactory,
@@ -141,7 +141,7 @@ async function main(): Promise<void> {
   console.log('Generating expired option');
   // get the current time
   const currentTime = Math.round(new Date().getTime() / 1000);
-  // generate and underwrite option that expires in 60 secs
+  // generate and write option that expires in 60 secs
   const inSixtySeconds = currentTime + 60;
 
   await createAndLockAndWrite(
@@ -200,7 +200,7 @@ async function main(): Promise<void> {
   // console.log("Adding data to option: ", sellableAddress);
   // console.log("Eve underwriting 20.000 Dai");
   // await call(collateral, MockCollateralFactory, eve).approve(pool.address, newBigNum(20_000));
-  // await call(pool, OptionPoolFactory, eve).underwriteOption(sellableAddress, newBigNum(20_000), btcHash, Script.p2wpkh);
+  // await call(pool, OptionPoolFactory, eve).writeOption(sellableAddress, newBigNum(20_000), btcHash, Script.p2wpkh);
 
   // console.log("Dave insuring 1.27 BTC");
   // await call(collateral, MockCollateralFactory, dave).approve(pool.address, newBigNum(2*17));

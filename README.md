@@ -17,12 +17,12 @@
 In traditional finance, an [option](https://en.wikipedia.org/wiki/Option_(finance)) enables the owner to buy or sell an underlying asset at a specified conversion rate before an expiration date.
 XOPTS extends the native capabilities of Ethereum to track and execute PUT Options against BTC. Specifically, we enable sellers to lock DAI collateral in a contract to mint ERC-20 compatible option
 tokens that can be traded on [Uniswap](https://uniswap.org/). Buyers can then insure an arbitrary amount of BTC relative to the contract's strike price and pay in an amount of DAI collateral as premium.
-Finally, options can be exercised once the buyer proves payment to the respective underwriters of that contract using an on-chain Bitcoin SPV client.
+Finally, options can be exercised once the buyer proves payment to the respective writers of that contract using an on-chain Bitcoin SPV client.
 
 ### Protocol
 
-- A seller (underwriter) creates a BTC put option with a strike price (the value of BTC the seller is willing to insure in Dai), an expiry time (the validity of the option), and a premium (the fee paid to the seller for buying an option in Dai).
-- A seller underwrites an option contract previously created by locking a number of Dai into the option contract. This creates a number of option tokens with the specific expiry, premium and strike price that are now available for buyers to obtain. During this process the seller also attaches his BTC address to the option tokens. For example, if the strike price is 10,000 Dai for a BTC and the seller locks 1,000 Dai, he would have generated 1,000 option tokens.
+- A seller (writer) creates a BTC put option with a strike price (the value of BTC the seller is willing to insure in Dai), an expiry time (the validity of the option), and a premium (the fee paid to the seller for buying an option in Dai).
+- A seller writes an option contract previously created by locking a number of Dai into the option contract. This creates a number of option tokens with the specific expiry, premium and strike price that are now available for buyers to obtain. During this process the seller also attaches his BTC address to the option tokens. For example, if the strike price is 10,000 Dai for a BTC and the seller locks 1,000 Dai, he would have generated 1,000 option tokens.
 - The buyer then goes ahead and buys a number of option tokens at a specific expiry, premium, and strike price.
 - During the expiry time, the buyer can exercise the option. To achieve this, he must send a number of BTC to the seller. Then, he proves that he sent the required number of BTC to the option smart contract. In return, the option tokens are burned and the buyer obtains underlying Dai provided by the seller.
 - After the expiry time, the seller can reclaim any unused collateral.
@@ -152,7 +152,7 @@ You can interact with a locally deployed front-end on [localhost:3000](http://lo
 |---------------------|---------|-----------------------------|
 | `constructor`  	  | 4459604 | Deploy Option Factory	 	  |
 | `createOption` 	  | 3099130 | Create Sell & Buy ERC-20    |
-| `underwriteOption`  | 241516  | Deposit Collateral		  |
+| `writeOption`  | 241516  | Deposit Collateral		  |
 | `transfer` 		  | 119209  | Transfer Unsold Options     |
 | `insureOption`	  | 221144  | Buy Options At Premium	  |
 | `transfer` 		  | 117892  | Transfer Sold Options		  |
