@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 
-import { ethers } from '@nomiclabs/buidler';
-import { MockCollateralFactory } from '../typechain/MockCollateralFactory';
-import { Signer, constants } from 'ethers';
+import {ethers} from '@nomiclabs/buidler';
+import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
+import {Signer, constants} from 'ethers';
 import * as bitcoin from 'bitcoinjs-lib';
 import {
   deploy0,
@@ -11,17 +11,17 @@ import {
   createPair,
   deploy1
 } from '../lib/contracts';
-import { newBigNum } from '../lib/conversion';
-import { OptionPairFactoryFactory } from '../typechain/OptionPairFactoryFactory';
-import { OptionFactory } from '../typechain/OptionFactory';
-import { deployUniswapFactory } from '../lib/uniswap';
-import { OptionLibFactory } from '../typechain/OptionLibFactory';
-import { Script } from '../lib/constants';
-import { OptionPairFactory } from '../typechain/OptionPairFactory';
-import { BigNumberish, BigNumber } from 'ethers';
-import { MockCollateral } from '../typechain/MockCollateral';
-import { BtcReferee } from '../typechain/BtcReferee';
-import { OptionLib } from '../typechain/OptionLib';
+import {newBigNum} from '../lib/conversion';
+import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
+import {OptionFactory} from '../typechain/OptionFactory';
+import {deployUniswapFactory} from '../lib/uniswap';
+import {OptionLibFactory} from '../typechain/OptionLibFactory';
+import {Script} from '../lib/constants';
+import {OptionPairFactory} from '../typechain/OptionPairFactory';
+import {BigNumberish, BigNumber} from 'ethers';
+import {MockCollateral} from '../typechain/MockCollateral';
+import {BtcReferee} from '../typechain/BtcReferee';
+import {OptionLib} from '../typechain/OptionLib';
 import {
   BtcRefereeFactory,
   MockRelayFactory,
