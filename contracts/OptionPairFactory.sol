@@ -39,7 +39,6 @@ contract OptionPairFactory is IOptionPairFactory {
         uint8 decimals,
         uint256 expiryTime,
         uint256 windowSize,
-        address obligation,
         bytes32 salt
     ) internal returns (address option) {
         bytes memory bytecode = type(Option).creationCode;
@@ -48,12 +47,7 @@ contract OptionPairFactory is IOptionPairFactory {
             // solium-disable-previous-line security/no-inline-assembly
             option := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IOption(option).initialize(
-            decimals,
-            expiryTime,
-            windowSize,
-            obligation
-        );
+        IOption(option).initialize(decimals, expiryTime, windowSize);
         return option;
     }
 
@@ -62,6 +56,7 @@ contract OptionPairFactory is IOptionPairFactory {
         uint256 expiryTime,
         uint256 windowSize,
         uint256 strikePrice,
+        address option,
         address referee,
         address treasury,
         bytes32 salt
@@ -77,6 +72,7 @@ contract OptionPairFactory is IOptionPairFactory {
             expiryTime,
             windowSize,
             strikePrice,
+            option,
             referee,
             treasury
         );
@@ -126,23 +122,18 @@ contract OptionPairFactory is IOptionPairFactory {
         // decmials precision.
         uint8 decimals = IERC20(collateral).decimals();
 
+        option = _createOption(decimals, expiryTime, windowSize, salt);
         obligation = _createObligation(
             decimals,
             expiryTime,
             windowSize,
             strikePrice,
+            option,
             referee,
             treasury,
             salt
         );
-        option = _createOption(
-            decimals,
-            expiryTime,
-            windowSize,
-            obligation,
-            salt
-        );
-        Ownable(obligation).transferOwnership(option);
+        Ownable(option).transferOwnership(obligation);
 
         getObligation[option] = obligation;
         getTreasury[collateral] = treasury;

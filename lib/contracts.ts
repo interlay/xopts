@@ -351,7 +351,7 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     seller: string,
     satoshis: BigNumberish
   ): Promise<BigNumber> {
-    await this.option
+    await this.obligation
       .requestExercise(seller, satoshis)
       .then((tx) => tx.wait(this.confirmations));
     return this.obligation.getSecret(seller);

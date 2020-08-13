@@ -13,6 +13,7 @@ import {getTimeNow} from '../common';
 import {MockContract, deployMockContract} from 'ethereum-waffle';
 import TreasuryArtifact from '../../artifacts/Treasury.json';
 import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
+import OptionArtifact from '../../artifacts/Option.json';
 import {ErrorCode, Script} from '../../lib/constants';
 import {evmSnapFastForward} from '../../lib/mock';
 import {newBigNum} from '../../lib/conversion';
@@ -31,6 +32,7 @@ describe('Obligation.sol', () => {
   let charlieAddress: string;
 
   let obligation: Obligation;
+  let option: MockContract;
   let treasury: MockContract;
   let referee: MockContract;
 
@@ -48,6 +50,7 @@ describe('Obligation.sol', () => {
       charlie.getAddress()
     ]);
     obligation = await deploy0(alice, ObligationFactory);
+    option = await deployMockContract(alice, OptionArtifact.abi);
     treasury = await deployMockContract(alice, TreasuryArtifact.abi);
     referee = await deployMockContract(alice, BTCRefereeArtifact.abi);
     await obligation.initialize(
@@ -55,6 +58,7 @@ describe('Obligation.sol', () => {
       expiryTime,
       windowSize,
       strikePrice,
+      option.address,
       referee.address,
       treasury.address
     );
@@ -71,6 +75,7 @@ describe('Obligation.sol', () => {
       getTimeNow(),
       1000,
       9000,
+      option.address,
       referee.address,
       treasury.address
     );
@@ -92,6 +97,7 @@ describe('Obligation.sol', () => {
   it('should fail to mint obligations with no btc address', async () => {
     const result = obligation.mint(
       aliceAddress,
+      aliceAddress,
       1000,
       constants.AddressZero,
       Script.p2sh
@@ -101,7 +107,14 @@ describe('Obligation.sol', () => {
 
   it('should mint obligations with btc address', async () => {
     await treasury.mock.lock.returns();
-    const tx = await obligation.mint(aliceAddress, 1000, btcHash, Script.p2sh);
+    await option.mock.mint.returns();
+    const tx = await obligation.mint(
+      aliceAddress,
+      aliceAddress,
+      1000,
+      btcHash,
+      Script.p2sh
+    );
 
     const result = await obligation.getBtcAddress(aliceAddress);
     expect(result.btcHash).to.eq(btcHash);
@@ -120,11 +133,7 @@ describe('Obligation.sol', () => {
 
   it('should fail to request exercise against seller with insufficient balance', async () => {
     return evmSnapFastForward(1000, async () => {
-      const result = obligation.requestExercise(
-        aliceAddress,
-        bobAddress,
-        amountOutSat
-      );
+      const result = obligation.requestExercise(bobAddress, amountOutSat);
       await expect(result).to.be.revertedWith(
         ErrorCode.ERR_INSUFFICIENT_OBLIGATIONS
       );
@@ -133,16 +142,20 @@ describe('Obligation.sol', () => {
 
   it('should request exercise against seller with sufficient balance', async () => {
     await treasury.mock.lock.returns();
-    await obligation.mint(bobAddress, amountIn, btcHash, Script.p2sh);
+    await option.mock.mint.returns();
+    await option.mock.requestExercise.returns();
+    await obligation.mint(
+      bobAddress,
+      bobAddress,
+      amountIn,
+      btcHash,
+      Script.p2sh
+    );
     const obligationBalance = await obligation.balanceObl(bobAddress);
     expect(obligationBalance).to.eq(amountIn);
 
     return evmSnapFastForward(1000, async () => {
-      const tx = await obligation.requestExercise(
-        aliceAddress,
-        bobAddress,
-        amountOutSat
-      );
+      const tx = await obligation.requestExercise(bobAddress, amountOutSat);
       const event = await getRequestEvent(
         obligation,
         aliceAddress,
@@ -172,11 +185,18 @@ describe('Obligation.sol', () => {
   it('should not execute exercise with invalid output amount / secret', async () => {
     await referee.mock.verifyTx.returns(amountOutSat);
     await treasury.mock.lock.returns();
-    await obligation.mint(bobAddress, amountIn, btcHash, Script.p2sh);
+    await option.mock.mint.returns();
+    await option.mock.requestExercise.returns();
+    await obligation.mint(
+      bobAddress,
+      bobAddress,
+      amountIn,
+      btcHash,
+      Script.p2sh
+    );
 
     return evmSnapFastForward(1000, async () => {
       const requestTx = await obligation.requestExercise(
-        aliceAddress,
         bobAddress,
         amountOutSat
       );
@@ -203,11 +223,18 @@ describe('Obligation.sol', () => {
   it('should execute exercise with request and sufficient payment', async () => {
     await treasury.mock.lock.returns();
     await treasury.mock.release.returns();
-    await obligation.mint(bobAddress, amountIn, btcHash, Script.p2sh);
+    await option.mock.mint.returns();
+    await option.mock.requestExercise.returns();
+    await obligation.mint(
+      bobAddress,
+      bobAddress,
+      amountIn,
+      btcHash,
+      Script.p2sh
+    );
 
     return evmSnapFastForward(1000, async () => {
       const requestTx = await obligation.requestExercise(
-        aliceAddress,
         bobAddress,
         amountOutSat
       );
@@ -268,7 +295,14 @@ describe('Obligation.sol', () => {
   it('should refund after window', async () => {
     await treasury.mock.lock.returns();
     await treasury.mock.release.returns();
-    await obligation.mint(bobAddress, amountIn, btcHash, Script.p2sh);
+    await option.mock.mint.returns();
+    await obligation.mint(
+      bobAddress,
+      bobAddress,
+      amountIn,
+      btcHash,
+      Script.p2sh
+    );
 
     return evmSnapFastForward(2000, async () => {
       await reconnect(obligation, ObligationFactory, bob).refund(amountIn);
@@ -287,7 +321,14 @@ describe('Obligation.sol', () => {
   it('should sell obligations and withdraw', async () => {
     await treasury.mock.lock.returns();
     await treasury.mock.release.returns();
-    await obligation.mint(aliceAddress, amountIn, btcHash, Script.p2sh);
+    await option.mock.mint.returns();
+    await obligation.mint(
+      aliceAddress,
+      aliceAddress,
+      amountIn,
+      btcHash,
+      Script.p2sh
+    );
 
     // alice sells obligations to bob (pool)
     await obligation.transfer(bobAddress, amountIn);

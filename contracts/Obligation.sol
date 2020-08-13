@@ -8,6 +8,7 @@ import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {European} from './European.sol';
+import {IOption} from './interface/IOption.sol';
 import {IObligation} from './interface/IObligation.sol';
 import {Bitcoin} from './types/Bitcoin.sol';
 import {ITreasury} from './interface/ITreasury.sol';
@@ -56,6 +57,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     // set price at which options can be sold when exercised
     uint256 public strikePrice;
+
+    address public override option;
 
     // btc relay or oracle
     address public override referee;
@@ -116,6 +119,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param _windowSize Settlement window
      * @param _strikePrice Strike price
      * @param _referee Inclusion verifier
+     * @param _option ERC20 option
      * @param _treasury Backing currency
      **/
     function initialize(
@@ -123,6 +127,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         uint256 _expiryTime,
         uint256 _windowSize,
         uint256 _strikePrice,
+        address _option,
         address _referee,
         address _treasury
     ) external override onlyOwner {
@@ -139,6 +144,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         expiryTime = _expiryTime;
         windowSize = _windowSize;
         strikePrice = _strikePrice;
+        option = _option;
         referee = _referee;
         treasury = _treasury;
     }
@@ -157,19 +163,24 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     }
 
     /**
-     * @notice Mints obligation tokens
-     * @dev Can only be called by option contract before expiry
-     * @param account Address to credit
+     * @notice Mints obligation tokens to an `account` transfers the respective option
+     * tokens to a `pool` - e.g. Uniswap. To prevent misappropriation of funds we expect
+     * this function to be called atomically after depositing in the treasury. The `OptionLib`
+     * contract should provide helpers to facilitate this.
+     * @dev Once the expiry date has lapsed this function is no longer valid.
+     * @param account Origin address
+     * @param pool Destination address (i.e. uniswap pool)
      * @param amount Total credit
      * @param btcHash Bitcoin hash
      * @param format Bitcoin script format
      **/
     function mint(
         address account,
+        address pool,
         uint256 amount,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) external override notExpired onlyOwner {
+    ) external override notExpired {
         // insert into the accounts balance
         _balances[account] = _balances[account].add(amount);
         _obligations[account] = _obligations[account].add(amount);
@@ -180,8 +191,10 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
         // check treasury has enough unlocked
         ITreasury(treasury).lock(account, amount);
-
         emit Transfer(address(0), account, amount);
+
+        // mint the equivalent options
+        IOption(option).mint(pool, amount);
     }
 
     function _burn(address account, uint256 amount) internal {
@@ -197,16 +210,17 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     /**
      * @notice Initiate physical settlement, locking obligations owned by the specified seller.
-     * @dev Only callable by the parent option contract.
-     * @param buyer Account that bought the options.
+     * @dev Caller is assumed to be the `buyer`.
      * @param seller Account that wrote the options.
      * @param satoshis Input amount.
      **/
-    function requestExercise(
-        address buyer,
-        address seller,
-        uint256 satoshis
-    ) external override onlyOwner canExercise returns (uint256) {
+    function requestExercise(address seller, uint256 satoshis)
+        external
+        override
+        canExercise
+    {
+        address buyer = msg.sender;
+
         uint256 options = calculateAmountIn(satoshis);
         _locked[seller] = _locked[seller].add(options);
         require(
@@ -233,7 +247,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         _requests[buyer][salt].seller = seller;
 
         emit RequestExercise(buyer, seller, salt, options, secret);
-        return options;
+
+        IOption(option).requestExercise(buyer, options);
     }
 
     /**
