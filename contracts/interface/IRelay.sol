@@ -4,9 +4,10 @@ pragma solidity ^0.6.0;
 
 interface IRelay {
     function verifyTx(
-        uint256 height,
+        uint32 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
         uint256 confirmations,
         bool insecure

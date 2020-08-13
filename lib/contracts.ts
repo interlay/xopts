@@ -197,6 +197,7 @@ export interface WriteOptionPair extends ReadOptionPair {
     height: BigNumberish,
     index: BigNumberish,
     txid: BytesLike,
+    header: BytesLike,
     proof: BytesLike,
     rawtx: BytesLike
   ): Promise<void>;
@@ -363,11 +364,12 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     height: BigNumberish,
     index: BigNumberish,
     txid: BytesLike,
+    header: BytesLike,
     proof: BytesLike,
     rawtx: BytesLike
   ): Promise<void> {
     await this.obligation
-      .executeExercise(seller, height, index, txid, proof, rawtx)
+      .executeExercise(seller, height, index, txid, header, proof, rawtx)
       .then((tx) => tx.wait(this.confirmations));
   }
 

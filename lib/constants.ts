@@ -37,6 +37,8 @@ export const ErrorCode = {
 
   // BTCReferee
   ERR_INVALID_OUT_HASH: 'Invalid output hash',
+  ERR_TX_ID_BLOCKED: 'Transaction ID blocked',
+  ERR_TX_NOT_EXPIRED: 'Tx sent before expiry',
   ERR_TX_NOT_INCLUDED: 'Cannot verify tx inclusion',
 
   // Ownable

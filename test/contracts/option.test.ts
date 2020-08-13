@@ -3,16 +3,12 @@ import {ethers} from '@nomiclabs/buidler';
 import {Signer, constants, BigNumber} from 'ethers';
 import {deploy0, getEvent, reconnect} from '../../lib/contracts';
 import {getTimeNow} from '../common';
-import {MockContract, deployMockContract} from 'ethereum-waffle';
-import ObligationArtifact from '../../artifacts/Obligation.json';
-import {ErrorCode, Script} from '../../lib/constants';
+import {ErrorCode} from '../../lib/constants';
 import {Option} from '../../typechain/Option';
 import {OptionFactory} from '../../typechain';
 import {evmSnapFastForward} from '../../lib/mock';
 
 const {expect} = chai;
-
-const btcHash = '0x5587090c3288b46df8cc928c6910a8c1bbea508f';
 
 describe('Option.sol', () => {
   let alice: Signer;

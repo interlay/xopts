@@ -65,6 +65,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     address public override treasury;
 
+    uint256 internal _nonce;
+
     struct Request {
         uint256 amount;
         uint256 secret;
@@ -210,6 +212,18 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     /**
      * @notice Initiate physical settlement, locking obligations owned by the specified seller.
+     *
+     * In order to prevent replay attacks, where an adversary would reuse proofs, we adopt a
+     * construction that requires the payer to supply an additional amount of Satoshi to be taken
+     * by the option writer as premium. For each submission we also check that the timestamp is
+     * greater than or equal to the parameterized expiry time to exclude older BTC payments. Each
+     * verified transaction is then added to a blocklist to further mitigate reuse.
+     *
+     * For maximum security we would ideally utilize `OP_RETURN` to embed the seller's Bitcoin
+     * address but few wallet providers support signing custom transactions. Therefore an advantage
+     * of this 'amount-only' construction is that we can easily support embedding payments in the
+     * [URI format](https://en.bitcoin.it/wiki/BIP_0021).
+     *
      * @dev Caller is assumed to be the `buyer`.
      * @param seller Account that wrote the options.
      * @param satoshis Input amount.
@@ -228,6 +242,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             ERR_INSUFFICIENT_OBLIGATIONS
         );
 
+        _nonce = _nonce.add(1);
         bytes32 salt = keccak256(
             abi.encodePacked(
                 expiryTime,
@@ -235,18 +250,17 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
                 strikePrice,
                 buyer,
                 seller,
-                // append height to avoid replay
+                // append nonce to avoid replay
                 // attacks on the same option
-                block.number
+                _nonce
             )
         );
-        uint256 secret = uint256(uint8(salt[0]));
 
         _requests[buyer][salt].amount = options;
-        _requests[buyer][salt].secret = secret;
+        _requests[buyer][salt].secret = _nonce;
         _requests[buyer][salt].seller = seller;
 
-        emit RequestExercise(buyer, seller, salt, options, secret);
+        emit RequestExercise(buyer, seller, salt, options, _nonce);
 
         IOption(option).requestExercise(buyer, options);
     }
@@ -268,31 +282,33 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param height Bitcoin block height
      * @param index Bitcoin tx index
      * @param txid Bitcoin transaction id
+     * @param header Bitcoin block header
      * @param proof Bitcoin inclusion proof
      * @param rawtx Bitcoin raw tx
      **/
     function executeExercise(
         bytes32 id,
-        uint256 height,
+        uint32 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
         bytes calldata rawtx
     ) external override canExercise {
         address buyer = msg.sender;
         address seller = _requests[buyer][id].seller;
-        bytes20 btcHash = _btcAddresses[seller].btcHash;
-        Bitcoin.Script format = _btcAddresses[seller].format;
 
         // verify & validate tx, use default confirmations
         uint256 satoshis = IReferee(referee).verifyTx(
             height,
             index,
             txid,
+            header,
             proof,
             rawtx,
-            btcHash,
-            format
+            _btcAddresses[seller].btcHash,
+            _btcAddresses[seller].format,
+            expiryTime
         );
 
         _verifyReceipt(buyer, id, satoshis);

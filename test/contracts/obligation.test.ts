@@ -176,6 +176,7 @@ describe('Obligation.sol', () => {
         0,
         constants.HashZero,
         constants.HashZero,
+        constants.HashZero,
         constants.HashZero
       );
       await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_REQUEST);
@@ -210,6 +211,7 @@ describe('Obligation.sol', () => {
         requestEvent.id,
         0,
         0,
+        constants.HashZero,
         constants.HashZero,
         constants.HashZero,
         constants.HashZero
@@ -251,6 +253,7 @@ describe('Obligation.sol', () => {
         requestEvent.id,
         0,
         0,
+        constants.HashZero,
         constants.HashZero,
         constants.HashZero,
         constants.HashZero

@@ -32,10 +32,11 @@ interface IObligation {
     function requestExercise(address seller, uint256 satoshis) external;
 
     function executeExercise(
-        bytes32 reqid,
-        uint256 height,
+        bytes32 id,
+        uint32 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
         bytes calldata rawtx
     ) external;

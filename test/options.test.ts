@@ -318,6 +318,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
         0,
         constants.HashZero,
         constants.HashZero,
+        constants.HashZero,
         constants.HashZero
       );
 
@@ -477,6 +478,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
         requestEvent.id,
         0,
         0,
+        constants.HashZero,
         constants.HashZero,
         constants.HashZero,
         constants.HashZero
