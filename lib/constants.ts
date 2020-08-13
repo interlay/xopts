@@ -40,5 +40,8 @@ export const ErrorCode = {
   ERR_TX_NOT_INCLUDED: 'Cannot verify tx inclusion',
 
   // Ownable
-  ERR_CALLER_NOT_OWNER: 'Ownable: caller is not the owner'
+  ERR_CALLER_NOT_OWNER: 'Ownable: caller is not the owner',
+
+  // Library
+  ERR_GET_SPOT_PRICE: 'Failed to fetch spot price'
 };

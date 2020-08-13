@@ -21,10 +21,10 @@ import {EventFragment, Result} from 'ethers/lib/utils';
 import {
   ReadOnlyOptionPair,
   WriteOptionPair,
-  BtcAddress,
   ReadOptionPair,
   ReadWriteOptionPair
 } from './pair';
+import {BtcAddress} from './bitcoin';
 
 interface Connectable<C> {
   connect: (addr: string, signer: SignerOrProvider) => C;

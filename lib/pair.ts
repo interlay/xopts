@@ -6,13 +6,8 @@ import {Option} from '../typechain/Option';
 import {ITreasury} from '../typechain/ITreasury';
 import {OptionLib} from '../typechain/OptionLib';
 import {Ierc20} from '../typechain/Ierc20';
-import {Script} from './constants';
 import {BitcoinPriceFeed} from './feed';
-
-export type BtcAddress = {
-  btcHash: BytesLike;
-  format: Script;
-};
+import {BtcAddress} from './bitcoin';
 
 interface EuropeanOption {
   contract: string;
@@ -254,12 +249,11 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     height: BigNumberish,
     index: BigNumberish,
     txid: BytesLike,
-    header: BytesLike,
     proof: BytesLike,
     rawtx: BytesLike
   ): Promise<void> {
     await this.obligation
-      .executeExercise(seller, height, index, txid, header, proof, rawtx)
+      .executeExercise(seller, height, index, txid, proof, rawtx)
       .then((tx) => tx.wait(this.confirmations));
   }
 

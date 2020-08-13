@@ -1,3 +1,5 @@
+import {ErrorCode} from './constants';
+
 export interface BitcoinPriceFeed {
   getSpotPrice(): Promise<number>;
 }
@@ -12,6 +14,7 @@ export class CoinbaseFeed implements BitcoinPriceFeed {
 
   async getSpotPrice(): Promise<number> {
     const response = await global.fetch(this.url);
+    if (!response.ok) throw Error(ErrorCode.ERR_GET_SPOT_PRICE);
     const body = await response.json();
     return parseFloat(body.data.amount);
   }
