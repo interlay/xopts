@@ -97,6 +97,16 @@ After compiling the contracts as described above, run the tests.
 yarn test
 ```
 
+### Docker
+
+Tests for both smart contracts and frontend can be executed within Docker.
+
+```
+docker build . -t interlay/xopts
+docker run -t interlay/xopts yarn test
+docker run -t interlay/xopts yarn test-js
+```
+
 ### Docs
 
 We build our docs using [solidity-docgen](https://github.com/OpenZeppelin/solidity-docgen) and [docsify](https://docsify.js.org/#/).
