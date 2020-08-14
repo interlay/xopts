@@ -57,18 +57,11 @@ contract Option is IOption, IERC20, European, Ownable {
         uint8 _decimals,
         uint256 _expiryTime,
         uint256 _windowSize
-    ) external override onlyOwner {
-        require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
-        require(_windowSize > 0, ERR_WINDOW_ZERO);
-
+    ) external override onlyOwner setExpiry(_expiryTime, _windowSize) {
         // ERC20
         name = 'Option';
         symbol = 'OPT';
         decimals = _decimals;
-
-        // Option
-        expiryTime = _expiryTime;
-        windowSize = _windowSize;
     }
 
     /**

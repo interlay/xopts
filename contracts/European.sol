@@ -23,6 +23,16 @@ contract European {
     // window post expiry
     uint256 public windowSize;
 
+    modifier setExpiry(uint256 _expiryTime, uint256 _windowSize) {
+        require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
+        require(_windowSize > 0, ERR_WINDOW_ZERO);
+
+        expiryTime = _expiryTime;
+        windowSize = _windowSize;
+
+        _;
+    }
+
     /**
      * @dev Throws if called before the configured timestamp
      */
