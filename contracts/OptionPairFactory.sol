@@ -23,8 +23,9 @@ contract OptionPairFactory is IOptionPairFactory {
 
     /// @notice Emit upon successful creation of a new option pair.
     event CreatePair(
-        address indexed option,
-        address indexed obligation,
+        address option,
+        address obligation,
+        address collateral,
         uint256 expiryTime,
         uint256 windowSize,
         uint256 strikePrice
@@ -143,6 +144,7 @@ contract OptionPairFactory is IOptionPairFactory {
         emit CreatePair(
             option,
             obligation,
+            collateral,
             expiryTime,
             windowSize,
             strikePrice
