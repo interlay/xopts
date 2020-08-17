@@ -15,6 +15,15 @@ interface IObligation {
         address _treasury
     ) external;
 
+    function getDetails()
+        external
+        view
+        returns (
+            uint256 _expiryTime,
+            uint256 _windowSize,
+            uint256 _strikePrice
+        );
+
     function option() external returns (address);
 
     function referee() external returns (address);

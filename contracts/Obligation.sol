@@ -145,6 +145,19 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         treasury = _treasury;
     }
 
+    function getDetails()
+        external
+        override
+        view
+        returns (
+            uint256 _expiryTime,
+            uint256 _windowSize,
+            uint256 _strikePrice
+        )
+    {
+        return (expiryTime, windowSize, strikePrice);
+    }
+
     /**
      * @notice Set the payout address for an account before expiry.
      * @param btcHash Recipient address for exercising
