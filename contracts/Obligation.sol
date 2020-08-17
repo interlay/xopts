@@ -429,8 +429,27 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param account An account which owns obligations.
      * @return The total balance of the account.
      **/
-    function balanceObl(address account) external view returns (uint256) {
+    function obligations(address account)
+        external
+        override
+        view
+        returns (uint256)
+    {
         return _obligations[account];
+    }
+
+    /**
+     * @notice Returns the obligations available to exercise for an account.
+     * @param account An account which owns obligations.
+     * @return The total exercisable balance of the account.
+     **/
+    function available(address account)
+        external
+        override
+        view
+        returns (uint256)
+    {
+        return _obligations[account].sub(_locked[account]);
     }
 
     /// @dev See {IERC20-transfer}
