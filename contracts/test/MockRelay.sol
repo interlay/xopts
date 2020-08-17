@@ -6,9 +6,10 @@ import {IRelay} from '../interface/IRelay.sol';
 
 contract MockRelay is IRelay {
     function verifyTx(
-        uint256,
+        uint32,
         uint256,
         bytes32,
+        bytes calldata,
         bytes calldata,
         uint256,
         bool

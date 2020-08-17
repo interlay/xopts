@@ -176,6 +176,7 @@ describe('Obligation.sol', () => {
         0,
         constants.HashZero,
         constants.HashZero,
+        constants.HashZero,
         constants.HashZero
       );
       await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_REQUEST);
@@ -206,10 +207,12 @@ describe('Obligation.sol', () => {
         bobAddress,
         await requestTx.wait(0)
       );
+      await referee.mock.verifyTx.returns(amountOutSat.sub(1000));
       const result = obligation.executeExercise(
         requestEvent.id,
         0,
         0,
+        constants.HashZero,
         constants.HashZero,
         constants.HashZero,
         constants.HashZero
@@ -244,13 +247,12 @@ describe('Obligation.sol', () => {
         bobAddress,
         await requestTx.wait(0)
       );
-      await referee.mock.verifyTx.returns(
-        amountOutSat.add(requestEvent.secret)
-      );
+      await referee.mock.verifyTx.returns(amountOutSat);
       const tx = await obligation.executeExercise(
         requestEvent.id,
         0,
         0,
+        constants.HashZero,
         constants.HashZero,
         constants.HashZero,
         constants.HashZero

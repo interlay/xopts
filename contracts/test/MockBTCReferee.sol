@@ -11,10 +11,10 @@ contract MockBTCReferee is BTCReferee {
     }
 
     function extractOutputValue(
-        bytes calldata rawTx,
+        bytes calldata rawtx,
         bytes20 btcHash,
         Bitcoin.Script format
     ) external pure returns (uint256) {
-        return _extractOutputValue(rawTx, btcHash, format);
+        return _extractOutputValue(rawtx, btcHash, format);
     }
 }

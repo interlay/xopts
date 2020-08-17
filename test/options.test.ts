@@ -305,14 +305,13 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
         await requestTx.wait(0)
       );
 
-      await btcReferee.mock.verifyTx.returns(
-        amountOutSat.add(requestEvent.secret)
-      );
+      await btcReferee.mock.verifyTx.returns(amountOutSat);
 
       await reconnect(obligation, ObligationFactory, bob).executeExercise(
         requestEvent.id,
         0,
         0,
+        constants.HashZero,
         constants.HashZero,
         constants.HashZero,
         constants.HashZero
@@ -463,14 +462,13 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
         await requestTx.wait(0)
       );
 
-      await btcReferee.mock.verifyTx.returns(
-        amountOutSat.add(requestEvent.secret)
-      );
+      await btcReferee.mock.verifyTx.returns(amountOutSat);
 
       await reconnect(obligation, ObligationFactory, bob).executeExercise(
         requestEvent.id,
         0,
         0,
+        constants.HashZero,
         constants.HashZero,
         constants.HashZero,
         constants.HashZero

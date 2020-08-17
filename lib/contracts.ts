@@ -92,7 +92,7 @@ export function getRequestEvent(
 ): Promise<Result> {
   const fragment =
     obligation.interface.events[
-      'RequestExercise(address,address,bytes32,uint256,uint256)'
+      'RequestExercise(address,address,bytes32,uint256)'
     ];
   return getEvent(fragment, [buyer, seller], receipt, obligation);
 }
@@ -190,13 +190,14 @@ export interface WriteOptionPair extends ReadOptionPair {
     amountInMax: BigNumberish
   ): Promise<void>;
 
-  requestExercise(seller: string, satoshis: BigNumberish): Promise<BigNumber>;
+  requestExercise(seller: string, satoshis: BigNumberish): Promise<void>;
 
   executeExercise(
     seller: string,
     height: BigNumberish,
     index: BigNumberish,
     txid: BytesLike,
+    header: BytesLike,
     proof: BytesLike,
     rawtx: BytesLike
   ): Promise<void>;
@@ -347,14 +348,10 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
       .then((tx) => tx.wait(this.confirmations));
   }
 
-  async requestExercise(
-    seller: string,
-    satoshis: BigNumberish
-  ): Promise<BigNumber> {
+  async requestExercise(seller: string, satoshis: BigNumberish): Promise<void> {
     await this.obligation
       .requestExercise(seller, satoshis)
       .then((tx) => tx.wait(this.confirmations));
-    return this.obligation.getSecret(seller);
   }
 
   // prove inclusion and claim collateral
@@ -363,11 +360,12 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     height: BigNumberish,
     index: BigNumberish,
     txid: BytesLike,
+    header: BytesLike,
     proof: BytesLike,
     rawtx: BytesLike
   ): Promise<void> {
     await this.obligation
-      .executeExercise(seller, height, index, txid, proof, rawtx)
+      .executeExercise(seller, height, index, txid, header, proof, rawtx)
       .then((tx) => tx.wait(this.confirmations));
   }
 

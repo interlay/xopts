@@ -65,9 +65,10 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     address public override treasury;
 
+    uint256 internal _nonce;
+
     struct Request {
         uint256 amount;
-        uint256 secret;
         address seller;
     }
 
@@ -92,8 +93,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         address indexed buyer,
         address indexed seller,
         bytes32 id,
-        uint256 amount,
-        uint256 secret
+        uint256 amount
     );
 
     /// @notice Emit upon successful exercise execution (tx inclusion & verification).
@@ -219,6 +219,11 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     /**
      * @notice Initiate physical settlement, locking obligations owned by the specified seller.
+     *
+     * In order to prevent replay attacks we will require the use of `OP_RETURN` to embed the request id.
+     * Pending support, the current implementation is susceptible to transaction reuse so please do not
+     * use these contracts in production.
+     *
      * @dev Caller is assumed to be the `buyer`.
      * @param seller Account that wrote the options.
      * @param satoshis Input amount.
@@ -237,37 +242,25 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             ERR_INSUFFICIENT_OBLIGATIONS
         );
 
-        bytes32 salt = keccak256(
+        bytes32 id = keccak256(
             abi.encodePacked(
                 expiryTime,
                 windowSize,
                 strikePrice,
                 buyer,
                 seller,
-                // append height to avoid replay
-                // attacks on the same option
-                block.number
+                // append nonce to avoid
+                // id collisions
+                _nonce
             )
         );
-        uint256 secret = uint256(uint8(salt[0]));
 
-        _requests[buyer][salt].amount = options;
-        _requests[buyer][salt].secret = secret;
-        _requests[buyer][salt].seller = seller;
+        _requests[buyer][id].amount = options;
+        _requests[buyer][id].seller = seller;
 
-        emit RequestExercise(buyer, seller, salt, options, secret);
+        emit RequestExercise(buyer, seller, id, options);
 
         IOption(option).requestExercise(buyer, options);
-    }
-
-    /**
-     * @notice Get the secret for a particular exercise request identified
-     * by the seller and the caller.
-     * @param id The outstanding request ID.
-     * @return The generated satoshi secret nonce.
-     **/
-    function getSecret(bytes32 id) external view returns (uint256) {
-        return _requests[msg.sender][id].secret;
     }
 
     /**
@@ -277,31 +270,32 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param height Bitcoin block height
      * @param index Bitcoin tx index
      * @param txid Bitcoin transaction id
+     * @param header Bitcoin block header
      * @param proof Bitcoin inclusion proof
      * @param rawtx Bitcoin raw tx
      **/
     function executeExercise(
         bytes32 id,
-        uint256 height,
+        uint32 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
         bytes calldata rawtx
     ) external override canExercise {
         address buyer = msg.sender;
         address seller = _requests[buyer][id].seller;
-        bytes20 btcHash = _btcAddresses[seller].btcHash;
-        Bitcoin.Script format = _btcAddresses[seller].format;
 
         // verify & validate tx, use default confirmations
         uint256 satoshis = IReferee(referee).verifyTx(
             height,
             index,
             txid,
+            header,
             proof,
             rawtx,
-            btcHash,
-            format
+            _btcAddresses[seller].btcHash,
+            _btcAddresses[seller].format
         );
 
         _verifyReceipt(buyer, id, satoshis);
@@ -315,9 +309,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         uint256 amount = _requests[buyer][id].amount;
         require(amount > 0, ERR_INVALID_REQUEST);
 
-        // final amount must equal exactly for the secret to be valid
-        uint256 secret = _requests[buyer][id].secret;
-        uint256 options = calculateAmountIn(satoshis.sub(secret));
+        // pending op_return validation
+        uint256 options = calculateAmountIn(satoshis);
         require(amount == options, ERR_INVALID_OUTPUT_AMOUNT);
 
         address seller = _requests[buyer][id].seller;
