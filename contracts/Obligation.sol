@@ -130,9 +130,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         address _option,
         address _referee,
         address _treasury
-    ) external override onlyOwner {
-        require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
-        require(_windowSize > 0, ERR_WINDOW_ZERO);
+    ) external override onlyOwner setExpiry(_expiryTime, _windowSize) {
         require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
 
         // ERC20
@@ -141,8 +139,6 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         decimals = _decimals;
 
         // Obligation
-        expiryTime = _expiryTime;
-        windowSize = _windowSize;
         strikePrice = _strikePrice;
         option = _option;
         referee = _referee;
