@@ -62,13 +62,14 @@ async function main(): Promise<void> {
     contract.address,
     newBigNum(10_000, 18)
   );
-  tx = await reconnect(
-    contract,
-    OptionPairFactoryFactory,
-    bob
-  ).underwriteOption(options[0], newBigNum(5_000, 18), btcHash, Script.p2wpkh);
+  tx = await reconnect(contract, OptionPairFactoryFactory, bob).writeOption(
+    options[0],
+    newBigNum(5_000, 18),
+    btcHash,
+    Script.p2wpkh
+  );
   receipt = await tx.wait(0);
-  console.log(`Gas [Underwrite]: ${receipt.gasUsed?.toString()}`);
+  console.log(`Gas [write]: ${receipt.gasUsed?.toString()}`);
 
   // transfer all unsold options to charlie
   const optionAddress = options[0];
