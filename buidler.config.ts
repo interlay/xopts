@@ -1,4 +1,5 @@
 import {usePlugin} from '@nomiclabs/buidler/config';
+import {USDT} from './lib/constants';
 
 // Plugins
 usePlugin('@nomiclabs/buidler-ganache');
@@ -16,15 +17,16 @@ let ganacheConfig = {
   timeout: 0
 };
 
-// if infura is available, fork from ropsten
-const INFURA_ID = process.env.INFURA_ID;
+const INFURA_API_KEY = process.env.INFURA_API_KEY;
+const INFURA_URL = `https://mainnet.infura.io/v3/${INFURA_API_KEY}`;
 
-if (INFURA_ID) {
-  const INFURA_URL = 'https://ropsten.infura.io/v3/'.concat(INFURA_ID);
-  ganacheConfig = {...ganacheConfig, ...{fork: INFURA_URL}};
+if (INFURA_API_KEY) {
+  ganacheConfig = {
+    ...ganacheConfig,
+    ...{fork: INFURA_URL}
+  };
 }
 
-const INFURA_API_KEY = process.env.INFURA_API_KEY || '';
 const ROPSTEN_PRIVATE_KEY = process.env.ROPSTEN_PRIVATE_KEY || '';
 
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
@@ -49,7 +51,7 @@ const config = {
     },
     ganache: ganacheConfig,
     ropsten: {
-      url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
+      url: INFURA_URL,
       accounts: [ROPSTEN_PRIVATE_KEY]
     },
     localhost: {
@@ -58,7 +60,7 @@ const config = {
   },
   gasReporter: {
     enabled: COINMARKETCAP_API_KEY ? true : false,
-    coinmarketcap: COINMARKETCAP_API_KEY,
+    // coinmarketcap: COINMARKETCAP_API_KEY,
     currency: 'GBP',
     src: './contracts'
   }

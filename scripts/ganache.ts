@@ -1,35 +1,24 @@
 /* eslint-disable no-console */
 
-import config from '../buidler.config';
 import * as child from 'child_process';
+import {USDT} from '../lib/constants';
 
-const ganacheCmd = 'ganache-cli';
+const ganacheCmd = 'ganache-cli ';
 const port = '-p 8545';
-const mnemonic = '-m '.concat(config.networks.ganache.mnemonic);
-const id = '-i '.concat(config.networks.ganache.networkId.toString());
 
-// if infura is available, fork from ropsten
-const INFURA_ID = process.env.INFURA_ID;
+// if infura is available, fork from mainnet
+const INFURA_API_KEY = process.env.INFURA_API_KEY;
 
 let fork = '';
+let unlock = '';
 
-if (INFURA_ID) {
-  const INFURA_URL = 'https://ropsten.infura.io/v3/'.concat(
-    INFURA_ID.toString()
-  );
+if (INFURA_API_KEY) {
+  const INFURA_URL = `https://mainnet.infura.io/v3/${INFURA_API_KEY}`;
   fork = '-f '.concat(INFURA_URL.toString());
+  unlock = '-u '.concat(USDT.owner);
 }
 
-const ganacheString = ganacheCmd.concat(
-  ' ',
-  port,
-  ' ',
-  mnemonic,
-  ' ',
-  id,
-  ' ',
-  fork
-);
+const ganacheString = ganacheCmd.concat([port, fork, unlock].join(' '));
 
 console.log(ganacheString);
 

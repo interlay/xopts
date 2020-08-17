@@ -42,3 +42,22 @@ export const ErrorCode = {
   // Ownable
   ERR_CALLER_NOT_OWNER: 'Ownable: caller is not the owner'
 };
+
+export const Uniswap = {
+  mainnet: '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95',
+  ropsten: '0x9c83dCE8CA20E9aAF9D3efc003b2ea62aBC08351',
+  rinkeby: '0xf5D915570BC477f9B8D6C0E980aA81757A3AaC36',
+  kovan: '0xD3E51Ef092B2845f10401a0159B2B96e8B6c3D30',
+  görli: '0x6Ce570d02D73d4c384b46135E87f8C592A8c86dA'
+};
+
+export const WETH = {
+  mainnet: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+};
+
+export const USDT = {
+  mainnet: {
+    contract: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+    owner: '0xc6cde7c39eb2f0f0095f41570af89efc2c1ea828'
+  }
+};
