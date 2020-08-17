@@ -21,6 +21,10 @@ interface IObligation {
 
     function treasury() external returns (address);
 
+    function obligations(address account) external view returns (uint256);
+
+    function available(address account) external view returns (uint256);
+
     function mint(
         address account,
         address pool,

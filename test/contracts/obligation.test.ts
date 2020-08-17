@@ -151,7 +151,7 @@ describe('Obligation.sol', () => {
       btcHash,
       Script.p2sh
     );
-    const obligationBalance = await obligation.balanceObl(bobAddress);
+    const obligationBalance = await obligation.obligations(bobAddress);
     expect(obligationBalance).to.eq(amountIn);
 
     return evmSnapFastForward(1000, async () => {
@@ -306,7 +306,7 @@ describe('Obligation.sol', () => {
 
     return evmSnapFastForward(2000, async () => {
       await reconnect(obligation, ObligationFactory, bob).refund(amountIn);
-      const obligationBalance = await obligation.balanceObl(bobAddress);
+      const obligationBalance = await obligation.obligations(bobAddress);
       expect(obligationBalance).to.eq(constants.Zero);
     });
   });
@@ -332,7 +332,7 @@ describe('Obligation.sol', () => {
 
     // alice sells obligations to bob (pool)
     await obligation.transfer(bobAddress, amountIn);
-    const obligationBalanceAlice0 = await obligation.balanceObl(aliceAddress);
+    const obligationBalanceAlice0 = await obligation.obligations(aliceAddress);
     expect(obligationBalanceAlice0).to.eq(amountIn);
     const poolBalance = await obligation.balanceOf(bobAddress);
     expect(poolBalance).to.eq(amountIn);
@@ -348,14 +348,14 @@ describe('Obligation.sol', () => {
       charlieAddress,
       amountIn
     );
-    const obligationBalanceCharlie = await obligation.balanceObl(
+    const obligationBalanceCharlie = await obligation.obligations(
       charlieAddress
     );
     expect(obligationBalanceCharlie).to.eq(amountIn);
 
     // alice can now withdraw her collateral
     await obligation.withdraw(amountIn, bobAddress);
-    const obligationBalanceAlice1 = await obligation.balanceObl(aliceAddress);
+    const obligationBalanceAlice1 = await obligation.obligations(aliceAddress);
     expect(obligationBalanceAlice1).to.eq(constants.Zero);
   });
 });

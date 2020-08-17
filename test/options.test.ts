@@ -324,7 +324,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
       const optionBalance = await option.balanceOf(bobAddress);
       expect(optionBalance, 'bob should have no options').to.eq(constants.Zero);
 
-      const obligationBalance = await obligation.balanceObl(aliceAddress);
+      const obligationBalance = await obligation.obligations(aliceAddress);
       expect(obligationBalance).to.eq(collateralAmount.sub(amountOut));
     });
   });
@@ -485,7 +485,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
       const optionBalance = await option.balanceOf(bobAddress);
       expect(optionBalance, 'bob should have no options').to.eq(constants.Zero);
 
-      const obligationBalance = await obligation.balanceObl(aliceAddress);
+      const obligationBalance = await obligation.obligations(aliceAddress);
       expect(obligationBalance).to.eq(collateralAmount.sub(amountOut));
     });
   });
@@ -593,13 +593,13 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
   });
 
   it('alice should refund options after expiry', async () => {
-    const obligationBalance = await obligation.balanceObl(aliceAddress);
+    const obligationBalance = await obligation.obligations(aliceAddress);
     expect(obligationBalance).to.eq(collateralAmount);
     await evmSnapFastForward(2000, async () => {
       await reconnect(obligation, ObligationFactory, alice).refund(
         collateralAmount
       );
-      const obligationBalance = await obligation.balanceObl(aliceAddress);
+      const obligationBalance = await obligation.obligations(aliceAddress);
       expect(obligationBalance).to.eq(constants.Zero);
       const collateralBalance = await collateral.balanceOf(aliceAddress);
       expect(collateralBalance).to.eq(collateralAmount);
@@ -763,7 +763,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
       [collateral.address, obligation.address]
     );
 
-    const obligationBalance = await obligation.balanceObl(eveAddress);
+    const obligationBalance = await obligation.obligations(eveAddress);
     expect(obligationBalance).to.eq(amountOut);
 
     const collateralBalance = await collateral.balanceOf(eveAddress);
@@ -857,7 +857,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
         Script.p2sh
       );
 
-      const obligationBalance = await obligation.balanceObl(address);
+      const obligationBalance = await obligation.obligations(address);
       expect(obligationBalance).to.eq(collateralAmount);
     };
 
@@ -933,7 +933,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
       [collateral.address, obligation.address]
     );
 
-    const obligationBalance = await obligation.balanceObl(bobAddress);
+    const obligationBalance = await obligation.obligations(bobAddress);
     expect(obligationBalance).to.eq(amountOut);
     const collateralBalance = await collateral.balanceOf(bobAddress);
     expect(collateralBalance).to.eq(amountInMax.sub(input));
@@ -1020,7 +1020,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
 //         Script.p2sh
 //       );
 
-//     // const obligationBalance = (await obligation.balanceObl(address)).toNumber();
+//     // const obligationBalance = (await obligation.obligations(address)).toNumber();
 //     // expect(obligationBalance).to.eq(collateralAmount);
 //   };
 
@@ -1075,10 +1075,10 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
 //           Buffer.alloc(32, 0)
 //         );
 
-//       const obligationBalance1 = (await obligation.balanceObl(addresses[1])).toNumber();
+//       const obligationBalance1 = (await obligation.obligations(addresses[1])).toNumber();
 //       expect(obligationBalance1).to.eq(collateralAmounts[0] - 115);
 
-//       const obligationBalance2 = (await obligation.balanceObl(addresses[2])).toNumber();
+//       const obligationBalance2 = (await obligation.obligations(addresses[2])).toNumber();
 //       expect(obligationBalance2).to.eq(6560);
 //     });
 //   });
