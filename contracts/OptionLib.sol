@@ -59,6 +59,8 @@ contract OptionLib is UniswapV2Router02 {
 
     /// @notice Atomically deposit collateral into a treasury and add liquidity to a
     /// Uniswap pair based on the specified premium.
+    /// @dev The output `optionsAmount` describes both the number of option tokens minted
+    /// as well as the total amount of collateral transferred.
     function lockAndWrite(
         address obligation,
         address premium,
