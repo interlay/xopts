@@ -1,4 +1,4 @@
-import assert from 'assert';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface RPCResponse {
   jsonrpc: string;
@@ -27,7 +27,7 @@ export default class ExternalProvider {
     public path?: string
   ) {}
 
-  register(method: string, response: RPCResponse | RPCError) {
+  register(method: string, response: RPCResponse | RPCError): void {
     this.responses[method].push(response);
   }
 
@@ -37,7 +37,7 @@ export default class ExternalProvider {
       params?: Array<any>;
     },
     callback: (error: any, response: any) => void
-  ) {
+  ): void {
     this.requestId++;
     const response = this.getResponse(request.method);
     this.isError(response)
@@ -51,7 +51,7 @@ export default class ExternalProvider {
       params?: Array<any>;
     },
     callback: (error: any, response: any) => void
-  ) {
+  ): void {
     this.requestId++;
     const response = this.getResponse(request.method);
     this.isError(response)

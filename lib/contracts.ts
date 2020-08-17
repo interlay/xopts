@@ -1,4 +1,4 @@
-import {ethers, Signer, Contract, ContractReceipt} from 'ethers';
+import {ethers, Contract, ContractReceipt} from 'ethers';
 import {Obligation} from '../typechain/Obligation';
 import {OptionPairFactory} from '../typechain/OptionPairFactory';
 import {BigNumberish, BytesLike, BigNumber} from 'ethers';
@@ -17,11 +17,10 @@ import {IRefereeFactory} from '../typechain/IRefereeFactory';
 import {ITreasury} from '../typechain/ITreasury';
 import {ITreasuryFactory} from '../typechain/ITreasuryFactory';
 import {ObligationFactory} from '../typechain/ObligationFactory';
-import * as bitcoin from 'bitcoinjs-lib';
-import {encodeBtcAddress} from './encode';
-import {Addresses, Deployments} from './addresses';
 import {IWriterRegistry} from '../typechain/IWriterRegistry';
 import {IWriterRegistryFactory} from '../typechain/IWriterRegistryFactory';
+import {SignerOrProvider, Optional, Signer, Provider} from './core';
+import {Addresses, resolveAddresses} from './addresses';
 import {EventFragment, Result} from 'ethers/lib/utils';
 
 interface Connectable<C> {
@@ -127,27 +126,7 @@ export async function createPair(
     );
 }
 
-type Provider = ethers.providers.Provider;
-// type Signer = ethers.providers.JsonRpcSigner;
-type SignerOrProvider = Signer | Provider;
-type Optional<T> = T | undefined;
-
-async function resolve(provider: Provider): Promise<Optional<Addresses>> {
-  const network = await provider.getNetwork();
-
-  switch (network.chainId) {
-    case 31337:
-      // Buidlerevm
-      return Deployments.buidler;
-    case 2222:
-      // Ganache
-      return Deployments.ganache;
-    default:
-      return;
-  }
-}
-
-type BtcAddress = {
+export type BtcAddress = {
   btcHash: BytesLike;
   format: Script;
 };
@@ -158,8 +137,6 @@ export interface ReadOptionPair {
     windowSize: BigNumber;
     strikePrice: BigNumber;
   }>;
-
-  getBtcAddress(account: string, network: bitcoin.Network): Promise<string>;
 
   balanceOf(account: string): Promise<BigNumber>;
 }
@@ -242,18 +219,14 @@ export class ReadOnlyOptionPair implements ReadOptionPair {
     };
   }
 
-  async getBtcAddress(
-    account: string,
-    network: bitcoin.Network
-  ): Promise<string> {
-    const {btcHash, format} = await this.obligation.getBtcAddress(account);
-    return encodeBtcAddress(btcHash.substr(2), format, network)!;
-  }
-
   // gets the locked collateral for a pair
+  // total number of USDT written
+  // TODO: change name to totalSupplied
   async balanceOf(account: string): Promise<BigNumber> {
     return this.treasury.balanceOf(this.obligation.address, account);
   }
+
+  // TODO: add totalWritten getter
 }
 
 export class ReadWriteOptionPair extends ReadOnlyOptionPair
@@ -398,8 +371,6 @@ export interface WriteContracts extends ReadContracts {
     strikePrice: BigNumberish
   ): Promise<WriteOptionPair>;
 
-  getBtcAddress(): Promise<BtcAddress>;
-
   getPair(option: string): Promise<WriteOptionPair>;
 }
 
@@ -461,7 +432,7 @@ export class ReadOnlyContracts implements ReadContracts {
   static async resolve(
     provider: Provider
   ): Promise<Optional<ReadOnlyContracts>> {
-    const addresses = await resolve(provider);
+    const addresses = await resolveAddresses(provider);
     return addresses ? this.load(addresses, provider) : undefined;
   }
 
@@ -561,7 +532,7 @@ export class ReadWriteContracts extends ReadOnlyContracts
     provider: JsonRpcProvider,
     confirmations?: number
   ): Promise<Optional<ReadWriteContracts>> {
-    const addresses = await resolve(provider);
+    const addresses = await resolveAddresses(provider);
     return addresses
       ? this.load(addresses, provider.getSigner(), confirmations)
       : undefined;
@@ -623,13 +594,5 @@ export class ReadWriteContracts extends ReadOnlyContracts
       this.account,
       this.confirmations
     );
-  }
-
-  // persistent btcAddress across options
-  async getBtcAddress(): Promise<BtcAddress> {
-    const {btcHash, format} = await this.writerRegistry.getBtcAddress(
-      this.account
-    );
-    return {btcHash, format};
   }
 }

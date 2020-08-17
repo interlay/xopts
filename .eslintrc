@@ -15,6 +15,12 @@
   ],
   "rules": {
     "no-console": 1,
-    "prettier/prettier": 2
+    "prettier/prettier": 2,
+    "@typescript-eslint/no-inferrable-types": [
+      1, {
+        "ignoreParameters": true,
+        "ignoreProperties": true
+      }
+    ]
   }
 }

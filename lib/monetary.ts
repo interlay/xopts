@@ -18,7 +18,7 @@ export enum ETHUnit {
   Wei = 18
 }
 
-class Bitcoin implements Currency {
+export class Bitcoin implements Currency {
   get decimals(): number {
     return BTCUnit.Satoshi;
   }
@@ -28,7 +28,7 @@ class Bitcoin implements Currency {
   }
 }
 
-class Ethereum implements Currency {
+export class Ethereum implements Currency {
   get decimals(): number {
     return ETHUnit.Wei;
   }
@@ -37,9 +37,6 @@ class Ethereum implements Currency {
     return 'ethereum';
   }
 }
-
-export const BTC = new Bitcoin();
-export const ETH = new Ethereum();
 
 export class ERC20 implements Currency {
   constructor(protected _name: string, protected _decimals: number = 18) {}
@@ -52,6 +49,16 @@ export class ERC20 implements Currency {
     return this._name;
   }
 }
+
+export class Tether extends ERC20 implements Currency {
+  constructor() {
+    super('tether', 6);
+  }
+}
+
+export const BTC = new Bitcoin();
+export const ETH = new Ethereum();
+export const USDT = new Tether();
 
 export interface MonetaryAmount<C extends Currency> {
   currency: C;
@@ -210,13 +217,24 @@ export class ETHAmount extends BaseMonetaryAmount<Ethereum> {
 
 export class ERC20Amount extends BaseMonetaryAmount<ERC20> {}
 
-export interface ExchangeRate<From extends Currency, To extends Currency> {
-  readonly from: From;
-  readonly to: To;
+export interface ExchangeRate<Base extends Currency, Counter extends Currency> {
+  readonly base: Base;
+  readonly counter: Counter;
   readonly rate: Big;
 }
 
-export class ExchangeRate<From extends Currency, To extends Currency>
-  implements ExchangeRate<From, To> {
-  constructor(readonly from: From, readonly to: To, readonly rate: Big) {}
+export class BaseExchangeRate<Base extends Currency, Counter extends Currency>
+  implements ExchangeRate<Base, Counter> {
+  constructor(
+    readonly base: Base,
+    readonly counter: Counter,
+    readonly rate: Big
+  ) {}
+}
+
+export class BitcoinTetherRate extends BaseExchangeRate<Bitcoin, Tether>
+  implements ExchangeRate<Bitcoin, Tether> {
+  constructor(readonly rate: Big) {
+    super(BTC, USDT, rate);
+  }
 }

@@ -1,58 +1,51 @@
-import {Signer} from 'ethers';
-import {providers} from 'ethers';
 import {ReadOnlyContracts, ReadWriteContracts} from './contracts';
-import {Addresses, Deployments} from './addresses';
-import {ExchangeRate, Currency, MonetaryAmount} from './monetary';
 
-type SignerOrProvider = Signer | providers.Provider;
+import Big from 'big.js';
 
-interface Option<From extends Currency, To extends Currency> {
-  expiry: Date;
-  from: From;
-  to: To;
-  strikePrice: ExchangeRate<From, To>;
-  currentPrice: ExchangeRate<From, To>;
-  liquidityFrom: MonetaryAmount<From>;
-}
+import {Addresses, mustResolveAddresses} from './addresses';
+import {BTCAmount} from './monetary';
+import {Signer, SignerOrProvider} from './core';
+import {GlobalActions} from './actions/global';
 
-interface OptionsReadOnlyActions {
-  list(): Promise<Array<Option<Currency, Currency>>>;
-}
+import {
+  OptionsReadWriteActions,
+  ContractsOptionsReadWriteActions
+} from './actions/options/read-write';
 
-interface OptionsReadWriteActions extends OptionsReadOnlyActions {
-  write(): Promise<void>;
-}
+import {
+  OptionsReadOnlyActions,
+  ContractsOptionsReadOnlyActions
+} from './actions/options/read-only';
 
-class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
-  constructor(private roContracts: ReadOnlyContracts) {}
-
-  list() {
-    return Promise.resolve([]);
-  }
-}
-
-class ContractsOptionsReadWriteActions extends ContractsOptionsReadOnlyActions
-  implements OptionsReadWriteActions {
-  constructor(private contracts: ReadWriteContracts) {
-    super(contracts);
-  }
-
-  async write() {}
-}
-
-type OptionActions<T extends SignerOrProvider> = T extends Signer
+export type OptionActions<T extends SignerOrProvider> = T extends Signer
   ? OptionsReadWriteActions
   : OptionsReadOnlyActions;
 
-export class XOpts<T extends SignerOrProvider> {
+export class XOpts<T extends SignerOrProvider> implements GlobalActions {
   constructor(readonly options: OptionActions<T>) {}
+
+  async totalLiquidity(): Promise<Big> {
+    throw new Error('not implemented');
+  }
+
+  async totalFeesEarned(): Promise<Big> {
+    throw new Error('not implemented');
+  }
+
+  async optionMarketsCount(): Promise<number> {
+    throw new Error('not implemented');
+  }
+
+  async bitcoinTransferedAmount(): Promise<BTCAmount> {
+    throw new Error('not implemented');
+  }
 
   static async load<T extends SignerOrProvider>(
     provider: T,
     addresses?: Addresses
   ): Promise<XOpts<T>> {
     if (addresses === undefined) {
-      addresses = Deployments.ganache; // TODO: change this to testnet/mainnet later on
+      addresses = await mustResolveAddresses(provider);
     }
 
     if (provider instanceof Signer) {

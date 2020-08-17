@@ -1,6 +1,7 @@
 import {utils} from 'ethers';
 import OptionArtifact from '../artifacts/Option.json';
 import ObligationArtifact from '../artifacts/Obligation.json';
+import {Optional, SignerOrProvider, Provider} from './core';
 
 export interface Addresses {
   collateral: string;
@@ -75,4 +76,42 @@ export function getCreate2ObligationAddress(
   factory: string
 ): string {
   return getCreate2Address(salt, factory, ObligationArtifact.bytecode);
+}
+
+function getProvider(signerOrProvider: SignerOrProvider): Optional<Provider> {
+  if (signerOrProvider instanceof Provider) {
+    return signerOrProvider;
+  }
+  return signerOrProvider.provider;
+}
+
+export async function resolveAddresses(
+  signerOrProvider: SignerOrProvider
+): Promise<Optional<Addresses>> {
+  const provider = getProvider(signerOrProvider);
+  if (!provider) {
+    return;
+  }
+  const network = await provider.getNetwork();
+
+  switch (network.chainId) {
+    case 31337:
+      // Buidlerevm
+      return Deployments.buidler;
+    case 2222:
+      // Ganache
+      return Deployments.ganache;
+    default:
+      return;
+  }
+}
+
+export async function mustResolveAddresses(
+  signerOrProvider: SignerOrProvider
+): Promise<Addresses> {
+  const addresses = await resolveAddresses(signerOrProvider);
+  if (addresses !== undefined) {
+    return addresses;
+  }
+  throw new Error('unknown network used');
 }
