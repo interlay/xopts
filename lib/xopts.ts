@@ -36,7 +36,7 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
     throw new Error('not implemented');
   }
 
-  async bitcoinTransferedAmount(): Promise<BTCAmount> {
+  async bitcoinTransferredAmount(): Promise<BTCAmount> {
     throw new Error('not implemented');
   }
 
