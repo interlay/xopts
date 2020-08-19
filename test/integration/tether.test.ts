@@ -68,10 +68,16 @@ describe('Tether (USDT)', () => {
   });
 
   it('should deploy tether (USDT)', async () => {
+    // deploy compiled USDT bytecode from mainnet
+    // no constructor args required
     const contract = await deployContract(charlie, TetherTokenArtifact, [
+      // _initialSupply
       0,
+      // _name
       '',
+      // _symbol
       '',
+      // _decimals
       0
     ]);
     tether = ITetherTokenFactory.connect(contract.address, charlie);
@@ -83,7 +89,7 @@ describe('Tether (USDT)', () => {
     await tether.issue(BigNumber.from(aliceAmount.add(bobAmount)));
     await tether.transfer(aliceAddress, aliceAmount);
     await tether.transfer(bobAddress, bobAmount);
-  }).timeout(40000);
+  });
 
   it('should create an option pair', async () => {
     ({option, obligation} = await deployPair(
@@ -98,7 +104,7 @@ describe('Tether (USDT)', () => {
 
     const decimals = await obligation.decimals();
     expect(decimals).to.eq(6);
-  }).timeout(40000);
+  });
 
   it('should write to an option pair', async () => {
     await reconnect(tether, ITetherTokenFactory, alice).approve(
