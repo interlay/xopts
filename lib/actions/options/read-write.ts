@@ -1,7 +1,6 @@
 import {Option} from '../../option';
 import {Currency, MonetaryAmount} from '../../monetary';
 import {BtcAddress, ReadWriteContracts} from '../../contracts';
-import {Signer, SignerOrProvider} from '../../core';
 import {
   OptionsReadOnlyActions,
   ContractsOptionsReadOnlyActions
@@ -17,6 +16,10 @@ export interface OptionsReadWriteActions extends OptionsReadOnlyActions {
   buy<Underlying extends Currency, Collateral extends Currency>(
     option: Option<Underlying, Collateral>,
     amount: MonetaryAmount<Underlying>
+  ): Promise<void>;
+
+  create<Underlying extends Currency, Collateral extends Currency>(
+    option: Option<Underlying, Collateral>
   ): Promise<void>;
 }
 
@@ -38,6 +41,12 @@ export class ContractsOptionsReadWriteActions
   async buy<Underlying extends Currency, Collateral extends Currency>(
     option: Option<Underlying, Collateral>,
     amount: MonetaryAmount<Underlying>
+  ) {
+    return;
+  }
+
+  async create<Underlying extends Currency, Collateral extends Currency>(
+    option: Option<Underlying, Collateral>
   ) {
     return;
   }

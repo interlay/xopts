@@ -32,6 +32,7 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     throw new Error('not implemented');
   } // TODO: check the liquidity amount
 
+  // NOTE: keep this splitted
   async getUserSupply<Underlying extends Currency, Collateral extends Currency>(
     user: string,
     option: Option<Underlying, Collateral>
@@ -48,4 +49,5 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
   ): Promise<MonetaryAmount<Collateral>> {
     throw new Error('not implemented');
   } // call the oblication contract balanceObl
+  // NOTE: return single currency and provide facility to convert
 }

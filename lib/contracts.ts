@@ -356,6 +356,7 @@ export interface ReadContracts {
   getPair(option: string): Promise<ReadOptionPair>;
 
   listOptions(): Promise<string[]>;
+  totalLiquidity(): Promise<BigNumber>;
 }
 
 export interface WriteContracts extends ReadContracts {
@@ -457,6 +458,14 @@ export class ReadOnlyContracts implements ReadContracts {
       this.collateral,
       treasury
     );
+  }
+
+  async totalLiquidity(): Promise<BigNumber> {
+    // NOTE: this only works while we use a single collateral
+    const treasury = await this.optionFactory.getTreasury(
+      this.collateral.address
+    );
+    return this.collateral.balanceOf(treasury);
   }
 
   listOptions(): Promise<string[]> {

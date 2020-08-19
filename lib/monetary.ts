@@ -216,6 +216,11 @@ export class ETHAmount extends BaseMonetaryAmount<Ethereum> {
 }
 
 export class ERC20Amount extends BaseMonetaryAmount<ERC20> {}
+export class USDTAmount extends BaseMonetaryAmount<Tether> {
+  constructor(amount: BigSource, decimals?: number) {
+    super(USDT, amount, decimals);
+  }
+}
 
 export interface ExchangeRate<Base extends Currency, Counter extends Currency> {
   readonly base: Base;

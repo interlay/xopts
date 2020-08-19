@@ -3,7 +3,7 @@ import {ReadOnlyContracts, ReadWriteContracts} from './contracts';
 import Big from 'big.js';
 
 import {Addresses, mustResolveAddresses} from './addresses';
-import {BTCAmount} from './monetary';
+import {BTCAmount, USDTAmount} from './monetary';
 import {Signer, SignerOrProvider} from './core';
 import {GlobalActions} from './actions/global';
 
@@ -22,14 +22,14 @@ export type OptionActions<T extends SignerOrProvider> = T extends Signer
   : OptionsReadOnlyActions;
 
 export class XOpts<T extends SignerOrProvider> implements GlobalActions {
-  constructor(readonly options: OptionActions<T>) {}
+  constructor(
+    readonly readOnlyContracts: ReadOnlyContracts,
+    readonly options: OptionActions<T>
+  ) {}
 
-  async totalLiquidity(): Promise<Big> {
-    throw new Error('not implemented');
-  }
-
-  async totalFeesEarned(): Promise<Big> {
-    throw new Error('not implemented');
+  async totalLiquidity(): Promise<USDTAmount> {
+    const rawAmount = await this.readOnlyContracts.totalLiquidity();
+    return new USDTAmount(rawAmount.toString());
   }
 
   async optionMarketsCount(): Promise<number> {
@@ -48,6 +48,7 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
       addresses = await mustResolveAddresses(provider);
     }
 
+    const roContracts = await ReadOnlyContracts.load(addresses, provider);
     if (provider instanceof Signer) {
       // type checker does not seem to understand that in this branch
       // OptionActions<T> === OptionsReadWriteActions, hence the need for casting
@@ -55,13 +56,12 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
       const optionActions: OptionsReadWriteActions = new ContractsOptionsReadWriteActions(
         contracts
       );
-      return new XOpts(optionActions as OptionActions<T>);
+      return new XOpts(roContracts, optionActions as OptionActions<T>);
     } else {
-      const contracts = await ReadOnlyContracts.load(addresses, provider);
       const optionActions: OptionsReadOnlyActions = new ContractsOptionsReadOnlyActions(
-        contracts
+        roContracts
       );
-      return new XOpts(optionActions as OptionActions<T>);
+      return new XOpts(roContracts, optionActions as OptionActions<T>);
     }
   }
 }
