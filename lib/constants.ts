@@ -38,6 +38,7 @@ export const ErrorCode = {
   // BTCReferee
   ERR_INVALID_OUT_HASH: 'Invalid output hash',
   ERR_TX_NOT_INCLUDED: 'Cannot verify tx inclusion',
+  ERR_INVALID_REQUEST_ID: 'Invalid request id',
 
   // Ownable
   ERR_CALLER_NOT_OWNER: 'Ownable: caller is not the owner'

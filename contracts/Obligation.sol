@@ -244,16 +244,13 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
         bytes32 id = keccak256(
             abi.encodePacked(
-                expiryTime,
-                windowSize,
-                strikePrice,
-                buyer,
-                seller,
-                // append nonce to avoid
-                // id collisions
+                // create2 ensures params are unique
+                address(this),
+                // append nonce to avoid collisions
                 _nonce
             )
         );
+        _nonce = _nonce.add(1);
 
         _requests[buyer][id].amount = options;
         _requests[buyer][id].seller = seller;
@@ -283,22 +280,23 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         bytes calldata proof,
         bytes calldata rawtx
     ) external override canExercise {
-        address buyer = msg.sender;
-        address seller = _requests[buyer][id].seller;
+        address seller = _requests[msg.sender][id].seller;
+        Bitcoin.Address memory addr = _btcAddresses[seller];
 
         // verify & validate tx, use default confirmations
         uint256 satoshis = IReferee(referee).verifyTx(
+            id,
             height,
             index,
             txid,
             header,
             proof,
             rawtx,
-            _btcAddresses[seller].btcHash,
-            _btcAddresses[seller].format
+            addr.btcHash,
+            addr.format
         );
 
-        _verifyReceipt(buyer, id, satoshis);
+        _verifyReceipt(msg.sender, id, satoshis);
     }
 
     function _verifyReceipt(

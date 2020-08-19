@@ -42,12 +42,12 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const result = await btcReferee.extractOutputValue(
+    const {amount} = await btcReferee.extractOutput(
       p2shTx,
       btcHash,
       Script.p2sh
     );
-    expect(result).to.eq(btcToSatoshi(0.38900688));
+    expect(amount).to.eq(btcToSatoshi(0.38900688));
   });
 
   it('should not extract incorrect script (p2sh)', async () => {
@@ -57,16 +57,16 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const result = await btcReferee.extractOutputValue(
+    const {amount} = await btcReferee.extractOutput(
       p2shTx,
       btcHash,
       Script.p2pkh
     );
-    expect(result).to.eq(constants.Zero);
+    expect(amount).to.eq(constants.Zero);
   });
 
   // d9c9213136854a53211f1c80d202b743dfe971867558fd2c5628fe781a7f7ba9
-  const p2pkhTx =
+  const p2pkhTx0 =
     '0x0200000001f76fec5260faa8f39fbd8f17f5acb2bd50260fa715347201657fceaefc14a102' +
     '000000006a47304402203f09be3d47d77f6a0948023aa80dc849128ce5a9cb017ed3c2413abb' +
     '74accf9c022019da8fed912a6b5b01aa6088fee3bdeb0d237d37072e29fb7b238932bf140cd0' +
@@ -81,12 +81,12 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const result = await btcReferee.extractOutputValue(
-      p2pkhTx,
+    const {amount} = await btcReferee.extractOutput(
+      p2pkhTx0,
       btcHash,
       Script.p2pkh
     );
-    expect(result).to.eq(btcToSatoshi(1.14883244));
+    expect(amount).to.eq(btcToSatoshi(1.14883244));
   });
 
   it('should not extract incorrect script (p2pkh)', async () => {
@@ -96,15 +96,43 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const result = await btcReferee.extractOutputValue(
+    const {amount} = await btcReferee.extractOutput(
       p2shTx,
       btcHash,
       Script.p2wpkh
     );
-    expect(result).to.eq(constants.Zero);
+    expect(amount).to.eq(constants.Zero);
   });
 
-  const p2wpkhTx =
+  // 777fc7368170497035a176c3c9cbd3561c4f5d0e147efefd8fd642a5ccd81a26
+  const p2pkhTx1 =
+    '0x0100000001ba804de05af33903ff4abb03f8c89c08e3a9d106aa137d70a847d36c2297383e' +
+    '000000006b483045022100a81044ca5e2869837d8624f12caf4f690adfdae7786545bca95337' +
+    'c3d3f9d30f022019204133cf9744041bfe12609b4b8527f81e1d0ba97d4f186d1d2b2dfe187b' +
+    '5b0121028c71cc6ac7ecb5f0559f43a7a21066a088fa88637b4f35e775ce9f1d16a8e2b6ffff' +
+    'ffff0264000000000000001976a9140e333880329368987577d7e81a2207938cccd53788ac00' +
+    '00000000000000226a20bb098b68899b1f586de557dae6bae76093ae4206039c43c89031ae77' +
+    '352268ba00000000';
+
+  it('should successfully extract p2pkh output and op_return', async () => {
+    const payment = bitcoin.payments.p2pkh({
+      address: 'mgp37ciqPF6BQDiv1hhrjFaPxUE2rkSqgR',
+      network: NETWORK
+    });
+    const btcHash = payment.hash!;
+
+    const {data, amount} = await btcReferee.extractOutput(
+      p2pkhTx1,
+      btcHash,
+      Script.p2pkh
+    );
+    expect(amount).to.eq(btcToSatoshi(0.000001));
+    expect(data).to.eq(
+      '0xbb098b68899b1f586de557dae6bae76093ae4206039c43c89031ae77352268ba'
+    );
+  });
+
+  const p2wpkhTx0 =
     '0x02000000000103adbd70d005de0da198443510bf9ebee467430a52b32dcefab6cd30439792ca7301' +
     '00000000fdffffffd7f39f49b86629f424eef093bf18ace94ff3dcb2cdd8889431e54980f2f70b6e00' +
     '00000000fdffffff174378c00591be16087edda13100b3e21b11d743b596cbba6eadedebdc228ca300' +
@@ -126,12 +154,12 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const result = await btcReferee.extractOutputValue(
-      p2wpkhTx,
+    const {amount} = await btcReferee.extractOutput(
+      p2wpkhTx0,
       btcHash,
       Script.p2wpkh
     );
-    expect(result).to.eq(btcToSatoshi(0.002));
+    expect(amount).to.eq(btcToSatoshi(0.002));
   });
 
   it('should not extract incorrect script (p2wpkh)', async () => {
@@ -141,11 +169,63 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const result = await btcReferee.extractOutputValue(
+    const {amount} = await btcReferee.extractOutput(
       p2shTx,
       btcHash,
       Script.p2sh
     );
-    expect(result).to.eq(constants.Zero);
+    expect(amount).to.eq(constants.Zero);
+  });
+
+  const p2wpkhTx1 =
+    '0x01000000000101747c038ceb0a5ab9edd61d39f3d3c611cd52ccd0f519d9ad93ccf1f81a0fc5d301' +
+    '00000000ffffffff026400000000000000160014867a55207369ad0fe47cf3cfd2ecbaef2446c8b400' +
+    '00000000000000226a206217fb6a2ad9bb6ce6e2b27545fea21416aaf9a401f86f10f8f914dc47f757' +
+    'f002483045022100e9af70c449a0303371324f61b3c30e631525046f289ecf51b5cff9752cd512dc02' +
+    '2059339ddd77f94f03aaa4f4ef4a0b63d9aaf22fd05b5bd795c853bb37b240e83c01210290465bd783' +
+    'baaa9d52df3b57e31cef7df72c0cbd10afe6a10e3cfbd9477c8acf00000000';
+
+  it('should successfully extract p2wpkh output and op_return', async () => {
+    const payment = bitcoin.payments.p2wpkh({
+      address: 'tb1qsea92grndxksleru708a9m96aujydj95s5edsj',
+      network: NETWORK
+    });
+    const btcHash = payment.hash!;
+
+    const {data, amount} = await btcReferee.extractOutput(
+      p2wpkhTx1,
+      btcHash,
+      Script.p2wpkh
+    );
+    expect(amount).to.eq(btcToSatoshi(0.000001));
+    expect(data).to.eq(
+      '0x6217fb6a2ad9bb6ce6e2b27545fea21416aaf9a401f86f10f8f914dc47f757f0'
+    );
+  });
+
+  const p2wpkhTx2 =
+    '0x01000000000101747c038ceb0a5ab9edd61d39f3d3c611cd52ccd0f519d9ad93ccf1f81a0fc5d301' +
+    '00000000ffffffff026400000000000000160014867a55207369ad0fe47cf3cfd2ecbaef2446c8b400' +
+    '00000000000000166a14c783df8a850f42e7f7e57013759c285caa701eb60247304402200b89a0ad9a' +
+    '73eb8a1d5cfcb9c0e925fcfc8629fe4249fa052395b7172958fb300220344d5c3b44caa85573dcbeef' +
+    'bfa310a9f465dec4751d9097c18e510038aa0bf701210290465bd783baaa9d52df3b57e31cef7df72c' +
+    '0cbd10afe6a10e3cfbd9477c8acf00000000';
+
+  it('should fail to extract incorrect op_return', async () => {
+    const payment = bitcoin.payments.p2wpkh({
+      address: 'tb1qsea92grndxksleru708a9m96aujydj95s5edsj',
+      network: NETWORK
+    });
+    const btcHash = payment.hash!;
+
+    const {data, amount} = await btcReferee.extractOutput(
+      p2wpkhTx2,
+      btcHash,
+      Script.p2wpkh
+    );
+    expect(amount).to.eq(btcToSatoshi(0.000001));
+    expect(data).to.eq(
+      '0x0000000000000000000000000000000000000000000000000000000000000000'
+    );
   });
 });
