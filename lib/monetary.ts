@@ -18,7 +18,7 @@ export enum ETHUnit {
   Wei = 18
 }
 
-class Bitcoin implements Currency {
+export class Bitcoin implements Currency {
   get decimals(): number {
     return BTCUnit.Satoshi;
   }
@@ -28,7 +28,7 @@ class Bitcoin implements Currency {
   }
 }
 
-class Ethereum implements Currency {
+export class Ethereum implements Currency {
   get decimals(): number {
     return ETHUnit.Wei;
   }
@@ -37,9 +37,6 @@ class Ethereum implements Currency {
     return 'ethereum';
   }
 }
-
-export const BTC = new Bitcoin();
-export const ETH = new Ethereum();
 
 export class ERC20 implements Currency {
   constructor(protected _name: string, protected _decimals: number = 18) {}
@@ -53,17 +50,28 @@ export class ERC20 implements Currency {
   }
 }
 
-export interface Monetary {
-  currency: Currency;
+export class Tether extends ERC20 implements Currency {
+  constructor() {
+    super('tether', 6);
+  }
+}
+
+export const BTC = new Bitcoin();
+export const ETH = new Ethereum();
+export const USDT = new Tether();
+
+export interface MonetaryAmount<C extends Currency> {
+  currency: C;
 
   toString(humanFriendly: boolean): string;
   toBig(decimals?: number): Big;
 }
 
-export abstract class MonetaryAmount<T extends Currency> implements Monetary {
+export abstract class BaseMonetaryAmount<C extends Currency>
+  implements MonetaryAmount<C> {
   protected _amount: Big;
 
-  constructor(protected _currency: T, amount: BigSource, decimals?: number) {
+  constructor(protected _currency: C, amount: BigSource, decimals?: number) {
     decimals = decimals ?? _currency.decimals;
     amount = new Big(amount);
     const exponent = _currency.decimals - decimals;
@@ -132,12 +140,12 @@ export abstract class MonetaryAmount<T extends Currency> implements Monetary {
     return new Cls(this.currency, amount);
   }
 
-  get currency(): T {
+  get currency(): C {
     return this._currency;
   }
 }
 
-export class BTCAmount extends MonetaryAmount<Bitcoin> {
+export class BTCAmount extends BaseMonetaryAmount<Bitcoin> {
   constructor(amount: BigSource, decimals?: number) {
     super(BTC, amount, decimals);
   }
@@ -172,7 +180,7 @@ export class BTCAmount extends MonetaryAmount<Bitcoin> {
   }
 }
 
-export class ETHAmount extends MonetaryAmount<Ethereum> {
+export class ETHAmount extends BaseMonetaryAmount<Ethereum> {
   constructor(amount: BigSource, decimals?: number) {
     super(ETH, amount, decimals);
   }
@@ -207,4 +215,26 @@ export class ETHAmount extends MonetaryAmount<Ethereum> {
   }
 }
 
-export class ERC20Amount extends MonetaryAmount<ERC20> {}
+export class ERC20Amount extends BaseMonetaryAmount<ERC20> {}
+
+export interface ExchangeRate<Base extends Currency, Counter extends Currency> {
+  readonly base: Base;
+  readonly counter: Counter;
+  readonly rate: Big;
+}
+
+export class BaseExchangeRate<Base extends Currency, Counter extends Currency>
+  implements ExchangeRate<Base, Counter> {
+  constructor(
+    readonly base: Base,
+    readonly counter: Counter,
+    readonly rate: Big
+  ) {}
+}
+
+export class BitcoinTetherRate extends BaseExchangeRate<Bitcoin, Tether>
+  implements ExchangeRate<Bitcoin, Tether> {
+  constructor(readonly rate: Big) {
+    super(BTC, USDT, rate);
+  }
+}

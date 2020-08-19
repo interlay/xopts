@@ -8,7 +8,7 @@ const fcBig = (): fc.Arbitrary<Big> => fc.integer().map((v) => new Big(v));
 
 describe('currencies', () => {
   describe('BTC', () => {
-    it('should have the correct amount of decimals', function () {
+    it('should have the correct amount of decimals', () => {
       expect(monetary.BTC.decimals).to.eq(8);
     });
 
@@ -31,12 +31,12 @@ describe('currencies', () => {
     const dai = new monetary.ERC20('dai', 18);
     const comp = new monetary.ERC20('compound', 12);
 
-    it('should have customizable decimals', function () {
+    it('should have customizable decimals', () => {
       expect(dai.decimals).to.eq(18);
       expect(comp.decimals).to.eq(12);
     });
 
-    it('should have customizable name', function () {
+    it('should have customizable name', () => {
       expect(dai.name).to.eq('dai');
       expect(comp.name).to.eq('compound');
     });
@@ -52,7 +52,7 @@ const DummyC = new DummyCurrency();
 class DummyERC extends monetary.ERC20 {}
 const DummyERCT = new DummyERC('dummy', 5);
 
-class DummyAmount extends monetary.MonetaryAmount<DummyCurrency> {
+class DummyAmount extends monetary.BaseMonetaryAmount<DummyCurrency> {
   constructor(amount: BigSource, decimals?: number) {
     super(DummyC, amount, decimals);
   }
