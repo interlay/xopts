@@ -1,4 +1,4 @@
-import {utils} from 'ethers';
+import {utils, BigNumberish} from 'ethers';
 import OptionArtifact from '../artifacts/Option.json';
 import ObligationArtifact from '../artifacts/Obligation.json';
 import {Optional, SignerOrProvider, Provider} from './core';
@@ -36,7 +36,7 @@ export const Deployments: Record<Networks, Addresses> = {
 type saltArgs = {
   expiryTime: number;
   windowSize: number;
-  strikePrice: number;
+  strikePrice: BigNumberish;
   collateral: string;
   referee: string;
 };

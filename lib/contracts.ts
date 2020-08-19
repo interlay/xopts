@@ -76,6 +76,7 @@ export async function getEvent<T extends any[]>(
   receipt: ContractReceipt,
   contract: Contract
 ): Promise<Result> {
+  // indexed parameters are not included in log data
   const topics = contract.interface.encodeFilterTopics(fragment, args);
   const log = receipt.logs.find((log) =>
     log.topics.every((val, i) => val === topics[i])
@@ -96,6 +97,17 @@ export function getRequestEvent(
   return getEvent(fragment, [buyer, seller], receipt, obligation);
 }
 
+export function getCreatePairEvent(
+  optionFactory: OptionPairFactory,
+  receipt: ContractReceipt
+): Promise<Result> {
+  const fragment =
+    optionFactory.interface.events[
+      'CreatePair(address,address,address,uint256,uint256,uint256)'
+    ];
+  return getEvent(fragment, [], receipt, optionFactory);
+}
+
 export async function createPair(
   optionFactory: OptionPairFactory,
   expiryTime: BigNumberish,
@@ -105,25 +117,11 @@ export async function createPair(
   referee: string,
   confirmations?: number
 ): Promise<string> {
-  const topic = ethers.utils.id(
-    'CreatePair(address,address,uint256,uint256,uint256)'
-  );
-  // indexed parameters are not included in log data
-  return optionFactory
+  const receipt = await optionFactory
     .createPair(expiryTime, windowSize, strikePrice, collateral, referee)
-    .then((tx) =>
-      tx
-        .wait(confirmations)
-        .then(
-          (receipt) =>
-            ethers.utils.defaultAbiCoder.decode(
-              ['address'],
-              receipt.logs.find((log) =>
-                log.topics.find((name) => name == topic)
-              )!.topics[1]
-            )[0]
-        )
-    );
+    .then((tx) => tx.wait(confirmations));
+  const event = await getCreatePairEvent(optionFactory, receipt);
+  return event.option;
 }
 
 export type BtcAddress = {
