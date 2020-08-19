@@ -9,7 +9,8 @@ import {
   reconnect,
   deploy2,
   createPair,
-  deploy1
+  deploy1,
+  AddressesPair
 } from '../lib/contracts';
 import {newBigNum} from '../lib/conversion';
 import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
@@ -46,8 +47,8 @@ async function createAndLockAndWrite(
   referee: BtcReferee,
   premium: BigNumber,
   amount: BigNumber
-): Promise<string> {
-  const optionAddress = await createPair(
+): Promise<AddressesPair> {
+  const addressesPair = await createPair(
     optionFactory,
     expiryTime,
     windowSize,
@@ -55,16 +56,16 @@ async function createAndLockAndWrite(
     collateral.address,
     referee.address
   );
-  const option = OptionFactory.connect(optionAddress, signer);
+  const obligation = OptionFactory.connect(addressesPair.obligation, signer);
 
-  console.log('Adding data to option: ', optionAddress);
+  console.log('Adding data to obligation: ', obligation.address);
   await reconnect(collateral, MockCollateralFactory, signer).approve(
     optionLib.address,
     amount.add(premium)
   );
 
   await reconnect(optionLib, OptionLibFactory, signer).lockAndWrite(
-    option.address,
+    obligation.address,
     collateral.address,
     collateral.address,
     amount,
@@ -75,7 +76,7 @@ async function createAndLockAndWrite(
     Script.p2pkh
   );
 
-  return optionAddress;
+  return addressesPair;
 }
 
 async function main(): Promise<void> {
