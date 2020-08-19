@@ -28,21 +28,31 @@ contract BTCReferee is IReferee {
     }
 
     function _isIncluded(
-        uint256 height,
+        uint32 height,
         uint256 index,
         bytes32 txid,
+        bytes memory header,
         bytes memory proof
     ) internal view returns (bool) {
-        return IRelay(relay).verifyTx(height, index, txid, proof, 0, false);
+        return
+            IRelay(relay).verifyTx(
+                height,
+                index,
+                txid,
+                header,
+                proof,
+                0,
+                false
+            );
     }
 
     function _extractOutputValue(
-        bytes memory rawTx,
+        bytes memory rawtx,
         bytes20 btcHash,
         Bitcoin.Script format
     ) internal pure returns (uint256 amount) {
-        (, uint256 lenInputs) = rawTx.extractInputLength();
-        bytes memory outputs = rawTx.slice(lenInputs, rawTx.length - lenInputs);
+        (, uint256 lenInputs) = rawtx.extractInputLength();
+        bytes memory outputs = rawtx.slice(lenInputs, rawtx.length - lenInputs);
         (uint256 numOutputs, ) = outputs.extractOutputLength();
 
         // sum total over all outputs
@@ -67,17 +77,35 @@ contract BTCReferee is IReferee {
         }
     }
 
+    /**
+     * @notice Verify transaction inclusion through the configured BTC relay,
+     * ensure submission after expiry and block processed tx ids to prevent
+     * replays.
+     * @param height Bitcoin block height
+     * @param index Bitcoin tx index
+     * @param txid Bitcoin transaction id
+     * @param header Bitcoin block header
+     * @param proof Bitcoin inclusion proof
+     * @param rawtx Bitcoin raw tx
+     * @param btcHash Bitcoin address hash
+     * @param format Bitcoin script format
+     * @return Bitcoin output satoshis
+     **/
     function verifyTx(
-        uint256 height,
+        uint32 height,
         uint256 index,
         bytes32 txid,
+        bytes calldata header,
         bytes calldata proof,
-        bytes calldata rawTx,
+        bytes calldata rawtx,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) external virtual override view returns (uint256) {
+    ) external virtual override returns (uint256) {
         require(btcHash != 0, ERR_INVALID_OUT_HASH);
-        require(_isIncluded(height, index, txid, proof), ERR_TX_NOT_INCLUDED);
-        return _extractOutputValue(rawTx, btcHash, format);
+        require(
+            _isIncluded(height, index, txid, header, proof),
+            ERR_TX_NOT_INCLUDED
+        );
+        return _extractOutputValue(rawtx, btcHash, format);
     }
 }
