@@ -1,11 +1,18 @@
-import {providers} from 'ethers';
-import {VoidSigner} from 'ethers';
+import {providers, VoidSigner, utils} from 'ethers';
 
 import FakeWeb3Provider from './helpers/FakeWeb3Provider';
 
+import {Provider} from '../../lib/core';
 import {XOpts} from '../../lib/xopts';
 import {Deployments} from '../../lib/addresses';
 import {expect} from 'chai';
+
+const ZERO_ADDRESS = '0x' + '0'.repeat(40);
+const DAI_ADDRESS = '0x6b175474e89094c44da98b954eedeac495271d0f';
+
+function encode(type: string, value: any): string {
+  return utils.defaultAbiCoder.encode([type], [value]);
+}
 
 describe('XOpts', () => {
   const addresses = Deployments.ganache;
@@ -36,16 +43,32 @@ describe('XOpts', () => {
     });
   });
 
-  describe('global', () => {
+  describe('globals', () => {
+    let xopts: XOpts<Provider>;
+
+    beforeEach(async () => {
+      xopts = await XOpts.load(provider, addresses);
+    });
+
     describe('totalLiquidity', () => {
       it('should return total USDT amount', async () => {
         web3Provider.register('eth_call', addresses.collateral, {
           to: addresses.optionFactory
         });
         web3Provider.register('eth_call', '0xfa', {to: addresses.collateral});
-        const xopts = await XOpts.load(provider, addresses);
         const amount = await xopts.totalLiquidity();
         expect(amount.toString()).to.eq('250');
+      });
+    });
+
+    describe('optionMarketsCount', () => {
+      it('should return the number of options', async () => {
+        const returnValue = encode('address[]', [ZERO_ADDRESS, DAI_ADDRESS]);
+        web3Provider.register('eth_call', returnValue, {
+          to: addresses.optionFactory
+        });
+        const count = await xopts.optionMarketsCount();
+        expect(count).to.eq(2);
       });
     });
   });

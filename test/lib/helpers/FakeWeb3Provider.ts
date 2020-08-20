@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import assert from 'assert';
 import {utils} from 'ethers';
 
 const WORD_SIZE: number = 32;
@@ -31,6 +32,10 @@ export default class ExternalProvider {
       to?: string;
     }
   ): void {
+    if (typeof result === 'string' && result.startsWith('0x')) {
+      assert(result.length % 2 == 0, 'response length must be even');
+    }
+
     const filters: Array<(params?: Array<any>) => boolean> = [];
     if (options.shouldExec) {
       filters.push(options.shouldExec);
@@ -78,25 +83,22 @@ export default class ExternalProvider {
   }
 
   async request(request: {method: string; params?: Array<any>}): Promise<any> {
-    if (request.method === 'eth_call') {
-      let response = this.getResponse(request);
-
-      // NOTE: it seems that the reply must be padded so that the total size
-      // is a multiple of the word size (32)
-      // https://github.com/ethers-io/ethers.js/blob/d817416bae2fbc7adb8391fd038613241b7ab8ba/packages/abi/src.ts/interface.ts#L311
-      if (
-        typeof response === 'string' &&
-        response.startsWith('0x') &&
-        response.length % WORD_SIZE !== 0
-      ) {
-        response = utils.hexZeroPad(
-          response,
-          Math.ceil(response.length / 32) * 32
-        );
-      }
+    let response = this.getResponse(request);
+    if (request.method !== 'eth_call') {
       return response;
     }
-    return this.getResponse(request);
+
+    // NOTE: it seems that the reply must be padded so that the total size
+    // is a multiple of the word size (32)
+    // https://github.com/ethers-io/ethers.js/blob/d817416bae2fbc7adb8391fd038613241b7ab8ba/packages/abi/src.ts/interface.ts#L311
+    if (typeof response === 'string' && response.startsWith('0x')) {
+      const length = (response.length - 2) / 2;
+      response = utils.hexZeroPad(
+        response,
+        Math.ceil(length / WORD_SIZE) * WORD_SIZE
+      );
+    }
+    return response;
   }
 
   private getResponse({

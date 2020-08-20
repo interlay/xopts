@@ -33,7 +33,8 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
   }
 
   async optionMarketsCount(): Promise<number> {
-    throw new Error('not implemented');
+    const options = await this.readOnlyContracts.listOptions();
+    return options.length;
   }
 
   async bitcoinTransferredAmount(): Promise<BTCAmount> {
