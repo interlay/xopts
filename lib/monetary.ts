@@ -24,7 +24,7 @@ export class Bitcoin implements Currency {
   }
 
   get name(): string {
-    return 'bitcoin';
+    return 'Bitcoin';
   }
 }
 
@@ -34,7 +34,7 @@ export class Ethereum implements Currency {
   }
 
   get name(): string {
-    return 'ethereum';
+    return 'Ethereum';
   }
 }
 
@@ -52,7 +52,7 @@ export class ERC20 implements Currency {
 
 export class Tether extends ERC20 implements Currency {
   constructor() {
-    super('tether', 6);
+    super('Tether', 6);
   }
 }
 
@@ -63,11 +63,11 @@ export const USDT = new Tether();
 export interface MonetaryAmount<C extends Currency> {
   currency: C;
 
-  toString(humanFriendly: boolean): string;
+  toString(humanFriendly?: boolean): string;
   toBig(decimals?: number): Big;
 }
 
-export abstract class BaseMonetaryAmount<C extends Currency>
+export class BaseMonetaryAmount<C extends Currency>
   implements MonetaryAmount<C> {
   protected _amount: Big;
 
@@ -75,9 +75,7 @@ export abstract class BaseMonetaryAmount<C extends Currency>
     decimals = decimals ?? _currency.decimals;
     amount = new Big(amount);
     const exponent = _currency.decimals - decimals;
-    if (exponent > 0) {
-      amount = amount.mul(new Big(10).pow(exponent));
-    }
+    amount = amount.mul(new Big(10).pow(exponent));
     this._amount = amount;
   }
 
@@ -94,11 +92,7 @@ export abstract class BaseMonetaryAmount<C extends Currency>
 
   toBig(decimals: number = this.currency.decimals): Big {
     const exponent = this.currency.decimals - decimals;
-    let result = this._amount;
-    if (exponent > 0) {
-      result = result.div(new Big(10).pow(exponent));
-    }
-    return result;
+    return this._amount.div(new Big(10).pow(exponent));
   }
 
   add(amount: this): this {
@@ -223,9 +217,23 @@ export class USDTAmount extends BaseMonetaryAmount<Tether> {
 }
 
 export interface ExchangeRate<Base extends Currency, Counter extends Currency> {
+  /**
+   * Base currency, BTC in BTC/USDT
+   */
   readonly base: Base;
+
+  /**
+   * Counter currency, USDT in BTC/USDT
+   */
   readonly counter: Counter;
+
+  /**
+   * Exchange rate: amount of `counter` needed per unit of `base`
+   * The amount is expressed with the same number of decimals as `counter`
+   */
   readonly rate: Big;
+
+  toBase(amount: MonetaryAmount<Counter>): MonetaryAmount<Base>;
 }
 
 export class BaseExchangeRate<Base extends Currency, Counter extends Currency>
@@ -235,6 +243,18 @@ export class BaseExchangeRate<Base extends Currency, Counter extends Currency>
     readonly counter: Counter,
     readonly rate: Big
   ) {}
+
+  toBase(amount: MonetaryAmount<Counter>): MonetaryAmount<Base> {
+    const converted = amount
+      .toBig(this.base.decimals + this.counter.decimals)
+      .div(this.rate);
+    return new BaseMonetaryAmount(this.base, converted);
+  }
+
+  toCounter(amount: MonetaryAmount<Base>): MonetaryAmount<Counter> {
+    const converted = amount.toBig(0).mul(this.rate);
+    return new BaseMonetaryAmount(this.counter, converted);
+  }
 }
 
 export class BitcoinTetherRate extends BaseExchangeRate<Bitcoin, Tether>

@@ -356,7 +356,17 @@ export interface ReadContracts {
   getPair(option: string): Promise<ReadOptionPair>;
 
   listOptions(): Promise<string[]>;
+  listObligations(): Promise<string[]>;
   totalLiquidity(): Promise<BigNumber>;
+  getDetails(
+    obligationAddress: string
+  ): Promise<{
+    _expiryTime: BigNumber;
+    _windowSize: BigNumber;
+    _strikePrice: BigNumber;
+    _decimals: BigNumber;
+    _collateral: string;
+  }>;
 }
 
 export interface WriteContracts extends ReadContracts {
@@ -470,6 +480,26 @@ export class ReadOnlyContracts implements ReadContracts {
 
   listOptions(): Promise<string[]> {
     return this.optionFactory.allOptions();
+  }
+
+  listObligations(): Promise<string[]> {
+    return this.optionFactory.allObligations();
+  }
+
+  getDetails(
+    obligationAddress: string
+  ): Promise<{
+    _expiryTime: BigNumber;
+    _windowSize: BigNumber;
+    _strikePrice: BigNumber;
+    _decimals: BigNumber;
+    _collateral: string;
+  }> {
+    const obligation = ObligationFactory.connect(
+      obligationAddress,
+      this.signer
+    );
+    return obligation.getDetails();
   }
 }
 

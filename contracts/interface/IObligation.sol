@@ -21,7 +21,9 @@ interface IObligation {
         returns (
             uint256 _expiryTime,
             uint256 _windowSize,
-            uint256 _strikePrice
+            uint256 _strikePrice,
+            uint256 _decimals,
+            address _collateral
         );
 
     function option() external returns (address);

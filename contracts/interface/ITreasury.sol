@@ -3,7 +3,7 @@
 pragma solidity ^0.6.0;
 
 interface ITreasury {
-    function collateral() external returns (address);
+    function collateral() external view returns (address);
 
     function balanceOf(address market, address account)
         external

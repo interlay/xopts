@@ -152,10 +152,13 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         returns (
             uint256 _expiryTime,
             uint256 _windowSize,
-            uint256 _strikePrice
+            uint256 _strikePrice,
+            uint256 _decimals,
+            address _collateral
         )
     {
-        return (expiryTime, windowSize, strikePrice);
+        address collateral = ITreasury(treasury).collateral();
+        return (expiryTime, windowSize, strikePrice, decimals, collateral);
     }
 
     /**

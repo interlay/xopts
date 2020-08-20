@@ -1,5 +1,5 @@
 import chai from 'chai';
-import {ethers} from '@nomiclabs/buidler';
+import {ethers, network} from '@nomiclabs/buidler';
 import {Signer, constants, BigNumber} from 'ethers';
 import {
   deploy0,
@@ -12,6 +12,7 @@ import {Obligation} from '../../typechain/Obligation';
 import {getTimeNow} from '../common';
 import {MockContract, deployMockContract} from 'ethereum-waffle';
 import TreasuryArtifact from '../../artifacts/Treasury.json';
+import ERC20Artifact from '../../artifacts/ERC20.json';
 import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
 import OptionArtifact from '../../artifacts/Option.json';
 import {ErrorCode, Script} from '../../lib/constants';
@@ -35,6 +36,7 @@ describe('Obligation.sol', () => {
   let option: MockContract;
   let treasury: MockContract;
   let referee: MockContract;
+  let token: MockContract;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -50,8 +52,10 @@ describe('Obligation.sol', () => {
       charlie.getAddress()
     ]);
     obligation = await deploy0(alice, ObligationFactory);
+    token = await deployMockContract(alice, ERC20Artifact.abi);
     option = await deployMockContract(alice, OptionArtifact.abi);
     treasury = await deployMockContract(alice, TreasuryArtifact.abi);
+    await treasury.mock.collateral.returns(token.address);
     referee = await deployMockContract(alice, BTCRefereeArtifact.abi);
     await obligation.initialize(
       18,
@@ -359,5 +363,14 @@ describe('Obligation.sol', () => {
     await obligation.withdraw(amountIn, bobAddress);
     const obligationBalanceAlice1 = await obligation.obligations(aliceAddress);
     expect(obligationBalanceAlice1).to.eq(constants.Zero);
+  });
+
+  it('should return details', async () => {
+    const details = await obligation.getDetails();
+    expect(details._strikePrice).to.eq(strikePrice);
+    expect(details._windowSize).to.eq(windowSize);
+    expect(details._expiryTime).to.eq(expiryTime);
+    expect(details._decimals).to.eq(BigNumber.from(18));
+    expect(details._collateral).to.eq(token.address);
   });
 });

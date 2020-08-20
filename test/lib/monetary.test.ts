@@ -6,6 +6,9 @@ import * as monetary from '../../lib/monetary';
 
 const fcBig = (): fc.Arbitrary<Big> => fc.integer().map((v) => new Big(v));
 
+const newBig = (value: number, decimals: number = 0) =>
+  new Big(value).mul(new Big(10).pow(decimals));
+
 describe('currencies', () => {
   describe('BTC', () => {
     it('should have the correct amount of decimals', () => {
@@ -13,7 +16,7 @@ describe('currencies', () => {
     });
 
     it('should have the correct name', () => {
-      expect(monetary.BTC.name).to.eq('bitcoin');
+      expect(monetary.BTC.name).to.eq('Bitcoin');
     });
   });
 
@@ -23,13 +26,13 @@ describe('currencies', () => {
     });
 
     it('should have the correct name', () => {
-      expect(monetary.ETH.name).to.eq('ethereum');
+      expect(monetary.ETH.name).to.eq('Ethereum');
     });
   });
 
   describe('ERC20', () => {
-    const dai = new monetary.ERC20('dai', 18);
-    const comp = new monetary.ERC20('compound', 12);
+    const dai = new monetary.ERC20('Dai', 18);
+    const comp = new monetary.ERC20('Compound', 12);
 
     it('should have customizable decimals', () => {
       expect(dai.decimals).to.eq(18);
@@ -37,20 +40,20 @@ describe('currencies', () => {
     });
 
     it('should have customizable name', () => {
-      expect(dai.name).to.eq('dai');
-      expect(comp.name).to.eq('compound');
+      expect(dai.name).to.eq('Dai');
+      expect(comp.name).to.eq('Compound');
     });
   });
 });
 
 class DummyCurrency implements monetary.Currency {
   decimals = 10;
-  name = 'dummy';
+  name = 'Dummy';
 }
 const DummyC = new DummyCurrency();
 
 class DummyERC extends monetary.ERC20 {}
-const DummyERCT = new DummyERC('dummy', 5);
+const DummyERCT = new DummyERC('Dummy', 5);
 
 class DummyAmount extends monetary.BaseMonetaryAmount<DummyCurrency> {
   constructor(amount: BigSource, decimals?: number) {
@@ -289,7 +292,7 @@ describe('MonetaryAmount', () => {
       (['add', 'sub'] as Array<amountOp>).forEach((op) => {
         describe(op, () => {
           it(`should ${op} tokens`, () => {
-            const dai = new monetary.ERC20('dai');
+            const dai = new monetary.ERC20('Dai');
             const amountA = new monetary.ERC20Amount(dai, 30);
             const amountB = new monetary.ERC20Amount(dai, 10);
             const added = amountA[op](amountB);
@@ -299,16 +302,36 @@ describe('MonetaryAmount', () => {
 
           it('should fail with different currencies', () => {
             const amountA = new monetary.ERC20Amount(
-              new monetary.ERC20('dai'),
+              new monetary.ERC20('Dai'),
               30
             );
             const amountB = new monetary.ERC20Amount(
-              new monetary.ERC20('comp'),
+              new monetary.ERC20('Compound'),
               10
             );
             expect(() => amountA[op](amountB)).to.throw(`cannot ${op}`);
           });
         });
+      });
+    });
+  });
+
+  describe('MonetaryAmount', () => {
+    const rawRate = 9200;
+    const normalizedRawRate = newBig(rawRate, monetary.USDT.decimals);
+    const rate = new monetary.BitcoinTetherRate(normalizedRawRate);
+
+    describe('toBase', () => {
+      it('should correctly convert value', () => {
+        const btcAmount = rate.toBase(new monetary.USDTAmount(rawRate * 3, 0));
+        expect(btcAmount.toBig(0).eq(new Big(3))).to.be.true;
+      });
+    });
+
+    describe('toCounter', () => {
+      it('should correctly convert value', () => {
+        const usdtAmount = rate.toCounter(new monetary.BTCAmount(2, 0));
+        expect(usdtAmount.toBig(0).eq(new Big(rawRate * 2))).to.be.true;
       });
     });
   });
