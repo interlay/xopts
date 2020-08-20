@@ -23,6 +23,8 @@ import {SignerOrProvider, Optional, Signer, Provider} from './core';
 import {Addresses, resolveAddresses} from './addresses';
 import {EventFragment, Result} from 'ethers/lib/utils';
 
+export type AddressesPair = {option: string; obligation: string};
+
 interface Connectable<C> {
   connect: (addr: string, signer: SignerOrProvider) => C;
 }
@@ -116,12 +118,12 @@ export async function createPair(
   collateral: string,
   referee: string,
   confirmations?: number
-): Promise<string> {
+): Promise<AddressesPair> {
   const receipt = await optionFactory
     .createPair(expiryTime, windowSize, strikePrice, collateral, referee)
     .then((tx) => tx.wait(confirmations));
   const event = await getCreatePairEvent(optionFactory, receipt);
-  return event.option;
+  return {option: event.option, obligation: event.obligation};
 }
 
 export type BtcAddress = {
@@ -558,7 +560,7 @@ export class ReadWriteContracts extends ReadOnlyContracts
     windowSize: BigNumberish,
     strikePrice: BigNumberish
   ): Promise<WriteOptionPair> {
-    const optionAddress = await createPair(
+    const {option} = await createPair(
       this.optionFactory,
       expiryTime,
       windowSize,
@@ -567,7 +569,7 @@ export class ReadWriteContracts extends ReadOnlyContracts
       this.referee.address,
       this.confirmations
     );
-    return this.getPair(optionAddress);
+    return this.getPair(option);
   }
 
   async getPair(optionAddress: string): Promise<WriteOptionPair> {
