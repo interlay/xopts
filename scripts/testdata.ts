@@ -10,7 +10,8 @@ import {
   deploy2,
   createPair,
   deploy1,
-  AddressesPair
+  AddressesPair,
+  getRequestEvent
 } from '../lib/contracts';
 import {newBigNum} from '../lib/conversion';
 import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
@@ -26,8 +27,12 @@ import {OptionLib} from '../typechain/OptionLib';
 import {
   BtcRefereeFactory,
   MockRelayFactory,
-  WriterRegistryFactory
+  WriterRegistryFactory,
+  ObligationFactory
 } from '../typechain';
+import {evmFastForward, getCurrentTime} from '../lib/mock';
+import BTCRefereeArtifact from '../artifacts/BTCReferee.json';
+import {deployMockContract, MockContract} from 'ethereum-waffle';
 
 const keyPair = bitcoin.ECPair.makeRandom();
 const payment = bitcoin.payments.p2pkh({
@@ -44,7 +49,7 @@ async function createAndLockAndWrite(
   windowSize: BigNumberish,
   strikePrice: BigNumberish,
   collateral: MockCollateral,
-  referee: BtcReferee,
+  referee: MockContract,
   premium: BigNumber,
   amount: BigNumber
 ): Promise<AddressesPair> {
@@ -106,7 +111,9 @@ async function main(): Promise<void> {
     constants.AddressZero
   );
   const relay = await deploy0(signers[0], MockRelayFactory);
-  const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
+  // const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
+  const referee = await deployMockContract(alice, BTCRefereeArtifact.abi);
+
   const writerRegistry = await deploy0(signers[0], WriterRegistryFactory);
 
   console.log('MockCollateral:', collateral.address);
@@ -141,33 +148,36 @@ async function main(): Promise<void> {
 
   console.log('Generating expired option');
   // get the current time
-  const currentTime = Math.round(new Date().getTime() / 1000);
+  const currentTime = await getCurrentTime();
   // generate and write option that expires in 60 secs
-  const inSixtySeconds = currentTime + 60;
+  const inOneMinute = currentTime + 60;
 
-  await createAndLockAndWrite(
-    bob,
+  console.log('Eve writing 15_000 Dai');
+  const evePair = await createAndLockAndWrite(
+    eve,
     optionLib,
     optionFactory,
-    inSixtySeconds,
+    inOneMinute,
     2000,
-    newBigNum(9_200, 18),
+    newBigNum(9_000, 18),
     collateral,
     referee,
     newBigNum(10, 18),
-    newBigNum(5_000, 18)
+    newBigNum(15_000, 18)
   );
 
   // generate the other options
+  const inTwoMinutes = currentTime + 60 + 60;
   const inAWeek = currentTime + 60 * 60 * 24 * 7;
-  const inTwoWeeks = currentTime + 60 * 60 * 24 * 14;
 
-  console.log('Bob underwriting 9000 Dai');
-  await createAndLockAndWrite(
+  // -----
+
+  console.log('Bob writing 9000 Dai');
+  const bobPair = await createAndLockAndWrite(
     bob,
     optionLib,
     optionFactory,
-    inAWeek,
+    inTwoMinutes,
     2000,
     newBigNum(9000, 18),
     collateral,
@@ -176,12 +186,14 @@ async function main(): Promise<void> {
     newBigNum(9_000, 18)
   );
 
-  console.log('Charlie underwriting 4000 Dai');
+  // -----
+
+  console.log('Charlie writing 4000 Dai');
   await createAndLockAndWrite(
-    bob,
+    charlie,
     optionLib,
     optionFactory,
-    inTwoWeeks,
+    inAWeek,
     2000,
     newBigNum(9050, 18),
     collateral,
@@ -190,25 +202,78 @@ async function main(): Promise<void> {
     newBigNum(4_000, 18)
   );
 
-  // console.log("Alice insuring 0.8 BTC");
-  // console.log(newBigNum(9000, 18).mul(mbtcToSatoshi(800)).toString());
-  // await call(collateral, MockCollateralFactory, alice).approve(pool.address, newBigNum(200));
-  // await call(pool, OptionPoolFactory, alice).insureOption(sellableAddress, bobAddress, mbtcToSatoshi(800));
+  // -----
 
-  // sellableAddress = options[3];
-  // buyableAddress = await getBuyable(sellableAddress, bob)
+  console.log('Alice insuring 0.8 BTC against Eve');
+  const aliceAmountOut = BigNumber.from(0.8 * 10 ** 10)
+    .mul(newBigNum(9_000, 18))
+    .div(10 ** 10);
 
-  // console.log("Adding data to option: ", sellableAddress);
-  // console.log("Eve underwriting 20.000 Dai");
-  // await call(collateral, MockCollateralFactory, eve).approve(pool.address, newBigNum(20_000));
-  // await call(pool, OptionPoolFactory, eve).writeOption(sellableAddress, newBigNum(20_000), btcHash, Script.p2wpkh);
+  const aliceAmountInMax = newBigNum(200, 18);
+  console.log(`Options: ${aliceAmountOut.toString()}`);
+  await reconnect(collateral, MockCollateralFactory, alice).approve(
+    optionLib.address,
+    aliceAmountInMax
+  );
+  await reconnect(optionLib, OptionLibFactory, alice).swapTokensForExactTokens(
+    aliceAmountOut,
+    aliceAmountInMax,
+    [collateral.address, evePair.option],
+    aliceAddress,
+    inOneMinute
+  );
 
-  // console.log("Dave insuring 1.27 BTC");
-  // await call(collateral, MockCollateralFactory, dave).approve(pool.address, newBigNum(2*17));
-  // await call(pool, OptionPoolFactory, dave).insureOption(sellableAddress, eveAddress, mbtcToSatoshi(1270));
+  console.log('Alice requests exercise against eve');
+  await evmFastForward(60);
+  await ObligationFactory.connect(evePair.obligation, alice).requestExercise(
+    eveAddress,
+    BigNumber.from(0.8 * 10 ** 10)
+  );
 
-  // details = await attachSellableOption(alice, sellableAddress).getDetails();
-  // console.log("Option details: ", details.toString());
+  // -----
+
+  console.log('Dave insuring 0.5 BTC against Bob');
+  const daveAmountOut = BigNumber.from(0.5 * 10 ** 10)
+    .mul(newBigNum(9_000, 18))
+    .div(10 ** 10);
+
+  const daveAmountInMax = newBigNum(200, 18);
+  console.log(`Options: ${daveAmountOut.toString()}`);
+  await reconnect(collateral, MockCollateralFactory, dave).approve(
+    optionLib.address,
+    daveAmountInMax
+  );
+  await reconnect(optionLib, OptionLibFactory, dave).swapTokensForExactTokens(
+    daveAmountOut,
+    daveAmountInMax,
+    [collateral.address, bobPair.option],
+    daveAddress,
+    inTwoMinutes
+  );
+
+  console.log('Dave exercises against bob');
+  await evmFastForward(120);
+  const obligation = ObligationFactory.connect(bobPair.obligation, dave);
+  const tx = await obligation.requestExercise(
+    bobAddress,
+    BigNumber.from(0.5 * 10 ** 10)
+  );
+  const result = await getRequestEvent(
+    obligation,
+    daveAddress,
+    bobAddress,
+    await tx.wait(0)
+  );
+  await referee.mock.verifyTx.returns(BigNumber.from(0.5 * 10 ** 10));
+  await ObligationFactory.connect(bobPair.obligation, dave).executeExercise(
+    result.id,
+    0,
+    0,
+    constants.HashZero,
+    constants.HashZero,
+    constants.HashZero,
+    constants.HashZero
+  );
 }
 
 main()

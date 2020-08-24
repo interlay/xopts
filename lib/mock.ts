@@ -13,3 +13,13 @@ export async function evmSnapFastForward<R>(
   await cb();
   await ethers.provider.send('evm_revert', [id]);
 }
+
+export async function evmFastForward(n: number): Promise<void> {
+  return ethers.provider.send('evm_increaseTime', [n]);
+}
+
+export async function getCurrentTime() {
+  const height = await ethers.provider.getBlockNumber();
+  const block = await ethers.provider.getBlock(height);
+  return block.timestamp;
+}

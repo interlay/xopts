@@ -11,6 +11,4 @@ interface IWriterRegistry {
         external
         view
         returns (bytes20 btcHash, Bitcoin.Script format);
-
-    function allWriters() external view returns (address[] memory);
 }

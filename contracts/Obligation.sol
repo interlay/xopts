@@ -88,6 +88,15 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     // accounts that can spend an owners funds
     mapping(address => mapping(address => uint256)) internal _allowances;
 
+    /// @notice Emit whenever obligation tokens are minted or transferred.
+    event Write(
+        address indexed from,
+        address indexed to,
+        uint256 value,
+        bytes20 btcHash,
+        Bitcoin.Script format
+    );
+
     /// @notice Emit upon successful exercise request.
     event RequestExercise(
         address indexed buyer,
@@ -100,7 +109,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     event ExecuteExercise(
         address indexed buyer,
         address indexed seller,
-        uint256 amount
+        uint256 amount,
+        uint256 satoshis
     );
 
     /// @notice Emit once collateral is reclaimed by a writer after `expiryTime + windowSize`.
@@ -194,13 +204,13 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         _balances[account] = _balances[account].add(amount);
         _obligations[account] = _obligations[account].add(amount);
         totalSupply = totalSupply.add(amount);
-        _writers.push(account);
 
         _setBtcAddress(account, btcHash, format);
 
         // check treasury has enough unlocked
         ITreasury(treasury).lock(account, amount);
         emit Transfer(address(0), account, amount);
+        emit Write(address(0), account, amount, btcHash, format);
 
         // mint the equivalent options
         IOption(option).mint(pool, amount);
@@ -323,7 +333,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         // transfers from the treasury to the buyer
         ITreasury(treasury).release(seller, buyer, amount);
 
-        emit ExecuteExercise(buyer, seller, amount);
+        emit ExecuteExercise(buyer, seller, amount, satoshis);
     }
 
     /**
@@ -506,7 +516,9 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             // transfer ownership
             _obligations[sender] = _obligations[sender].sub(amount);
             _obligations[recipient] = _obligations[recipient].add(amount);
-            _writers.push(recipient);
+
+            Bitcoin.Address storage addr = _btcAddresses[recipient];
+            emit Write(sender, recipient, amount, addr.btcHash, addr.format);
         } else if (
             _btcAddresses[sender].btcHash != 0 &&
             _btcAddresses[recipient].btcHash == 0
@@ -521,7 +533,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             // call to treasury should revert if insufficient locked
             ITreasury(treasury).lock(recipient, amount);
             _obligations[recipient] = _obligations[recipient].add(amount);
-            _writers.push(recipient);
+            Bitcoin.Address storage addr = _btcAddresses[recipient];
+            emit Write(sender, recipient, amount, addr.btcHash, addr.format);
         }
 
         emit Transfer(sender, recipient, amount);

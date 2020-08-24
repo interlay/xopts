@@ -258,7 +258,9 @@ describe('Obligation.sol', () => {
         constants.HashZero
       );
       const fragment =
-        obligation.interface.events['ExecuteExercise(address,address,uint256)'];
+        obligation.interface.events[
+          'ExecuteExercise(address,address,uint256,uint256)'
+        ];
       const event = await getEvent(
         fragment,
         [aliceAddress, bobAddress],
