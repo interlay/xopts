@@ -422,14 +422,15 @@
   resolved "https://registry.yarnpkg.com/@interlay/bitcoin-spv-sol/-/bitcoin-spv-sol-3.2.2.tgz#5d4afb571b0c9868799a9ce7c7bc4aee2daaf3d9"
   integrity sha512-Srf5XVyDGE/U6fQ9fEo6RCAgUSYhZJsI5YaJVc3O7dtyiprzjSuh/pFKxZOydL7y3AFetCEJxLLMzjbMDQntfQ==
 
-"@interlay/btc-relay-sol@0.3.4":
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.3.4.tgz#ba8eaebc78de05f5b916b8b7f7835320461a68ed"
-  integrity sha512-L6s5fONmFo06t1NJfYbEQ7BD6sxT5SbYUPAeN79twA0WHXv0TAk6DHdBni3ITtLEnIhegH+SjzIijDwUm9dalA==
+"@interlay/btc-relay-sol@0.3.10":
+  version "0.3.10"
+  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.3.10.tgz#f5574c8e5662591671ec18db496f2911e962772d"
+  integrity sha512-/8L6ZoLcUuc5HluGHHjIlPxLlBrqDm0b31teC/kBtSpfSYENj4ZGejXz3nE5dccb+31qpm2Nbpy/Jo4v6s/SaA==
   dependencies:
     "@interlay/bitcoin-spv-sol" "3.2.2"
     "@openzeppelin/contracts" "3.1.0"
     bitcoinjs-lib "^5.1.7"
+    ethers "^4.0.44"
 
 "@nodefactory/buidler-typechain@^0.2.0":
   version "0.2.0"
@@ -4244,7 +4245,7 @@ ethers@4.0.0-beta.3:
     uuid "2.0.1"
     xmlhttprequest "1.8.0"
 
-ethers@^4.0.40:
+ethers@^4.0.40, ethers@^4.0.44:
   version "4.0.47"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-4.0.47.tgz#91b9cd80473b1136dd547095ff9171bd1fc68c85"
   integrity sha512-hssRYhngV4hiDNeZmVU/k5/E8xmLG8UpcNUzg6mb7lqhgpFPH/t7nuv20RjRrEf0gblzvi2XwR5Te+V3ZFc9pQ==

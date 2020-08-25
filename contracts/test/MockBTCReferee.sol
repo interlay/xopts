@@ -10,11 +10,11 @@ contract MockBTCReferee is BTCReferee {
         // solhint-disable-previous-line no-empty-blocks
     }
 
-    function extractOutputValue(
+    function extractOutput(
         bytes calldata rawtx,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) external pure returns (uint256) {
-        return _extractOutputValue(rawtx, btcHash, format);
+    ) external pure returns (bytes32 data, uint256 amount) {
+        return _extractOutput(rawtx, btcHash, format);
     }
 }

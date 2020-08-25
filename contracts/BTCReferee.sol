@@ -20,6 +20,7 @@ contract BTCReferee is IReferee {
 
     string internal constant ERR_INVALID_OUT_HASH = 'Invalid output hash';
     string internal constant ERR_TX_NOT_INCLUDED = 'Cannot verify tx inclusion';
+    string internal constant ERR_INVALID_REQUEST_ID = 'Invalid request id';
 
     address public relay;
 
@@ -46,11 +47,11 @@ contract BTCReferee is IReferee {
             );
     }
 
-    function _extractOutputValue(
+    function _extractOutput(
         bytes memory rawtx,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) internal pure returns (uint256 amount) {
+    ) internal pure returns (bytes32 data, uint256 amount) {
         (, uint256 lenInputs) = rawtx.extractInputLength();
         bytes memory outputs = rawtx.slice(lenInputs, rawtx.length - lenInputs);
         (uint256 numOutputs, ) = outputs.extractOutputLength();
@@ -67,6 +68,8 @@ contract BTCReferee is IReferee {
                 _btcHash = script.P2PKH();
             } else if (format == Bitcoin.Script.p2wpkh && script.isP2WPKH()) {
                 (, _btcHash) = script.P2WPKH();
+            } else if (script.isOpReturn()) {
+                data = script.OpReturn().toBytes32();
             } else {
                 continue;
             }
@@ -81,6 +84,7 @@ contract BTCReferee is IReferee {
      * @notice Verify transaction inclusion through the configured BTC relay,
      * ensure submission after expiry and block processed tx ids to prevent
      * replays.
+     * @param id Unique request id
      * @param height Bitcoin block height
      * @param index Bitcoin tx index
      * @param txid Bitcoin transaction id
@@ -92,6 +96,7 @@ contract BTCReferee is IReferee {
      * @return Bitcoin output satoshis
      **/
     function verifyTx(
+        bytes32 id,
         uint32 height,
         uint256 index,
         bytes32 txid,
@@ -106,6 +111,8 @@ contract BTCReferee is IReferee {
             _isIncluded(height, index, txid, header, proof),
             ERR_TX_NOT_INCLUDED
         );
-        return _extractOutputValue(rawtx, btcHash, format);
+        (bytes32 data, uint256 amount) = _extractOutput(rawtx, btcHash, format);
+        require(data == id, ERR_INVALID_REQUEST_ID);
+        return amount;
     }
 }

@@ -219,11 +219,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     /**
      * @notice Initiate physical settlement, locking obligations owned by the specified seller.
-     *
-     * In order to prevent replay attacks we will require the use of `OP_RETURN` to embed the request id.
-     * Pending support, the current implementation is susceptible to transaction reuse so please do not
-     * use these contracts in production.
-     *
+     * In order to prevent replay attacks we require the use of `OP_RETURN` to embed the request id
+     * - the keccak256 hash of the contract address and a nonce which is incremented after each request.
      * @dev Caller is assumed to be the `buyer`.
      * @param seller Account that wrote the options.
      * @param satoshis Input amount.
@@ -244,16 +241,13 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
         bytes32 id = keccak256(
             abi.encodePacked(
-                expiryTime,
-                windowSize,
-                strikePrice,
-                buyer,
-                seller,
-                // append nonce to avoid
-                // id collisions
+                // create2 ensures params are unique
+                address(this),
+                // append nonce to avoid collisions
                 _nonce
             )
         );
+        _nonce = _nonce.add(1);
 
         _requests[buyer][id].amount = options;
         _requests[buyer][id].seller = seller;
@@ -265,7 +259,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     /**
      * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`.
-     * Requires a transaction inclusion proof which is verified by our chain relay.
+     * Requires a transaction inclusion proof which is verified by our chain relay. This payment
+     * must contain the unique request id in the `OP_RETURN` payload.
      * @param id Unique request id
      * @param height Bitcoin block height
      * @param index Bitcoin tx index
@@ -283,22 +278,23 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         bytes calldata proof,
         bytes calldata rawtx
     ) external override canExercise {
-        address buyer = msg.sender;
-        address seller = _requests[buyer][id].seller;
+        address seller = _requests[msg.sender][id].seller;
+        Bitcoin.Address memory addr = _btcAddresses[seller];
 
         // verify & validate tx, use default confirmations
         uint256 satoshis = IReferee(referee).verifyTx(
+            id,
             height,
             index,
             txid,
             header,
             proof,
             rawtx,
-            _btcAddresses[seller].btcHash,
-            _btcAddresses[seller].format
+            addr.btcHash,
+            addr.format
         );
 
-        _verifyReceipt(buyer, id, satoshis);
+        _verifyReceipt(msg.sender, id, satoshis);
     }
 
     function _verifyReceipt(
