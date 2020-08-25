@@ -219,11 +219,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     /**
      * @notice Initiate physical settlement, locking obligations owned by the specified seller.
-     *
-     * In order to prevent replay attacks we will require the use of `OP_RETURN` to embed the request id.
-     * Pending support, the current implementation is susceptible to transaction reuse so please do not
-     * use these contracts in production.
-     *
+     * In order to prevent replay attacks we require the use of `OP_RETURN` to embed the request id
+     * - the keccak256 hash of the contract address and a nonce which is incremented after each request.
      * @dev Caller is assumed to be the `buyer`.
      * @param seller Account that wrote the options.
      * @param satoshis Input amount.
@@ -262,7 +259,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     /**
      * @notice Exercises an option after `expiryTime` but before `expiryTime + windowSize`.
-     * Requires a transaction inclusion proof which is verified by our chain relay.
+     * Requires a transaction inclusion proof which is verified by our chain relay. This payment
+     * must contain the unique request id in the `OP_RETURN` payload.
      * @param id Unique request id
      * @param height Bitcoin block height
      * @param index Bitcoin tx index
