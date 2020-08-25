@@ -5,6 +5,16 @@ export interface Option<
   Collateral extends Currency
 > {
   /**
+   * Address of the option
+   */
+  readonly address: string;
+
+  /**
+   * Address of the associated obligation
+   */
+  readonly obligationAddress: string;
+
+  /**
    * Expiry date of the given option
    */
   readonly expiry: Date;

@@ -25,6 +25,15 @@ import {EventFragment, Result} from 'ethers/lib/utils';
 
 export type AddressesPair = {option: string; obligation: string};
 
+type ObligationInfo = {
+  _expiryTime: BigNumber;
+  _windowSize: BigNumber;
+  _strikePrice: BigNumber;
+  _decimals: BigNumber;
+  _collateral: string;
+  _option: string;
+};
+
 interface Connectable<C> {
   connect: (addr: string, signer: SignerOrProvider) => C;
 }
@@ -138,7 +147,8 @@ export interface ReadOptionPair {
     strikePrice: BigNumber;
   }>;
 
-  balanceOf(account: string): Promise<BigNumber>;
+  totalSupplied(account: string): Promise<BigNumber>;
+  totalWritten(account: string): Promise<BigNumber>;
 }
 
 export interface WriteOptionPair extends ReadOptionPair {
@@ -222,12 +232,13 @@ export class ReadOnlyOptionPair implements ReadOptionPair {
 
   // gets the locked collateral for a pair
   // total number of USDT written
-  // TODO: change name to totalSupplied
-  async balanceOf(account: string): Promise<BigNumber> {
+  async totalSupplied(account: string): Promise<BigNumber> {
     return this.treasury.balanceOf(this.obligation.address, account);
   }
 
-  // TODO: add totalWritten getter
+  async totalWritten(account: string): Promise<BigNumber> {
+    return this.obligation.obligations(account);
+  }
 }
 
 export class ReadWriteOptionPair extends ReadOnlyOptionPair
@@ -358,15 +369,7 @@ export interface ReadContracts {
   listOptions(): Promise<string[]>;
   listObligations(): Promise<string[]>;
   totalLiquidity(): Promise<BigNumber>;
-  getDetails(
-    obligationAddress: string
-  ): Promise<{
-    _expiryTime: BigNumber;
-    _windowSize: BigNumber;
-    _strikePrice: BigNumber;
-    _decimals: BigNumber;
-    _collateral: string;
-  }>;
+  getDetails(obligationAddress: string): Promise<ObligationInfo>;
 }
 
 export interface WriteContracts extends ReadContracts {
@@ -486,15 +489,7 @@ export class ReadOnlyContracts implements ReadContracts {
     return this.optionFactory.allObligations();
   }
 
-  getDetails(
-    obligationAddress: string
-  ): Promise<{
-    _expiryTime: BigNumber;
-    _windowSize: BigNumber;
-    _strikePrice: BigNumber;
-    _decimals: BigNumber;
-    _collateral: string;
-  }> {
+  getDetails(obligationAddress: string): Promise<ObligationInfo> {
     const obligation = ObligationFactory.connect(
       obligationAddress,
       this.signer

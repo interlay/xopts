@@ -1,4 +1,5 @@
 import {providers, VoidSigner, utils} from 'ethers';
+import {ethers} from '@nomiclabs/buidler';
 
 import FakeWeb3Provider from './helpers/FakeWeb3Provider';
 
@@ -117,6 +118,16 @@ describe('XOpts', () => {
           expect(options[0].windowSize).to.eq(2000000);
           expect(options[0].collateral.name).to.eq('Collateral');
           expect(options[0].underlying.name).to.eq('Bitcoin');
+        });
+      });
+
+      describe('getUserSupply', () => {
+        it('should return how much collateral the user supplied', async () => {
+          const signers = await ethers.getSigners();
+          const bob = await signers[1].getAddress();
+          const options = await xopts.options.list();
+          const supply = await xopts.options.getUserSupply(bob, options[1]);
+          expect(supply.toBig(0).toString()).to.eq('9000');
         });
       });
     });

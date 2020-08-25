@@ -23,7 +23,8 @@ interface IObligation {
             uint256 _windowSize,
             uint256 _strikePrice,
             uint256 _decimals,
-            address _collateral
+            address _collateral,
+            address _option
         );
 
     function option() external returns (address);

@@ -1,7 +1,5 @@
 import {ReadOnlyContracts, ReadWriteContracts} from './contracts';
 
-import Big from 'big.js';
-
 import {Addresses, mustResolveAddresses} from './addresses';
 import {BTCAmount, USDTAmount} from './monetary';
 import {Signer, SignerOrProvider} from './core';
