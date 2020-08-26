@@ -6,15 +6,14 @@ import {Provider, Signer} from '../../lib/core';
 import {XOpts} from '../../lib/xopts';
 import {Deployments} from '../../lib/addresses';
 import {expect} from 'chai';
-import {MonetaryAmount, Tether} from '../../lib/monetary';
+import {Tether} from '../../lib/monetary';
 import {decodeBtcAddress} from '../../lib/encode';
 import * as bitcoin from 'bitcoinjs-lib';
-import {Erc20} from '../../typechain/Erc20';
-import {Erc20Factory} from '../../typechain';
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const DAI_ADDRESS = '0x6b175474e89094c44da98b954eedeac495271d0f';
 
+// eslint-disable-next-line  @typescript-eslint/no-explicit-any
 function encode(type: string, value: any): string {
   return utils.defaultAbiCoder.encode([type], [value]);
 }

@@ -26,12 +26,12 @@ describe('Notifier', () => {
       let result = '';
       let error = null;
       notifier.on('success', (res: string) => {
-        console.log('great success');
         result = res;
       });
       notifier.on('error', (err: Error) => {
         error = err;
       });
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       await promise.catch(() => {});
       expect(result).to.eq('');
       expect(error).to.not.be.null;
