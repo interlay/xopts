@@ -1,9 +1,6 @@
-import {ExchangeRate, Currency} from './monetary';
+import {ExchangeRate, Currency, ERC20} from './monetary';
 
-export interface Option<
-  Underlying extends Currency,
-  Collateral extends Currency
-> {
+export interface Option<Underlying extends Currency, Collateral extends ERC20> {
   /**
    * Address of the option
    */

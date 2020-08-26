@@ -31,8 +31,8 @@ describe('currencies', () => {
   });
 
   describe('ERC20', () => {
-    const dai = new monetary.ERC20('Dai', 18);
-    const comp = new monetary.ERC20('Compound', 12);
+    const dai = new monetary.ERC20('Dai', '0x', 18);
+    const comp = new monetary.ERC20('Compound', '0x', 12);
 
     it('should have customizable decimals', () => {
       expect(dai.decimals).to.eq(18);
@@ -52,10 +52,14 @@ class DummyCurrency implements monetary.Currency {
 }
 const DummyC = new DummyCurrency();
 
-class DummyERC extends monetary.ERC20 {}
+class DummyERC extends monetary.ERC20 {
+  constructor(name: string, decimals: number = 18) {
+    super(name, '0x', decimals);
+  }
+}
 const DummyERCT = new DummyERC('Dummy', 5);
 
-class DummyAmount extends monetary.BaseMonetaryAmount<DummyCurrency> {
+class DummyAmount extends monetary.MonetaryAmount<DummyCurrency> {
   constructor(amount: BigSource, decimals?: number) {
     super(DummyC, amount, decimals);
   }
@@ -292,7 +296,7 @@ describe('MonetaryAmount', () => {
       (['add', 'sub'] as Array<amountOp>).forEach((op) => {
         describe(op, () => {
           it(`should ${op} tokens`, () => {
-            const dai = new monetary.ERC20('Dai');
+            const dai = new monetary.ERC20('Dai', '0x');
             const amountA = new monetary.ERC20Amount(dai, 30);
             const amountB = new monetary.ERC20Amount(dai, 10);
             const added = amountA[op](amountB);
@@ -302,11 +306,11 @@ describe('MonetaryAmount', () => {
 
           it('should fail with different currencies', () => {
             const amountA = new monetary.ERC20Amount(
-              new monetary.ERC20('Dai'),
+              new monetary.ERC20('Dai', '0x'),
               30
             );
             const amountB = new monetary.ERC20Amount(
-              new monetary.ERC20('Compound'),
+              new monetary.ERC20('Compound', '0x'),
               10
             );
             expect(() => amountA[op](amountB)).to.throw(`cannot ${op}`);
@@ -318,12 +322,19 @@ describe('MonetaryAmount', () => {
 
   describe('MonetaryAmount', () => {
     const rawRate = 9200;
-    const normalizedRawRate = newBig(rawRate, monetary.USDT.decimals);
-    const rate = new monetary.BitcoinTetherRate(normalizedRawRate);
+    const USDT = new monetary.Tether('0x');
+    const normalizedRawRate = newBig(rawRate, USDT.decimals);
+    const rate = new monetary.ExchangeRate(
+      monetary.BTC,
+      USDT,
+      normalizedRawRate
+    );
 
     describe('toBase', () => {
       it('should correctly convert value', () => {
-        const btcAmount = rate.toBase(new monetary.USDTAmount(rawRate * 3, 0));
+        const btcAmount = rate.toBase(
+          new monetary.MonetaryAmount(USDT, rawRate * 3, 0)
+        );
         expect(btcAmount.toBig(0).eq(new Big(3))).to.be.true;
       });
     });

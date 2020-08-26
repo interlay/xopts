@@ -35,7 +35,6 @@ contract OptionPairFactory is IOptionPairFactory {
     mapping(address => address) public getTreasury;
     mapping(address => address) public getCollateral;
     address[] public options;
-    address[] public obligations;
 
     function _createOption(
         uint8 decimals,
@@ -141,7 +140,6 @@ contract OptionPairFactory is IOptionPairFactory {
         getTreasury[collateral] = treasury;
         getCollateral[option] = collateral;
         options.push(option);
-        obligations.push(obligation);
 
         emit CreatePair(
             option,
@@ -155,14 +153,5 @@ contract OptionPairFactory is IOptionPairFactory {
 
     function allOptions() external override view returns (address[] memory) {
         return options;
-    }
-
-    function allObligations()
-        external
-        override
-        view
-        returns (address[] memory)
-    {
-        return obligations;
     }
 }

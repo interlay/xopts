@@ -143,4 +143,12 @@ contract OptionLib is UniswapV2Router02 {
         );
         _swap(amounts, path, msg.sender);
     }
+
+    function getPairAddress(address option, address premium)
+        public
+        view
+        returns (address)
+    {
+        return UniswapV2Library.pairFor(factory, option, premium);
+    }
 }

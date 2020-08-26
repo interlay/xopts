@@ -39,42 +39,29 @@ export class Ethereum implements Currency {
 }
 
 export class ERC20 implements Currency {
-  constructor(protected _name: string, protected _decimals: number = 18) {}
-
-  get decimals(): number {
-    return this._decimals;
-  }
-
-  get name(): string {
-    return this._name;
-  }
+  constructor(
+    readonly name: string,
+    readonly address: string,
+    readonly decimals: number = 18
+  ) {}
 }
 
 export class Tether extends ERC20 implements Currency {
-  constructor() {
-    super('Tether', 6);
+  constructor(address: string) {
+    super('Tether', address, 6);
   }
 }
 
 export const BTC = new Bitcoin();
 export const ETH = new Ethereum();
-export const USDT = new Tether();
 
-export interface MonetaryAmount<C extends Currency> {
-  currency: C;
-
-  toString(humanFriendly?: boolean): string;
-  toBig(decimals?: number): Big;
-}
-
-export class BaseMonetaryAmount<C extends Currency>
-  implements MonetaryAmount<C> {
+export class MonetaryAmount<C extends Currency> {
   protected _amount: Big;
 
-  constructor(protected _currency: C, amount: BigSource, decimals?: number) {
-    decimals = decimals ?? _currency.decimals;
+  constructor(readonly currency: C, amount: BigSource, decimals?: number) {
+    decimals = decimals ?? currency.decimals;
     amount = new Big(amount);
-    const exponent = _currency.decimals - decimals;
+    const exponent = currency.decimals - decimals;
     amount = amount.mul(new Big(10).pow(exponent));
     this._amount = amount;
   }
@@ -133,13 +120,9 @@ export class BaseMonetaryAmount<C extends Currency>
     ) => this;
     return new Cls(this.currency, amount);
   }
-
-  get currency(): C {
-    return this._currency;
-  }
 }
 
-export class BTCAmount extends BaseMonetaryAmount<Bitcoin> {
+export class BTCAmount extends MonetaryAmount<Bitcoin> {
   constructor(amount: BigSource, decimals?: number) {
     super(BTC, amount, decimals);
   }
@@ -174,7 +157,7 @@ export class BTCAmount extends BaseMonetaryAmount<Bitcoin> {
   }
 }
 
-export class ETHAmount extends BaseMonetaryAmount<Ethereum> {
+export class ETHAmount extends MonetaryAmount<Ethereum> {
   constructor(amount: BigSource, decimals?: number) {
     super(ETH, amount, decimals);
   }
@@ -209,35 +192,16 @@ export class ETHAmount extends BaseMonetaryAmount<Ethereum> {
   }
 }
 
-export class ERC20Amount extends BaseMonetaryAmount<ERC20> {}
-export class USDTAmount extends BaseMonetaryAmount<Tether> {
-  constructor(amount: BigSource, decimals?: number) {
-    super(USDT, amount, decimals);
-  }
-}
+export class ERC20Amount extends MonetaryAmount<ERC20> {}
 
-export interface ExchangeRate<Base extends Currency, Counter extends Currency> {
+export class ExchangeRate<Base extends Currency, Counter extends Currency> {
   /**
-   * Base currency, BTC in BTC/USDT
+   *
+   * @param base Base currency, BTC in BTC/USDT
+   * @param counter Counter currency, USDT in BTC/USDT
+   * @param rate Exchange rate: amount of `counter` needed per unit of `base`
+   *             The amount is expressed with the same number of decimals as `counter`
    */
-  readonly base: Base;
-
-  /**
-   * Counter currency, USDT in BTC/USDT
-   */
-  readonly counter: Counter;
-
-  /**
-   * Exchange rate: amount of `counter` needed per unit of `base`
-   * The amount is expressed with the same number of decimals as `counter`
-   */
-  readonly rate: Big;
-
-  toBase(amount: MonetaryAmount<Counter>): MonetaryAmount<Base>;
-}
-
-export class BaseExchangeRate<Base extends Currency, Counter extends Currency>
-  implements ExchangeRate<Base, Counter> {
   constructor(
     readonly base: Base,
     readonly counter: Counter,
@@ -248,18 +212,11 @@ export class BaseExchangeRate<Base extends Currency, Counter extends Currency>
     const converted = amount
       .toBig(this.base.decimals + this.counter.decimals)
       .div(this.rate);
-    return new BaseMonetaryAmount(this.base, converted);
+    return new MonetaryAmount(this.base, converted);
   }
 
   toCounter(amount: MonetaryAmount<Base>): MonetaryAmount<Counter> {
     const converted = amount.toBig(0).mul(this.rate);
-    return new BaseMonetaryAmount(this.counter, converted);
-  }
-}
-
-export class BitcoinTetherRate extends BaseExchangeRate<Bitcoin, Tether>
-  implements ExchangeRate<Bitcoin, Tether> {
-  constructor(readonly rate: Big) {
-    super(BTC, USDT, rate);
+    return new MonetaryAmount(this.counter, converted);
   }
 }

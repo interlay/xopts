@@ -1,8 +1,8 @@
 import {ReadOnlyContracts, ReadWriteContracts} from './contracts';
 
 import {Addresses, mustResolveAddresses} from './addresses';
-import {BTCAmount, USDTAmount} from './monetary';
-import {Signer, SignerOrProvider} from './core';
+import {BTCAmount, MonetaryAmount, Tether} from './monetary';
+import {Signer, SignerOrProvider, Optional} from './core';
 import {GlobalActions} from './actions/global';
 
 import {
@@ -15,19 +15,27 @@ import {
   ContractsOptionsReadOnlyActions
 } from './actions/options/read-only';
 
+import {Factory} from './actions/factory';
+
 export type OptionActions<T extends SignerOrProvider> = T extends Signer
   ? OptionsReadWriteActions
   : OptionsReadOnlyActions;
 
+export type FactoryActions<T extends SignerOrProvider> = T extends Signer
+  ? Factory
+  : null;
+
 export class XOpts<T extends SignerOrProvider> implements GlobalActions {
   constructor(
+    readonly addresses: Addresses,
     readonly readOnlyContracts: ReadOnlyContracts,
-    readonly options: OptionActions<T>
+    readonly options: OptionActions<T> // readonly factory: FactoryActions<T>
   ) {}
 
-  async totalLiquidity(): Promise<USDTAmount> {
+  async totalLiquidity(): Promise<MonetaryAmount<Tether>> {
     const rawAmount = await this.readOnlyContracts.totalLiquidity();
-    return new USDTAmount(rawAmount.toString());
+    const tether = new Tether(this.readOnlyContracts.collateral.address);
+    return new MonetaryAmount(tether, rawAmount.toString());
   }
 
   async optionMarketsCount(): Promise<number> {
@@ -55,12 +63,20 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
       const optionActions: OptionsReadWriteActions = new ContractsOptionsReadWriteActions(
         contracts
       );
-      return new XOpts(roContracts, optionActions as OptionActions<T>);
+      return new XOpts(
+        addresses,
+        roContracts,
+        optionActions as OptionActions<T>
+      );
     } else {
       const optionActions: OptionsReadOnlyActions = new ContractsOptionsReadOnlyActions(
         roContracts
       );
-      return new XOpts(roContracts, optionActions as OptionActions<T>);
+      return new XOpts(
+        addresses,
+        roContracts,
+        optionActions as OptionActions<T>
+      );
     }
   }
 }

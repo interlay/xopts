@@ -1,5 +1,4 @@
 import {providers, VoidSigner, utils} from 'ethers';
-import {ethers} from '@nomiclabs/buidler';
 
 import FakeWeb3Provider from './helpers/FakeWeb3Provider';
 
@@ -7,6 +6,11 @@ import {Provider, Signer} from '../../lib/core';
 import {XOpts} from '../../lib/xopts';
 import {Deployments} from '../../lib/addresses';
 import {expect} from 'chai';
+import {MonetaryAmount, Tether} from '../../lib/monetary';
+import {decodeBtcAddress} from '../../lib/encode';
+import * as bitcoin from 'bitcoinjs-lib';
+import {Erc20} from '../../typechain/Erc20';
+import {Erc20Factory} from '../../typechain';
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 const DAI_ADDRESS = '0x6b175474e89094c44da98b954eedeac495271d0f';
@@ -80,6 +84,11 @@ describe('XOpts', () => {
   // the data is assumed to be the one populated by the testdata.js script
   describe('integration', () => {
     const web3URI = process.env.NODE_URL || 'http://localhost:8545';
+    const btcAddress = decodeBtcAddress(
+      '1BuzwRy3TMYnhQqaZMRWjkqqUbfc2wQARr',
+      bitcoin.networks.bitcoin
+    )!;
+    const USDT = new Tether('0x');
 
     before(function () {
       if (!process.env.RUN_XOPTS_INTEGRATION) {
@@ -88,10 +97,14 @@ describe('XOpts', () => {
     });
 
     let xopts: XOpts<Signer>;
+    let signer: Signer;
+    let bob: string;
 
     beforeEach(async () => {
       const provider = new providers.JsonRpcProvider(web3URI);
-      xopts = await XOpts.load(provider.getSigner());
+      signer = provider.getSigner();
+      xopts = await XOpts.load(signer);
+      bob = await provider.getSigner(1).getAddress();
     });
 
     describe('global', () => {
@@ -123,13 +136,37 @@ describe('XOpts', () => {
 
       describe('getUserSupply', () => {
         it('should return how much collateral the user supplied', async () => {
-          const signers = await ethers.getSigners();
-          const bob = await signers[1].getAddress();
           const options = await xopts.options.list();
           const supply = await xopts.options.getUserSupply(bob, options[1]);
           expect(supply.toBig(0).toString()).to.eq('9000');
         });
       });
+    });
+
+    describe('readWrite', () => {
+      // describe('write', () => {
+      //   it('should write the given option', async () => {
+      //     const option = (await xopts.options.list())[1];
+      //     const amount = new MonetaryAmount(USDT, 5000, 0);
+      //     await xopts.options.write(option, amount, btcAddress);
+      //   });
+      // });
+      // describe('buy', () => {
+      //   it('should buy the given option', async () => {
+      //     const options = await xopts.options.list();
+      //     const amountOut = new MonetaryAmount(USDT, 10, 1);
+      //     const amountInMax = new MonetaryAmount(USDT, 12, 1);
+      //     const collateralToken = Erc20Factory.connect(
+      //       options[0].collateral.address,
+      //       signer
+      //     );
+      //     await collateralToken.approve(
+      //       xopts.addresses.optionLib,
+      //       amountInMax.toString()
+      //     );
+      //     await xopts.options.buy(options[0], amountOut, amountInMax);
+      //   });
+      // });
     });
   });
 });

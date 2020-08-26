@@ -64,7 +64,7 @@ export async function estimateOutput(
   pairAddress: string,
   input: ERC20,
   output: ERC20,
-  amountInput: number
+  amountInput: BigNumberish
 ): Promise<BigNumber> {
   const inputReserve = await input.balanceOf(pairAddress);
   const outputReserve = await output.balanceOf(pairAddress);
@@ -79,7 +79,7 @@ export async function quote(
   pairAddress: string,
   tokenA: ERC20,
   tokenB: ERC20,
-  amountA: number
+  amountA: BigNumberish
 ): Promise<BigNumber> {
   const reserveA = await tokenA.balanceOf(pairAddress);
   const reserveB = await tokenB.balanceOf(pairAddress);

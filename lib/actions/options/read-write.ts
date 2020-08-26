@@ -1,25 +1,29 @@
 import {Option} from '../../option';
-import {Currency, MonetaryAmount} from '../../monetary';
+import {Currency, MonetaryAmount, ERC20} from '../../monetary';
 import {BtcAddress, ReadWriteContracts} from '../../contracts';
 import {
   OptionsReadOnlyActions,
   ContractsOptionsReadOnlyActions
 } from './read-only';
 
+const defaultDeadline: number = 3_600 * 6; // 6 hours max
+
+function makeDefaultDeadline(): number {
+  const nowSeconds = Math.floor(new Date().getTime() / 1000);
+  return nowSeconds + defaultDeadline;
+}
+
 export interface OptionsReadWriteActions extends OptionsReadOnlyActions {
-  write<Underlying extends Currency, Collateral extends Currency>(
+  write<Underlying extends Currency, Collateral extends ERC20>(
     option: Option<Underlying, Collateral>,
-    amount: MonetaryAmount<Underlying>,
+    amount: MonetaryAmount<Collateral>,
     btcAddress: BtcAddress
   ): Promise<void>;
 
-  buy<Underlying extends Currency, Collateral extends Currency>(
+  buy<Underlying extends Currency, Collateral extends ERC20>(
     option: Option<Underlying, Collateral>,
-    amount: MonetaryAmount<Underlying>
-  ): Promise<void>;
-
-  create<Underlying extends Currency, Collateral extends Currency>(
-    option: Option<Underlying, Collateral>
+    amountOut: MonetaryAmount<Collateral>,
+    amountInMax: MonetaryAmount<Collateral>
   ): Promise<void>;
 }
 
@@ -30,24 +34,27 @@ export class ContractsOptionsReadWriteActions
     super(contracts);
   }
 
-  async write<Underlying extends Currency, Collateral extends Currency>(
+  async write<Underlying extends Currency, Collateral extends ERC20>(
     option: Option<Underlying, Collateral>,
-    amount: MonetaryAmount<Underlying>,
+    amount: MonetaryAmount<Collateral>,
     btcAddress: BtcAddress
   ) {
-    return;
+    const pair = await this.contracts.getPair(option.address);
+    const premium = await this.estimatePremium(option, amount);
+    await pair.write(premium.toString(), amount.toString(), btcAddress);
   }
 
-  async buy<Underlying extends Currency, Collateral extends Currency>(
+  async buy<Underlying extends Currency, Collateral extends ERC20>(
     option: Option<Underlying, Collateral>,
-    amount: MonetaryAmount<Underlying>
+    amountOut: MonetaryAmount<Collateral>,
+    amountInMax: MonetaryAmount<Collateral>
   ) {
-    return;
-  }
-
-  async create<Underlying extends Currency, Collateral extends Currency>(
-    option: Option<Underlying, Collateral>
-  ) {
-    return;
+    const pair = await this.contracts.getPair(option.address);
+    const deadline = makeDefaultDeadline();
+    await pair.buyOptions(
+      amountOut.toString(),
+      amountInMax.toString(),
+      deadline
+    );
   }
 }
