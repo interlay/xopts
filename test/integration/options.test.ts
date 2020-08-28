@@ -3,7 +3,6 @@ import {Signer, Wallet, constants} from 'ethers';
 import chai from 'chai';
 import {solidity, deployMockContract, MockContract} from 'ethereum-waffle';
 import {MockCollateralFactory} from '../../typechain/MockCollateralFactory';
-import {OptionFactory} from '../../typechain/OptionFactory';
 import {OptionPairFactoryFactory} from '../../typechain/OptionPairFactoryFactory';
 import {ErrorCode, Script} from '../../lib/constants';
 import {MockCollateral} from '../../typechain/MockCollateral';
@@ -19,10 +18,6 @@ import {Ierc20Factory} from '../../typechain/Ierc20Factory';
 import {Obligation} from '../../typechain/Obligation';
 import {IUniswapV2Factory} from '../../typechain/IUniswapV2Factory';
 import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
-import {
-  getCreate2OptionAddress,
-  getCreate2ObligationAddress
-} from '../../lib/addresses';
 import {evmSnapFastForward} from '../../lib/mock';
 import {BigNumberish} from 'ethers';
 import {deployPair, getTimeNow} from '../common';

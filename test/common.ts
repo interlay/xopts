@@ -21,6 +21,7 @@ export async function deployPair(
   option: Option;
   obligation: Obligation;
 }> {
+  await optionFactory.enableAsset(collateral);
   const pairAddresses = await createPair(
     optionFactory,
     expiryTime,

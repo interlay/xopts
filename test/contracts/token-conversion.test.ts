@@ -30,6 +30,7 @@ describe('Conversion for number of obligation and option tokens with number of s
     [alice] = await ethers.getSigners();
     optionFactory = await deploy0(alice, OptionPairFactoryFactory);
     collateral = await deploy0(alice, MockCollateralFactory);
+    await optionFactory.enableAsset(collateral.address);
   });
 
   it('should validate amountIn', async () => {
