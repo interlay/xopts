@@ -1,4 +1,4 @@
-import {ethers, Contract, ContractReceipt} from 'ethers';
+import {ethers, Contract, ContractReceipt, ContractTransaction} from 'ethers';
 import {Obligation} from '../typechain/Obligation';
 import {OptionPairFactory} from '../typechain/OptionPairFactory';
 import {BigNumberish, BytesLike, BigNumber} from 'ethers';
@@ -22,8 +22,18 @@ import {IWriterRegistryFactory} from '../typechain/IWriterRegistryFactory';
 import {SignerOrProvider, Optional, Signer, Provider} from './core';
 import {Addresses, resolveAddresses} from './addresses';
 import {EventFragment, Result} from 'ethers/lib/utils';
+import {ConfirmationNotifier} from './notifier';
 
 export type AddressesPair = {option: string; obligation: string};
+
+type ObligationInfo = {
+  _expiryTime: BigNumber;
+  _windowSize: BigNumber;
+  _strikePrice: BigNumber;
+  _decimals: BigNumber;
+  _collateral: string;
+  _option: string;
+};
 
 interface Connectable<C> {
   connect: (addr: string, signer: SignerOrProvider) => C;
@@ -127,18 +137,16 @@ export async function createPair(
 }
 
 export type BtcAddress = {
-  btcHash: BytesLike;
+  hash: BytesLike;
   format: Script;
 };
 
 export interface ReadOptionPair {
-  getDetails(): Promise<{
-    expiryTime: BigNumber;
-    windowSize: BigNumber;
-    strikePrice: BigNumber;
-  }>;
+  getDetails(): Promise<ObligationInfo>;
+  getPairAddress(): Promise<string>;
 
-  balanceOf(account: string): Promise<BigNumber>;
+  totalSupplied(account: string): Promise<BigNumber>;
+  totalWritten(account: string): Promise<BigNumber>;
 }
 
 export interface WriteOptionPair extends ReadOptionPair {
@@ -146,13 +154,13 @@ export interface WriteOptionPair extends ReadOptionPair {
     premium: BigNumberish,
     amount: BigNumberish,
     btcAddress?: BtcAddress
-  ): Promise<void>;
+  ): ConfirmationNotifier;
 
   buyOptions(
     amountOut: BigNumberish,
     amountInMax: BigNumberish,
     deadline: BigNumberish
-  ): Promise<void>;
+  ): ConfirmationNotifier;
 
   sellObligations(
     amountADesired: BigNumberish,
@@ -160,14 +168,14 @@ export interface WriteOptionPair extends ReadOptionPair {
     amountAMin: BigNumberish,
     amountBMin: BigNumberish,
     deadline: BigNumberish
-  ): Promise<void>;
+  ): ConfirmationNotifier;
 
   buyObligations(
     amountOut: BigNumberish,
     amountInMax: BigNumberish
-  ): Promise<void>;
+  ): ConfirmationNotifier;
 
-  requestExercise(seller: string, satoshis: BigNumberish): Promise<void>;
+  requestExercise(seller: string, satoshis: BigNumberish): ConfirmationNotifier;
 
   executeExercise(
     seller: string,
@@ -177,9 +185,9 @@ export interface WriteOptionPair extends ReadOptionPair {
     header: BytesLike,
     proof: BytesLike,
     rawtx: BytesLike
-  ): Promise<void>;
+  ): ConfirmationNotifier;
 
-  refund(amount: BigNumberish): Promise<void>;
+  refund(amount: BigNumberish): ConfirmationNotifier;
 }
 
 export class ReadOnlyOptionPair implements ReadOptionPair {
@@ -203,31 +211,26 @@ export class ReadOnlyOptionPair implements ReadOptionPair {
     this.treasury = treasury;
   }
 
-  async getDetails(): Promise<{
-    expiryTime: ethers.BigNumber;
-    windowSize: ethers.BigNumber;
-    strikePrice: ethers.BigNumber;
-  }> {
-    const [expiryTime, windowSize, strikePrice] = await Promise.all([
-      this.option.expiryTime(),
-      this.option.windowSize(),
-      this.obligation.strikePrice()
-    ]);
-    return {
-      expiryTime,
-      windowSize,
-      strikePrice
-    };
+  async getDetails(): Promise<ObligationInfo> {
+    return this.obligation.getDetails();
+  }
+
+  getPairAddress(): Promise<string> {
+    return this.optionLib.getPairAddress(
+      this.option.address,
+      this.collateral.address
+    );
   }
 
   // gets the locked collateral for a pair
   // total number of USDT written
-  // TODO: change name to totalSupplied
-  async balanceOf(account: string): Promise<BigNumber> {
+  async totalSupplied(account: string): Promise<BigNumber> {
     return this.treasury.balanceOf(this.obligation.address, account);
   }
 
-  // TODO: add totalWritten getter
+  async totalWritten(account: string): Promise<BigNumber> {
+    return this.obligation.obligations(account);
+  }
 }
 
 export class ReadWriteOptionPair extends ReadOnlyOptionPair
@@ -251,13 +254,13 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
 
   // back options with the default collateral
   // this also adds liquidity to the uniswap pool
-  async write(
+  write(
     premium: BigNumberish,
     amount: BigNumberish,
     btcAddress: BtcAddress
-  ): Promise<void> {
-    await this.optionLib
-      .lockAndWrite(
+  ): ConfirmationNotifier {
+    return this.waitConfirm(
+      this.optionLib.lockAndWrite(
         this.option.address,
         this.collateral.address,
         this.collateral.address,
@@ -265,38 +268,38 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
         premium,
         amount,
         premium,
-        btcAddress.btcHash,
+        btcAddress.hash,
         btcAddress.format
       )
-      .then((tx) => tx.wait(this.confirmations));
+    );
   }
 
-  async buyOptions(
+  buyOptions(
     amountOut: BigNumberish,
     amountInMax: BigNumberish,
     deadline: BigNumberish
-  ): Promise<void> {
+  ): ConfirmationNotifier {
     // buy order (i.e. specify exact number of options)
-    await this.optionLib
-      .swapTokensForExactTokens(
+    return this.waitConfirm(
+      this.optionLib.swapTokensForExactTokens(
         amountOut,
         amountInMax,
         [this.collateral.address, this.option.address],
         this.account,
         deadline
       )
-      .then((tx) => tx.wait(this.confirmations));
+    );
   }
 
-  async sellObligations(
+  sellObligations(
     amountADesired: BigNumberish,
     amountBDesired: BigNumberish,
     amountAMin: BigNumberish,
     amountBMin: BigNumberish,
     deadline: BigNumberish
-  ): Promise<void> {
-    await this.optionLib
-      .addLiquidity(
+  ): ConfirmationNotifier {
+    return this.waitConfirm(
+      this.optionLib.addLiquidity(
         this.collateral.address,
         this.obligation.address,
         amountADesired,
@@ -306,29 +309,30 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
         this.account,
         deadline
       )
-      .then((tx) => tx.wait(this.confirmations));
+    );
   }
 
-  async buyObligations(
+  buyObligations(
     amountOut: BigNumberish,
     amountInMax: BigNumberish
-  ): Promise<void> {
-    await this.optionLib
-      .lockAndBuy(amountOut, amountInMax, [
+  ): ConfirmationNotifier {
+    return this.waitConfirm(
+      this.optionLib.lockAndBuy(amountOut, amountInMax, [
         this.collateral.address,
         this.obligation.address
       ])
-      .then((tx) => tx.wait(this.confirmations));
+    );
   }
 
-  async requestExercise(seller: string, satoshis: BigNumberish): Promise<void> {
-    await this.obligation
-      .requestExercise(seller, satoshis)
-      .then((tx) => tx.wait(this.confirmations));
+  requestExercise(
+    seller: string,
+    satoshis: BigNumberish
+  ): ConfirmationNotifier {
+    return this.waitConfirm(this.obligation.requestExercise(seller, satoshis));
   }
 
   // prove inclusion and claim collateral
-  async executeExercise(
+  executeExercise(
     seller: string,
     height: BigNumberish,
     index: BigNumberish,
@@ -336,17 +340,31 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     header: BytesLike,
     proof: BytesLike,
     rawtx: BytesLike
-  ): Promise<void> {
-    await this.obligation
-      .executeExercise(seller, height, index, txid, header, proof, rawtx)
-      .then((tx) => tx.wait(this.confirmations));
+  ): ConfirmationNotifier {
+    return this.waitConfirm(
+      this.obligation.executeExercise(
+        seller,
+        height,
+        index,
+        txid,
+        header,
+        proof,
+        rawtx
+      )
+    );
   }
 
   // claim written collateral after expiry
-  async refund(amount: BigNumberish): Promise<void> {
-    await this.obligation
-      .refund(amount)
-      .then((tx) => tx.wait(this.confirmations));
+  refund(amount: BigNumberish): ConfirmationNotifier {
+    return this.waitConfirm(this.obligation.refund(amount));
+  }
+
+  private waitConfirm(
+    promise: Promise<ContractTransaction>
+  ): ConfirmationNotifier {
+    return new ConfirmationNotifier(
+      promise.then((tx) => tx.wait(this.confirmations))
+    );
   }
 }
 
@@ -356,6 +374,7 @@ export interface ReadContracts {
   getPair(option: string): Promise<ReadOptionPair>;
 
   listOptions(): Promise<string[]>;
+  totalLiquidity(): Promise<BigNumber>;
 }
 
 export interface WriteContracts extends ReadContracts {
@@ -373,12 +392,12 @@ export interface WriteContracts extends ReadContracts {
 }
 
 export class ReadOnlyContracts implements ReadContracts {
-  protected optionFactory: OptionPairFactory;
-  protected optionLib: OptionLib;
-  protected collateral: Ierc20;
-  protected referee: IReferee;
-  protected relay: IRelay;
-  protected writerRegistry: IWriterRegistry;
+  readonly optionFactory: OptionPairFactory;
+  readonly optionLib: OptionLib;
+  readonly collateral: Ierc20;
+  readonly referee: IReferee;
+  readonly relay: IRelay;
+  readonly writerRegistry: IWriterRegistry;
 
   readonly signer: SignerOrProvider;
 
@@ -457,6 +476,14 @@ export class ReadOnlyContracts implements ReadContracts {
       this.collateral,
       treasury
     );
+  }
+
+  async totalLiquidity(): Promise<BigNumber> {
+    // NOTE: this only works while we use a single collateral
+    const treasury = await this.optionFactory.getTreasury(
+      this.collateral.address
+    );
+    return this.collateral.balanceOf(treasury);
   }
 
   listOptions(): Promise<string[]> {
