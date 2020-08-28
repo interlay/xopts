@@ -1,11 +1,15 @@
 import chai from 'chai';
 import {ethers} from '@nomiclabs/buidler';
 import {Signer, BigNumber, constants} from 'ethers';
-import {deploy0, deploy2, reconnect} from '../../lib/contracts';
+import {deploy2, reconnect, deploy1} from '../../lib/contracts';
 import {getTimeNow, deployPair} from '../common';
 import {Script} from '../../lib/constants';
 import {Option} from '../../typechain/Option';
-import {OptionPairFactoryFactory, OptionLibFactory} from '../../typechain';
+import {
+  OptionPairFactoryFactory,
+  OptionLibFactory,
+  TreasuryFactory
+} from '../../typechain';
 import {ITetherTokenFactory} from '../../typechain/ITetherTokenFactory';
 import {Obligation} from '../../typechain/Obligation';
 import {OptionPairFactory} from '../../typechain/OptionPairFactory';
@@ -22,6 +26,7 @@ import TetherTokenArtifact from './static/TetherToken.json';
 import {deployUniswapFactory} from '../../lib/uniswap';
 import {ITetherToken} from '../../typechain/ITetherToken';
 import * as bitcoin from 'bitcoinjs-lib';
+import {Treasury} from '../../typechain/Treasury';
 
 const {expect} = chai;
 
@@ -39,6 +44,7 @@ describe('Tether (USDT)', () => {
   let optionLib: OptionLib;
   let option: Option;
   let obligation: Obligation;
+  let treasury: Treasury;
   let referee: MockContract;
   let tether: ITetherToken;
 
@@ -56,15 +62,17 @@ describe('Tether (USDT)', () => {
       [alice, bob, charlie].map((acc) => acc.getAddress())
     );
 
-    optionFactory = await deploy0(alice, OptionPairFactoryFactory);
     uniswapFactory = await deployUniswapFactory(alice, aliceAddress);
-    optionLib = await deploy2(
-      alice,
-      OptionLibFactory,
-      uniswapFactory.address,
-      constants.AddressZero
-    );
-    referee = await deployMockContract(alice, RefereeArtifact.abi);
+    [optionFactory, optionLib, referee] = await Promise.all([
+      deploy1(alice, OptionPairFactoryFactory, uniswapFactory.address),
+      deploy2(
+        alice,
+        OptionLibFactory,
+        uniswapFactory.address,
+        constants.AddressZero
+      ),
+      deployMockContract(alice, RefereeArtifact.abi)
+    ]);
   });
 
   it('should deploy tether (USDT)', async () => {
@@ -92,7 +100,7 @@ describe('Tether (USDT)', () => {
   });
 
   it('should create an option pair', async () => {
-    ({option, obligation} = await deployPair(
+    ({option, obligation, treasury} = await deployPair(
       optionFactory,
       expiryTime,
       windowSize,
@@ -115,6 +123,14 @@ describe('Tether (USDT)', () => {
     const pair = bitcoin.ECPair.makeRandom();
     const p2pkh = bitcoin.payments.p2pkh({pubkey: pair.publicKey});
 
+    await reconnect(treasury, TreasuryFactory, alice).position(
+      0,
+      constants.MaxUint256,
+      expiryTime + windowSize,
+      p2pkh.hash!,
+      Script.p2pkh
+    );
+
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
       obligation.address,
       tether.address,
@@ -122,9 +138,7 @@ describe('Tether (USDT)', () => {
       collateralAmount,
       premiumAmount,
       collateralAmount,
-      premiumAmount,
-      p2pkh.hash!,
-      Script.p2pkh
+      premiumAmount
     );
 
     const pairAddress = await uniswapFactory.getPair(

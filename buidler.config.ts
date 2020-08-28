@@ -35,7 +35,7 @@ const config = {
   defaultNetwork: 'buidlerevm',
   solc: {
     version: '0.6.6',
-    optimizer: {enabled: true, runs: 200}
+    optimizer: {enabled: true, runs: 300}
   },
   paths: {
     sources: './contracts',

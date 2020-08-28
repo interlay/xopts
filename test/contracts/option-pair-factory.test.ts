@@ -1,20 +1,26 @@
 import chai from 'chai';
 import {ethers} from '@nomiclabs/buidler';
 import {Signer} from 'ethers';
-import {deploy0, getCreatePairEvent} from '../../lib/contracts';
+import {
+  deploy0,
+  getCreatePairEvent,
+  getEvent,
+  deploy1
+} from '../../lib/contracts';
 import {getTimeNow} from '../common';
 import {ErrorCode} from '../../lib/constants';
 import {OptionPairFactoryFactory, OptionFactory} from '../../typechain';
 import {OptionPairFactory} from '../../typechain/OptionPairFactory';
 import {deployMockContract, MockContract} from 'ethereum-waffle';
 import ERC20Artifact from '../../artifacts/ERC20.json';
+import IUniswapV2FactoryArtifact from '../../artifacts/IUniswapV2Factory.json';
 import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
+import TreasuryArtifact from '../../artifacts/Treasury.json';
 import {
   getCreate2OptionAddress,
   getCreate2ObligationAddress
 } from '../../lib/addresses';
 import {newBigNum} from '../../lib/conversion';
-import {option} from 'fast-check';
 
 const {expect} = chai;
 
@@ -26,8 +32,11 @@ describe('OptionPairFactory.sol', () => {
   let bobAddress: string;
 
   let optionFactory: OptionPairFactory;
+  let uniswapFactory: MockContract;
   let collateral: MockContract;
   let referee: MockContract;
+
+  let treasury: MockContract;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -40,12 +49,38 @@ describe('OptionPairFactory.sol', () => {
       alice.getAddress(),
       bob.getAddress()
     ]);
-    optionFactory = await deploy0(alice, OptionPairFactoryFactory);
+    uniswapFactory = await deployMockContract(
+      alice,
+      IUniswapV2FactoryArtifact.abi
+    );
+    optionFactory = await deploy1(
+      alice,
+      OptionPairFactoryFactory,
+      uniswapFactory.address
+    );
     collateral = await deployMockContract(alice, ERC20Artifact.abi);
     referee = await deployMockContract(alice, BTCRefereeArtifact.abi);
   });
 
+  const setTreasury = async () => {
+    treasury = await deployMockContract(alice, TreasuryArtifact.abi);
+    await optionFactory.setTreasuryFor(collateral.address, treasury.address);
+  };
+
+  it('should fail to create an option pair without a treasury', async () => {
+    await collateral.mock.decimals.returns(decimals);
+    const result = optionFactory.createPair(
+      expiryTime,
+      windowSize,
+      strikePrice,
+      collateral.address,
+      referee.address
+    );
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_TREASURY);
+  });
+
   it('should fail to create an expired option pair', async () => {
+    await setTreasury();
     await collateral.mock.decimals.returns(decimals);
     const result = optionFactory.createPair(
       getTimeNow(),
@@ -58,6 +93,7 @@ describe('OptionPairFactory.sol', () => {
   });
 
   it('should fail to create a zero-window option pair', async () => {
+    await setTreasury();
     await collateral.mock.decimals.returns(decimals);
     const result = optionFactory.createPair(
       expiryTime,
@@ -70,6 +106,7 @@ describe('OptionPairFactory.sol', () => {
   });
 
   it('should fail to create an option pair with 0 strikePrice', async () => {
+    await setTreasury();
     await collateral.mock.decimals.returns(decimals);
     const result = optionFactory.createPair(
       expiryTime,
@@ -82,6 +119,9 @@ describe('OptionPairFactory.sol', () => {
   });
 
   it('should create an option pair with decimals', async () => {
+    await setTreasury();
+    await treasury.mock.authorize.returns();
+
     await collateral.mock.decimals.returns(decimals);
     const receipt = await optionFactory
       .createPair(
@@ -107,6 +147,9 @@ describe('OptionPairFactory.sol', () => {
   });
 
   it('should generate deterministic contract addresses', async () => {
+    await setTreasury();
+    await treasury.mock.authorize.returns();
+
     const salt = {
       expiryTime,
       windowSize,
@@ -116,21 +159,26 @@ describe('OptionPairFactory.sol', () => {
     };
 
     await collateral.mock.decimals.returns(decimals);
-    await optionFactory.createPair(
+    const tx = await optionFactory.createPair(
       expiryTime,
       windowSize,
       strikePrice,
       collateral.address,
       referee.address
     );
-    const optionAddress0 = await optionFactory.options(0);
+
+    const fragment =
+      optionFactory.interface.events[
+        'CreatePair(address,address,address,uint256,uint256,uint256)'
+      ];
+    const event = await getEvent(fragment, [], await tx.wait(0), optionFactory);
+
+    const optionAddress0 = event.option;
+    const obligationAddress0 = event.obligation;
 
     const optionAddress1 = getCreate2OptionAddress(salt, optionFactory.address);
     expect(optionAddress0).to.eq(optionAddress1);
 
-    const obligationAddress0 = await optionFactory.getObligation(
-      optionAddress0
-    );
     const obligationAddress1 = getCreate2ObligationAddress(
       salt,
       optionFactory.address

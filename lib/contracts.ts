@@ -186,8 +186,6 @@ export interface WriteOptionPair extends ReadOptionPair {
     proof: BytesLike,
     rawtx: BytesLike
   ): ConfirmationNotifier;
-
-  refund(amount: BigNumberish): ConfirmationNotifier;
 }
 
 export class ReadOnlyOptionPair implements ReadOptionPair {
@@ -225,7 +223,7 @@ export class ReadOnlyOptionPair implements ReadOptionPair {
   // gets the locked collateral for a pair
   // total number of USDT written
   async totalSupplied(account: string): Promise<BigNumber> {
-    return this.treasury.balanceOf(this.obligation.address, account);
+    return this.treasury.lockedIn(this.obligation.address, account);
   }
 
   async totalWritten(account: string): Promise<BigNumber> {
@@ -259,6 +257,7 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     amount: BigNumberish,
     btcAddress: BtcAddress
   ): ConfirmationNotifier {
+    // TODO: write position
     return this.waitConfirm(
       this.optionLib.lockAndWrite(
         this.option.address,
@@ -267,9 +266,7 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
         amount,
         premium,
         amount,
-        premium,
-        btcAddress.hash,
-        btcAddress.format
+        premium
       )
     );
   }
@@ -352,11 +349,6 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
         rawtx
       )
     );
-  }
-
-  // claim written collateral after expiry
-  refund(amount: BigNumberish): ConfirmationNotifier {
-    return this.waitConfirm(this.obligation.refund(amount));
   }
 
   private waitConfirm(

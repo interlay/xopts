@@ -4,6 +4,9 @@ pragma solidity ^0.6.0;
 
 import '@nomiclabs/buidler/console.sol';
 
+import {
+    IUniswapV2Pair
+} from '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -65,22 +68,24 @@ contract Option is IOption, IERC20, European, Ownable {
     }
 
     /**
-     * @notice Mints an `amount` of option tokens to an `account`.
+     * @notice Mints an `amount` of option tokens from a `writer` to an `account`.
      * @dev Can only be called by the parent Obligation contract.
      * @dev Once the expiry date has lapsed this function is no longer valid.
-     * @param account Destination address
+     * @param writer Origin address
+     * @param pair Uniswap liquidity pair
      * @param amount Total credit
      **/
-    function mint(address account, uint256 amount)
-        external
-        override
-        onlyOwner
-        notExpired
-    {
+    function mint(
+        address writer,
+        address pair,
+        uint256 amount
+    ) external override onlyOwner notExpired {
         // collateral:(options/obligations) are 1:1
-        _balances[account] = _balances[account].add(amount);
+        _balances[pair] = _balances[pair].add(amount);
         totalSupply = totalSupply.add(amount);
-        emit Transfer(address(0), account, amount);
+        emit Transfer(address(0), pair, amount);
+
+        IUniswapV2Pair(pair).mint(writer);
     }
 
     function _burn(address account, uint256 amount) internal {

@@ -13,13 +13,15 @@ import {IOption} from './interface/IOption.sol';
 import {Obligation} from './Obligation.sol';
 import {IObligation} from './interface/IObligation.sol';
 import {IOptionPairFactory} from './interface/IOptionPairFactory.sol';
-import {Treasury} from './Treasury.sol';
+import {ITreasury} from './interface/ITreasury.sol';
 
 /// @title Parent Factory
 /// @author Interlay
 /// @notice Tracks and manages ERC20 Option pairs.
-contract OptionPairFactory is IOptionPairFactory {
+contract OptionPairFactory is IOptionPairFactory, Ownable {
     using SafeMath for uint256;
+
+    string internal constant ERR_NO_TREASURY = 'No treasury found';
 
     /// @notice Emit upon successful creation of a new option pair.
     event CreatePair(
@@ -31,10 +33,13 @@ contract OptionPairFactory is IOptionPairFactory {
         uint256 strikePrice
     );
 
-    mapping(address => address) public getObligation;
+    address internal uniswap;
+
     mapping(address => address) public getTreasury;
-    mapping(address => address) public getCollateral;
-    address[] public options;
+
+    constructor(address _uniswap) public Ownable() {
+        uniswap = _uniswap;
+    }
 
     function _createOption(
         uint8 decimals,
@@ -75,9 +80,19 @@ contract OptionPairFactory is IOptionPairFactory {
             strikePrice,
             option,
             referee,
-            treasury
+            treasury,
+            uniswap
         );
         return obligation;
+    }
+
+    function setTreasuryFor(address collateral, address treasury)
+        external
+        onlyOwner
+    {
+        // treasury must be created separately due to the contract
+        // size limit of 24576 bytes
+        getTreasury[collateral] = treasury;
     }
 
     /**
@@ -98,13 +113,9 @@ contract OptionPairFactory is IOptionPairFactory {
         address collateral,
         address referee
     ) external override returns (address option, address obligation) {
-        // load treasury for collateral type or create
-        // a new treasury if it does not exist yet
+        // load treasury for collateral type
         address treasury = getTreasury[collateral];
-        if (treasury == address(0)) {
-            // TODO: treasury create2?
-            treasury = address(new Treasury(collateral));
-        }
+        require(treasury != address(0), ERR_NO_TREASURY);
 
         // deterministic creation of option pair to ensure
         // that liquidity ends up in the same pool
@@ -135,11 +146,7 @@ contract OptionPairFactory is IOptionPairFactory {
             salt
         );
         Ownable(option).transferOwnership(obligation);
-
-        getObligation[option] = obligation;
-        getTreasury[collateral] = treasury;
-        getCollateral[option] = collateral;
-        options.push(option);
+        ITreasury(treasury).authorize(obligation);
 
         emit CreatePair(
             option,
@@ -149,9 +156,5 @@ contract OptionPairFactory is IOptionPairFactory {
             windowSize,
             strikePrice
         );
-    }
-
-    function allOptions() external override view returns (address[] memory) {
-        return options;
     }
 }
