@@ -14,7 +14,6 @@ import {
   getCreate2ObligationAddress
 } from '../../lib/addresses';
 import {newBigNum} from '../../lib/conversion';
-import {option} from 'fast-check';
 
 const {expect} = chai;
 
@@ -40,13 +39,28 @@ describe('OptionPairFactory.sol', () => {
       alice.getAddress(),
       bob.getAddress()
     ]);
-    optionFactory = await deploy0(alice, OptionPairFactoryFactory);
-    collateral = await deployMockContract(alice, ERC20Artifact.abi);
-    referee = await deployMockContract(alice, BTCRefereeArtifact.abi);
+    [optionFactory, collateral, referee] = await Promise.all([
+      deploy0(alice, OptionPairFactoryFactory),
+      deployMockContract(alice, ERC20Artifact.abi),
+      deployMockContract(alice, BTCRefereeArtifact.abi)
+    ]);
+  });
+
+  it('should fail to create an option pair with unsupported collateral', async () => {
+    await collateral.mock.decimals.returns(decimals);
+    const result = optionFactory.createPair(
+      expiryTime,
+      windowSize,
+      strikePrice,
+      collateral.address,
+      referee.address
+    );
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_SUPPORTED);
   });
 
   it('should fail to create an expired option pair', async () => {
     await collateral.mock.decimals.returns(decimals);
+    await optionFactory.enableAsset(collateral.address);
     const result = optionFactory.createPair(
       getTimeNow(),
       windowSize,
@@ -59,6 +73,7 @@ describe('OptionPairFactory.sol', () => {
 
   it('should fail to create a zero-window option pair', async () => {
     await collateral.mock.decimals.returns(decimals);
+    await optionFactory.enableAsset(collateral.address);
     const result = optionFactory.createPair(
       expiryTime,
       0,
@@ -71,6 +86,7 @@ describe('OptionPairFactory.sol', () => {
 
   it('should fail to create an option pair with 0 strikePrice', async () => {
     await collateral.mock.decimals.returns(decimals);
+    await optionFactory.enableAsset(collateral.address);
     const result = optionFactory.createPair(
       expiryTime,
       windowSize,
@@ -83,6 +99,7 @@ describe('OptionPairFactory.sol', () => {
 
   it('should create an option pair with decimals', async () => {
     await collateral.mock.decimals.returns(decimals);
+    await optionFactory.enableAsset(collateral.address);
     const receipt = await optionFactory
       .createPair(
         expiryTime,
@@ -116,6 +133,7 @@ describe('OptionPairFactory.sol', () => {
     };
 
     await collateral.mock.decimals.returns(decimals);
+    await optionFactory.enableAsset(collateral.address);
     await optionFactory.createPair(
       expiryTime,
       windowSize,

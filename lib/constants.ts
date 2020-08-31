@@ -12,6 +12,9 @@ export const ErrorCode = {
   ERR_APPROVE_FROM_ZERO_ADDRESS: 'Approve from zero address',
   ERR_TRANSFER_FROM_ZERO_ADDRESS: 'Transfer from zero address',
 
+  // OptionPairFactory
+  ERR_NOT_SUPPORTED: 'Collateral not supported',
+
   // Expirable
   ERR_INIT_EXPIRED: 'Cannot init expired',
   ERR_EXPIRED: 'Contract has expired',

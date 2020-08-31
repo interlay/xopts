@@ -18,8 +18,10 @@ import {Treasury} from './Treasury.sol';
 /// @title Parent Factory
 /// @author Interlay
 /// @notice Tracks and manages ERC20 Option pairs.
-contract OptionPairFactory is IOptionPairFactory {
+contract OptionPairFactory is IOptionPairFactory, Ownable {
     using SafeMath for uint256;
+
+    string internal constant ERR_NOT_SUPPORTED = 'Collateral not supported';
 
     /// @notice Emit upon successful creation of a new option pair.
     event CreatePair(
@@ -35,6 +37,20 @@ contract OptionPairFactory is IOptionPairFactory {
     mapping(address => address) public getTreasury;
     mapping(address => address) public getCollateral;
     address[] public options;
+
+    mapping(address => bool) private isEnabled;
+
+    constructor() public Ownable() {
+        // solhint-disable-previous-line no-empty-blocks
+    }
+
+    function enableAsset(address collateral) external override onlyOwner {
+        isEnabled[collateral] = true;
+    }
+
+    function disableAsset(address collateral) external override onlyOwner {
+        isEnabled[collateral] = false;
+    }
 
     function _createOption(
         uint8 decimals,
@@ -98,11 +114,13 @@ contract OptionPairFactory is IOptionPairFactory {
         address collateral,
         address referee
     ) external override returns (address option, address obligation) {
+        // fail early if the collateral asset has not been whitelisted
+        require(isEnabled[collateral], ERR_NOT_SUPPORTED);
+
         // load treasury for collateral type or create
         // a new treasury if it does not exist yet
         address treasury = getTreasury[collateral];
         if (treasury == address(0)) {
-            // TODO: treasury create2?
             treasury = address(new Treasury(collateral));
         }
 
