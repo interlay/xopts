@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.0;
 
-import {Bitcoin} from '../types/Bitcoin.sol';
+import {Bitcoin} from "../types/Bitcoin.sol";
 
 interface IObligation {
     function initialize(

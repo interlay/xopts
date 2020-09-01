@@ -6,8 +6,7 @@ import * as monetary from '../../lib/monetary';
 
 const fcBig = (): fc.Arbitrary<Big> => fc.integer().map((v) => new Big(v));
 
-const newBig = (value: number, decimals: number = 0) =>
-  new Big(value).mul(new Big(10).pow(decimals));
+const newBig = (value: number, decimals: number = 0) => new Big(value).mul(new Big(10).pow(decimals));
 
 describe('currencies', () => {
   describe('BTC', () => {
@@ -85,9 +84,7 @@ describe('MonetaryAmount', () => {
             (decimals) => {
               const rawAmount = new Big(5);
               const amount = new DummyAmount(rawAmount, decimals);
-              expect(amount.toBig(decimals).toString()).to.eq(
-                rawAmount.toString()
-              );
+              expect(amount.toBig(decimals).toString()).to.eq(rawAmount.toString());
             }
           )
         );
@@ -123,9 +120,7 @@ describe('MonetaryAmount', () => {
               const amountA = new DummyAmount(rawAmountA);
               const amountB = new DummyAmount(rawAmountB);
               const added = amountA.add(amountB);
-              expect(added.toBig().toString()).to.eq(
-                rawAmountA.add(rawAmountB).toString()
-              );
+              expect(added.toBig().toString()).to.eq(rawAmountA.add(rawAmountB).toString());
               expect(amountA.toString()).to.eq(rawAmountA.toString());
               expect(amountB.toString()).to.eq(rawAmountB.toString());
             })
@@ -140,9 +135,7 @@ describe('MonetaryAmount', () => {
               const amountA = new DummyAmount(rawAmountA);
               const amountB = new DummyAmount(rawAmountB);
               const added = amountA.sub(amountB);
-              expect(added.toBig().toString()).to.eq(
-                rawAmountA.sub(rawAmountB).toString()
-              );
+              expect(added.toBig().toString()).to.eq(rawAmountA.sub(rawAmountB).toString());
               expect(amountA.toString()).to.eq(rawAmountA.toString());
               expect(amountB.toString()).to.eq(rawAmountB.toString());
             })
@@ -156,9 +149,7 @@ describe('MonetaryAmount', () => {
             fc.property(fcBig(), fc.integer(), (rawAmount, multiplier) => {
               const amount = new DummyAmount(rawAmount);
               const multiplied = amount.mul(multiplier);
-              expect(multiplied.toBig().toString()).to.eq(
-                rawAmount.mul(multiplier).toString()
-              );
+              expect(multiplied.toBig().toString()).to.eq(rawAmount.mul(multiplier).toString());
               expect(amount.toString()).to.eq(rawAmount.toString());
             })
           );
@@ -174,9 +165,7 @@ describe('MonetaryAmount', () => {
               (rawAmount, divisor) => {
                 const amount = new DummyAmount(rawAmount);
                 const divided = amount.div(divisor);
-                expect(divided.toBig().toString()).to.eq(
-                  rawAmount.div(divisor).toString()
-                );
+                expect(divided.toBig().toString()).to.eq(rawAmount.div(divisor).toString());
                 expect(amount.toString()).to.eq(rawAmount.toString());
               }
             )
@@ -193,11 +182,7 @@ describe('MonetaryAmount', () => {
   type toBTCAmount = 'toSatoshi' | 'toMSatoshi' | 'toBTC';
 
   describe('BTCAmount', () => {
-    const cases: [
-      (amount: BigSource) => monetary.BTCAmount,
-      toBTCAmount,
-      number
-    ][] = [
+    const cases: [(amount: BigSource) => monetary.BTCAmount, toBTCAmount, number][] = [
       [monetary.BTCAmount.fromSatoshi, 'toSatoshi', 100_000_000],
       [monetary.BTCAmount.fromMSatoshi, 'toMSatoshi', 100_000],
       [monetary.BTCAmount.fromBTC, 'toBTC', 1]
@@ -223,9 +208,7 @@ describe('MonetaryAmount', () => {
               fc.integer().map((v) => new Big(v)),
               (rawAmount) => {
                 const amount = from(rawAmount);
-                expect(amount.toBTC().toString()).to.eq(
-                  rawAmount.div(decimalMul).toString()
-                );
+                expect(amount.toBTC().toString()).to.eq(rawAmount.div(decimalMul).toString());
               }
             )
           );
@@ -237,11 +220,7 @@ describe('MonetaryAmount', () => {
   type toETHAmount = 'toWei' | 'toGWei' | 'toEther';
 
   describe('ETHAmount', () => {
-    const cases: [
-      (amount: BigSource) => monetary.ETHAmount,
-      toETHAmount,
-      number
-    ][] = [
+    const cases: [(amount: BigSource) => monetary.ETHAmount, toETHAmount, number][] = [
       [monetary.ETHAmount.fromWei, 'toWei', Math.pow(10, 18)],
       [monetary.ETHAmount.fromGWei, 'toGWei', Math.pow(10, 9)],
       [monetary.ETHAmount.fromEther, 'toEther', 1]
@@ -267,9 +246,7 @@ describe('MonetaryAmount', () => {
               fc.integer().map((v) => new Big(v)),
               (rawAmount) => {
                 const amount = from(rawAmount);
-                expect(amount.toEther().toString()).to.eq(
-                  rawAmount.div(decimalMul).toString()
-                );
+                expect(amount.toEther().toString()).to.eq(rawAmount.div(decimalMul).toString());
               }
             )
           );
@@ -283,9 +260,7 @@ describe('MonetaryAmount', () => {
       it('should delegate to parent', () => {
         const rawAmount = new Big(10);
         const amount = new monetary.ERC20Amount(DummyERCT, rawAmount, 0);
-        const expected = rawAmount
-          .mul(new Big(10).pow(DummyERCT.decimals))
-          .toString();
+        const expected = rawAmount.mul(new Big(10).pow(DummyERCT.decimals)).toString();
         expect(amount.toString()).to.eq(expected);
       });
     });
@@ -305,14 +280,8 @@ describe('MonetaryAmount', () => {
           });
 
           it('should fail with different currencies', () => {
-            const amountA = new monetary.ERC20Amount(
-              new monetary.ERC20('Dai', '0x'),
-              30
-            );
-            const amountB = new monetary.ERC20Amount(
-              new monetary.ERC20('Compound', '0x'),
-              10
-            );
+            const amountA = new monetary.ERC20Amount(new monetary.ERC20('Dai', '0x'), 30);
+            const amountB = new monetary.ERC20Amount(new monetary.ERC20('Compound', '0x'), 10);
             expect(() => amountA[op](amountB)).to.throw(`cannot ${op}`);
           });
         });
@@ -324,17 +293,11 @@ describe('MonetaryAmount', () => {
     const rawRate = 9200;
     const USDT = new monetary.Tether('0x');
     const normalizedRawRate = newBig(rawRate, USDT.decimals);
-    const rate = new monetary.ExchangeRate(
-      monetary.BTC,
-      USDT,
-      normalizedRawRate
-    );
+    const rate = new monetary.ExchangeRate(monetary.BTC, USDT, normalizedRawRate);
 
     describe('toBase', () => {
       it('should correctly convert value', () => {
-        const btcAmount = rate.toBase(
-          new monetary.MonetaryAmount(USDT, rawRate * 3, 0)
-        );
+        const btcAmount = rate.toBase(new monetary.MonetaryAmount(USDT, rawRate * 3, 0));
         expect(btcAmount.toBig(0).eq(new Big(3))).to.be.true;
       });
     });

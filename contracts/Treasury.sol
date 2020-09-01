@@ -2,14 +2,12 @@
 
 pragma solidity ^0.6.0;
 
-import '@nomiclabs/buidler/console.sol';
+import "@nomiclabs/buidler/console.sol";
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
-import {
-    ReentrancyGuard
-} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
-import {ITreasury} from './interface/ITreasury.sol';
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ITreasury} from "./interface/ITreasury.sol";
 
 /// @title Treasury ERC20
 /// @author Interlay
@@ -19,12 +17,9 @@ import {ITreasury} from './interface/ITreasury.sol';
 contract Treasury is ITreasury, ReentrancyGuard {
     using SafeMath for uint256;
 
-    string
-        internal constant ERR_INSUFFICIENT_DEPOSIT = 'Insufficient deposit amount';
-    string
-        internal constant ERR_INSUFFICIENT_LOCKED = 'Insufficient collateral locked';
-    string
-        internal constant ERR_INSUFFICIENT_UNLOCKED = 'Insufficient collateral unlocked';
+    string internal constant ERR_INSUFFICIENT_DEPOSIT = "Insufficient deposit amount";
+    string internal constant ERR_INSUFFICIENT_LOCKED = "Insufficient collateral locked";
+    string internal constant ERR_INSUFFICIENT_UNLOCKED = "Insufficient collateral unlocked";
 
     /// @notice The address of the collateral ERC20
     /// @return address of the ERC20 contract
@@ -45,12 +40,7 @@ contract Treasury is ITreasury, ReentrancyGuard {
     /// @notice Returns the balance of an `account` under a particular `market`.
     /// @param market Address of the market
     /// @param account Address of the supplier
-    function balanceOf(address market, address account)
-        external
-        override
-        view
-        returns (uint256)
-    {
+    function balanceOf(address market, address account) external override view returns (uint256) {
         return _locked[market][account];
     }
 
@@ -61,11 +51,7 @@ contract Treasury is ITreasury, ReentrancyGuard {
     /// to prevent misapproriation.
     /// @param market Address of the market
     /// @param account Address of the supplier
-    function deposit(address market, address account)
-        external
-        override
-        nonReentrant
-    {
+    function deposit(address market, address account) external override nonReentrant {
         uint256 balance = IERC20(collateral).balanceOf(address(this));
         uint256 amount = balance.sub(reserve);
         require(amount > 0, ERR_INSUFFICIENT_DEPOSIT);
@@ -78,15 +64,8 @@ contract Treasury is ITreasury, ReentrancyGuard {
     /// @dev Reverts if if there is insufficient funds 'unlocked'.
     /// @param account Ethereum address that locks collateral
     /// @param amount The amount to be locked
-    function lock(address account, uint256 amount)
-        external
-        override
-        nonReentrant
-    {
-        _unlocked[msg.sender][account] = _unlocked[msg.sender][account].sub(
-            amount,
-            ERR_INSUFFICIENT_UNLOCKED
-        );
+    function lock(address account, uint256 amount) external override nonReentrant {
+        _unlocked[msg.sender][account] = _unlocked[msg.sender][account].sub(amount, ERR_INSUFFICIENT_UNLOCKED);
         _locked[msg.sender][account] = _locked[msg.sender][account].add(amount);
     }
 
@@ -103,10 +82,7 @@ contract Treasury is ITreasury, ReentrancyGuard {
         address to,
         uint256 amount
     ) external override nonReentrant {
-        _locked[msg.sender][from] = _locked[msg.sender][from].sub(
-            amount,
-            ERR_INSUFFICIENT_LOCKED
-        );
+        _locked[msg.sender][from] = _locked[msg.sender][from].sub(amount, ERR_INSUFFICIENT_LOCKED);
         IERC20(collateral).transfer(to, amount);
         reserve = IERC20(collateral).balanceOf(address(this));
     }

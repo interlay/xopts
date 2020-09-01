@@ -24,10 +24,7 @@ describe('Option.sol', () => {
 
   beforeEach('should deploy option and mock dependencies', async () => {
     [alice, bob] = await ethers.getSigners();
-    [aliceAddress, bobAddress] = await Promise.all([
-      alice.getAddress(),
-      bob.getAddress()
-    ]);
+    [aliceAddress, bobAddress] = await Promise.all([alice.getAddress(), bob.getAddress()]);
     option = await deploy0(alice, OptionFactory);
     await option.initialize(18, expiryTime, windowSize);
   });
@@ -50,14 +47,8 @@ describe('Option.sol', () => {
   it('should mint options', async () => {
     const tx = await option.mint(aliceAddress, 1000);
 
-    const fragment =
-      option.interface.events['Transfer(address,address,uint256)'];
-    const event = await getEvent(
-      fragment,
-      [constants.AddressZero, aliceAddress],
-      await tx.wait(0),
-      option
-    );
+    const fragment = option.interface.events['Transfer(address,address,uint256)'];
+    const event = await getEvent(fragment, [constants.AddressZero, aliceAddress], await tx.wait(0), option);
     expect(event.value).to.eq(BigNumber.from(1000));
 
     const optionBalance = await option.balanceOf(aliceAddress);
@@ -67,19 +58,14 @@ describe('Option.sol', () => {
   });
 
   it('should only allow owner to request exercise', async () => {
-    const result = reconnect(option, OptionFactory, bob).requestExercise(
-      aliceAddress,
-      1000
-    );
+    const result = reconnect(option, OptionFactory, bob).requestExercise(aliceAddress, 1000);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_CALLER_NOT_OWNER);
   });
 
   it('should fail to request exercise with insufficient balance', async () => {
     return evmSnapFastForward(1000, async () => {
       const result = option.requestExercise(aliceAddress, 1000);
-      await expect(result).to.be.revertedWith(
-        ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE
-      );
+      await expect(result).to.be.revertedWith(ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE);
     });
   });
 

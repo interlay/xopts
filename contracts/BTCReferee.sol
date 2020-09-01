@@ -2,15 +2,15 @@
 
 pragma solidity ^0.6.0;
 
-import '@nomiclabs/buidler/console.sol';
+import "@nomiclabs/buidler/console.sol";
 
-import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
-import {BytesLib} from '@interlay/bitcoin-spv-sol/contracts/BytesLib.sol';
-import {Parser} from '@interlay/btc-relay-sol/contracts/Parser.sol';
-import {Script} from '@interlay/btc-relay-sol/contracts/Script.sol';
-import {IReferee} from './interface/IReferee.sol';
-import {IRelay} from './interface/IRelay.sol';
-import {Bitcoin} from './types/Bitcoin.sol';
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {BytesLib} from "@interlay/bitcoin-spv-sol/contracts/BytesLib.sol";
+import {Parser} from "@interlay/btc-relay-sol/contracts/Parser.sol";
+import {Script} from "@interlay/btc-relay-sol/contracts/Script.sol";
+import {IReferee} from "./interface/IReferee.sol";
+import {IRelay} from "./interface/IRelay.sol";
+import {Bitcoin} from "./types/Bitcoin.sol";
 
 contract BTCReferee is IReferee {
     using SafeMath for uint256;
@@ -18,9 +18,9 @@ contract BTCReferee is IReferee {
     using Parser for bytes;
     using Script for bytes;
 
-    string internal constant ERR_INVALID_OUT_HASH = 'Invalid output hash';
-    string internal constant ERR_TX_NOT_INCLUDED = 'Cannot verify tx inclusion';
-    string internal constant ERR_INVALID_REQUEST_ID = 'Invalid request id';
+    string internal constant ERR_INVALID_OUT_HASH = "Invalid output hash";
+    string internal constant ERR_TX_NOT_INCLUDED = "Cannot verify tx inclusion";
+    string internal constant ERR_INVALID_REQUEST_ID = "Invalid request id";
 
     address public relay;
 
@@ -35,16 +35,7 @@ contract BTCReferee is IReferee {
         bytes memory header,
         bytes memory proof
     ) internal view returns (bool) {
-        return
-            IRelay(relay).verifyTx(
-                height,
-                index,
-                txid,
-                header,
-                proof,
-                0,
-                false
-            );
+        return IRelay(relay).verifyTx(height, index, txid, header, proof, 0, false);
     }
 
     function _extractOutput(
@@ -107,10 +98,7 @@ contract BTCReferee is IReferee {
         Bitcoin.Script format
     ) external virtual override returns (uint256) {
         require(btcHash != 0, ERR_INVALID_OUT_HASH);
-        require(
-            _isIncluded(height, index, txid, header, proof),
-            ERR_TX_NOT_INCLUDED
-        );
+        require(_isIncluded(height, index, txid, header, proof), ERR_TX_NOT_INCLUDED);
         (bytes32 data, uint256 amount) = _extractOutput(rawtx, btcHash, format);
         require(data == id, ERR_INVALID_REQUEST_ID);
         return amount;

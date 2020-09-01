@@ -42,11 +42,7 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {amount} = await btcReferee.extractOutput(
-      p2shTx,
-      btcHash,
-      Script.p2sh
-    );
+    const {amount} = await btcReferee.extractOutput(p2shTx, btcHash, Script.p2sh);
     expect(amount).to.eq(btcToSatoshi(0.38900688));
   });
 
@@ -57,11 +53,7 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {amount} = await btcReferee.extractOutput(
-      p2shTx,
-      btcHash,
-      Script.p2pkh
-    );
+    const {amount} = await btcReferee.extractOutput(p2shTx, btcHash, Script.p2pkh);
     expect(amount).to.eq(constants.Zero);
   });
 
@@ -81,11 +73,7 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {amount} = await btcReferee.extractOutput(
-      p2pkhTx0,
-      btcHash,
-      Script.p2pkh
-    );
+    const {amount} = await btcReferee.extractOutput(p2pkhTx0, btcHash, Script.p2pkh);
     expect(amount).to.eq(btcToSatoshi(1.14883244));
   });
 
@@ -96,11 +84,7 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {amount} = await btcReferee.extractOutput(
-      p2shTx,
-      btcHash,
-      Script.p2wpkh
-    );
+    const {amount} = await btcReferee.extractOutput(p2shTx, btcHash, Script.p2wpkh);
     expect(amount).to.eq(constants.Zero);
   });
 
@@ -121,15 +105,9 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {data, amount} = await btcReferee.extractOutput(
-      p2pkhTx1,
-      btcHash,
-      Script.p2pkh
-    );
+    const {data, amount} = await btcReferee.extractOutput(p2pkhTx1, btcHash, Script.p2pkh);
     expect(amount).to.eq(btcToSatoshi(0.000001));
-    expect(data).to.eq(
-      '0xbb098b68899b1f586de557dae6bae76093ae4206039c43c89031ae77352268ba'
-    );
+    expect(data).to.eq('0xbb098b68899b1f586de557dae6bae76093ae4206039c43c89031ae77352268ba');
   });
 
   const p2wpkhTx0 =
@@ -154,11 +132,7 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {amount} = await btcReferee.extractOutput(
-      p2wpkhTx0,
-      btcHash,
-      Script.p2wpkh
-    );
+    const {amount} = await btcReferee.extractOutput(p2wpkhTx0, btcHash, Script.p2wpkh);
     expect(amount).to.eq(btcToSatoshi(0.002));
   });
 
@@ -169,11 +143,7 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {amount} = await btcReferee.extractOutput(
-      p2shTx,
-      btcHash,
-      Script.p2sh
-    );
+    const {amount} = await btcReferee.extractOutput(p2shTx, btcHash, Script.p2sh);
     expect(amount).to.eq(constants.Zero);
   });
 
@@ -192,15 +162,9 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {data, amount} = await btcReferee.extractOutput(
-      p2wpkhTx1,
-      btcHash,
-      Script.p2wpkh
-    );
+    const {data, amount} = await btcReferee.extractOutput(p2wpkhTx1, btcHash, Script.p2wpkh);
     expect(amount).to.eq(btcToSatoshi(0.000001));
-    expect(data).to.eq(
-      '0x6217fb6a2ad9bb6ce6e2b27545fea21416aaf9a401f86f10f8f914dc47f757f0'
-    );
+    expect(data).to.eq('0x6217fb6a2ad9bb6ce6e2b27545fea21416aaf9a401f86f10f8f914dc47f757f0');
   });
 
   const p2wpkhTx2 =
@@ -218,14 +182,8 @@ describe('BTCReferee.sol', () => {
     });
     const btcHash = payment.hash!;
 
-    const {data, amount} = await btcReferee.extractOutput(
-      p2wpkhTx2,
-      btcHash,
-      Script.p2wpkh
-    );
+    const {data, amount} = await btcReferee.extractOutput(p2wpkhTx2, btcHash, Script.p2wpkh);
     expect(amount).to.eq(btcToSatoshi(0.000001));
-    expect(data).to.eq(
-      '0x0000000000000000000000000000000000000000000000000000000000000000'
-    );
+    expect(data).to.eq('0x0000000000000000000000000000000000000000000000000000000000000000');
   });
 });

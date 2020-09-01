@@ -22,10 +22,7 @@ describe('Treasury.sol', () => {
 
   it('should deploy treasury', async () => {
     [alice, bob] = await ethers.getSigners();
-    [aliceAddress, bobAddress] = await Promise.all([
-      alice.getAddress(),
-      bob.getAddress()
-    ]);
+    [aliceAddress, bobAddress] = await Promise.all([alice.getAddress(), bob.getAddress()]);
     collateral = await deployMockContract(alice, ERC20Artifact.abi);
     treasury = await deploy1(alice, TreasuryFactory, collateral.address);
   });

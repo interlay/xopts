@@ -1,10 +1,7 @@
 import {Option} from '../../option';
 import {Currency, MonetaryAmount, ERC20} from '../../monetary';
 import {BtcAddress, ReadWriteContracts} from '../../contracts';
-import {
-  OptionsReadOnlyActions,
-  ContractsOptionsReadOnlyActions
-} from './read-only';
+import {OptionsReadOnlyActions, ContractsOptionsReadOnlyActions} from './read-only';
 
 const defaultDeadline: number = 3_600 * 6; // 6 hours max
 
@@ -27,8 +24,7 @@ export interface OptionsReadWriteActions extends OptionsReadOnlyActions {
   ): Promise<void>;
 }
 
-export class ContractsOptionsReadWriteActions
-  extends ContractsOptionsReadOnlyActions
+export class ContractsOptionsReadWriteActions extends ContractsOptionsReadOnlyActions
   implements OptionsReadWriteActions {
   constructor(private contracts: ReadWriteContracts) {
     super(contracts);
@@ -51,10 +47,6 @@ export class ContractsOptionsReadWriteActions
   ) {
     const pair = await this.contracts.getPair(option.address);
     const deadline = makeDefaultDeadline();
-    await pair.buyOptions(
-      amountOut.toString(),
-      amountInMax.toString(),
-      deadline
-    );
+    await pair.buyOptions(amountOut.toString(), amountInMax.toString(), deadline);
   }
 }

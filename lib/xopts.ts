@@ -5,15 +5,9 @@ import {BTCAmount, MonetaryAmount, Tether} from './monetary';
 import {Signer, SignerOrProvider, Optional} from './core';
 import {GlobalActions} from './actions/global';
 
-import {
-  OptionsReadWriteActions,
-  ContractsOptionsReadWriteActions
-} from './actions/options/read-write';
+import {OptionsReadWriteActions, ContractsOptionsReadWriteActions} from './actions/options/read-write';
 
-import {
-  OptionsReadOnlyActions,
-  ContractsOptionsReadOnlyActions
-} from './actions/options/read-only';
+import {OptionsReadOnlyActions, ContractsOptionsReadOnlyActions} from './actions/options/read-only';
 
 import {Factory} from './actions/factory';
 
@@ -21,9 +15,7 @@ export type OptionActions<T extends SignerOrProvider> = T extends Signer
   ? OptionsReadWriteActions
   : OptionsReadOnlyActions;
 
-export type FactoryActions<T extends SignerOrProvider> = T extends Signer
-  ? Factory
-  : null;
+export type FactoryActions<T extends SignerOrProvider> = T extends Signer ? Factory : null;
 
 export class XOpts<T extends SignerOrProvider> implements GlobalActions {
   constructor(
@@ -47,10 +39,7 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
     throw new Error('not implemented');
   }
 
-  static async load<T extends SignerOrProvider>(
-    provider: T,
-    addresses?: Addresses
-  ): Promise<XOpts<T>> {
+  static async load<T extends SignerOrProvider>(provider: T, addresses?: Addresses): Promise<XOpts<T>> {
     if (addresses === undefined) {
       addresses = await mustResolveAddresses(provider);
     }
@@ -60,23 +49,11 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
       // type checker does not seem to understand that in this branch
       // OptionActions<T> === OptionsReadWriteActions, hence the need for casting
       const contracts = await ReadWriteContracts.load(addresses, provider);
-      const optionActions: OptionsReadWriteActions = new ContractsOptionsReadWriteActions(
-        contracts
-      );
-      return new XOpts(
-        addresses,
-        roContracts,
-        optionActions as OptionActions<T>
-      );
+      const optionActions: OptionsReadWriteActions = new ContractsOptionsReadWriteActions(contracts);
+      return new XOpts(addresses, roContracts, optionActions as OptionActions<T>);
     } else {
-      const optionActions: OptionsReadOnlyActions = new ContractsOptionsReadOnlyActions(
-        roContracts
-      );
-      return new XOpts(
-        addresses,
-        roContracts,
-        optionActions as OptionActions<T>
-      );
+      const optionActions: OptionsReadOnlyActions = new ContractsOptionsReadOnlyActions(roContracts);
+      return new XOpts(addresses, roContracts, optionActions as OptionActions<T>);
     }
   }
 }

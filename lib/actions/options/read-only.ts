@@ -2,13 +2,7 @@ import {Big} from 'big.js';
 import {Erc20Factory} from '../../../typechain/Erc20Factory';
 import {Ierc20Factory} from '../../../typechain/Ierc20Factory';
 import {ReadOnlyContracts} from '../../contracts';
-import {
-  ExchangeRate,
-  BTC,
-  Currency,
-  ERC20,
-  MonetaryAmount
-} from '../../monetary';
+import {ExchangeRate, BTC, Currency, ERC20, MonetaryAmount} from '../../monetary';
 import {Option} from '../../option';
 import {quote} from '../../uniswap';
 
@@ -65,9 +59,7 @@ export interface OptionsReadOnlyActions {
 export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
   constructor(private roContracts: ReadOnlyContracts) {}
 
-  async fetchTokenNames(
-    addresses: Array<string>
-  ): Promise<Record<string, string>> {
+  async fetchTokenNames(addresses: Array<string>): Promise<Record<string, string>> {
     const uniqueAddresses: string[] = [];
     for (const address of addresses) {
       if (!uniqueAddresses.includes(address)) {
@@ -94,9 +86,7 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
   async list(): Promise<Array<Option<Currency, ERC20>>> {
     const obligationAddresses = await this.roContracts.listOptions();
     const rawResults = await Promise.all(
-      obligationAddresses.map((addr) =>
-        this.roContracts.getPair(addr).then((p) => p.getDetails())
-      )
+      obligationAddresses.map((addr) => this.roContracts.getPair(addr).then((p) => p.getDetails()))
     );
 
     const collateralAddresses = rawResults.map((r) => r._collateral);
@@ -158,12 +148,7 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     const premiumERC = Ierc20Factory.connect(option.collateral.address, signer);
     const optionERC = Ierc20Factory.connect(option.address, signer);
 
-    const result = await quote(
-      pairAddress,
-      optionERC,
-      premiumERC,
-      amount.toString()
-    );
+    const result = await quote(pairAddress, optionERC, premiumERC, amount.toString());
 
     return new MonetaryAmount(option.collateral, result.toString());
   }

@@ -83,10 +83,7 @@ describe('XOpts', () => {
   // the data is assumed to be the one populated by the testdata.js script
   describe('integration', () => {
     const web3URI = process.env.NODE_URL || 'http://localhost:8545';
-    const btcAddress = decodeBtcAddress(
-      '1BuzwRy3TMYnhQqaZMRWjkqqUbfc2wQARr',
-      bitcoin.networks.bitcoin
-    )!;
+    const btcAddress = decodeBtcAddress('1BuzwRy3TMYnhQqaZMRWjkqqUbfc2wQARr', bitcoin.networks.bitcoin)!;
     const USDT = new Tether('0x');
 
     before(function () {

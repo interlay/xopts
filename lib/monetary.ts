@@ -39,11 +39,7 @@ export class Ethereum implements Currency {
 }
 
 export class ERC20 implements Currency {
-  constructor(
-    readonly name: string,
-    readonly address: string,
-    readonly decimals: number = 18
-  ) {}
+  constructor(readonly name: string, readonly address: string, readonly decimals: number = 18) {}
 }
 
 export class Tether extends ERC20 implements Currency {
@@ -84,18 +80,14 @@ export class MonetaryAmount<C extends Currency> {
 
   add(amount: this): this {
     if (!this.isSameCurrency(amount)) {
-      throw new Error(
-        `cannot add ${this.currency.name} and ${amount.currency.name}`
-      );
+      throw new Error(`cannot add ${this.currency.name} and ${amount.currency.name}`);
     }
     return this.withAmount(this._amount.add(amount._amount));
   }
 
   sub(amount: this): this {
     if (!this.isSameCurrency(amount)) {
-      throw new Error(
-        `cannot subtract ${this.currency.name} and ${amount.currency.name}`
-      );
+      throw new Error(`cannot subtract ${this.currency.name} and ${amount.currency.name}`);
     }
     return this.withAmount(this._amount.sub(amount._amount));
   }
@@ -114,10 +106,7 @@ export class MonetaryAmount<C extends Currency> {
 
   // NOTE: needs override if constructor is overriden
   withAmount(amount: BigSource): this {
-    const Cls = this.constructor as new (
-      currency: Currency,
-      amount: BigSource
-    ) => this;
+    const Cls = this.constructor as new (currency: Currency, amount: BigSource) => this;
     return new Cls(this.currency, amount);
   }
 }
@@ -202,16 +191,10 @@ export class ExchangeRate<Base extends Currency, Counter extends Currency> {
    * @param rate Exchange rate: amount of `counter` needed per unit of `base`
    *             The amount is expressed with the same number of decimals as `counter`
    */
-  constructor(
-    readonly base: Base,
-    readonly counter: Counter,
-    readonly rate: Big
-  ) {}
+  constructor(readonly base: Base, readonly counter: Counter, readonly rate: Big) {}
 
   toBase(amount: MonetaryAmount<Counter>): MonetaryAmount<Base> {
-    const converted = amount
-      .toBig(this.base.decimals + this.counter.decimals)
-      .div(this.rate);
+    const converted = amount.toBig(this.base.decimals + this.counter.decimals).div(this.rate);
     return new MonetaryAmount(this.base, converted);
   }
 

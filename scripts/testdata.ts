@@ -4,14 +4,7 @@ import {ethers} from '@nomiclabs/buidler';
 import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
 import {Signer, constants} from 'ethers';
 import * as bitcoin from 'bitcoinjs-lib';
-import {
-  deploy0,
-  reconnect,
-  deploy2,
-  createPair,
-  deploy1,
-  AddressesPair
-} from '../lib/contracts';
+import {deploy0, reconnect, deploy2, createPair, deploy1, AddressesPair} from '../lib/contracts';
 import {newBigNum} from '../lib/conversion';
 import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
 import {OptionFactory} from '../typechain/OptionFactory';
@@ -23,11 +16,7 @@ import {BigNumberish, BigNumber} from 'ethers';
 import {MockCollateral} from '../typechain/MockCollateral';
 import {BtcReferee} from '../typechain/BtcReferee';
 import {OptionLib} from '../typechain/OptionLib';
-import {
-  BtcRefereeFactory,
-  MockRelayFactory,
-  WriterRegistryFactory
-} from '../typechain';
+import {BtcRefereeFactory, MockRelayFactory, WriterRegistryFactory} from '../typechain';
 
 const keyPair = bitcoin.ECPair.makeRandom();
 const payment = bitcoin.payments.p2pkh({
@@ -59,10 +48,7 @@ async function createAndLockAndWrite(
   const obligation = OptionFactory.connect(addressesPair.obligation, signer);
 
   console.log('Adding data to obligation: ', obligation.address);
-  await reconnect(collateral, MockCollateralFactory, signer).approve(
-    optionLib.address,
-    amount.add(premium)
-  );
+  await reconnect(collateral, MockCollateralFactory, signer).approve(optionLib.address, amount.add(premium));
 
   await reconnect(optionLib, OptionLibFactory, signer).lockAndWrite(
     obligation.address,
@@ -99,12 +85,7 @@ async function main(): Promise<void> {
   const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
   // TODO: make conditional
   const uniswapFactory = await deployUniswapFactory(alice, aliceAddress);
-  const optionLib = await deploy2(
-    signers[0],
-    OptionLibFactory,
-    uniswapFactory.address,
-    constants.AddressZero
-  );
+  const optionLib = await deploy2(signers[0], OptionLibFactory, uniswapFactory.address, constants.AddressZero);
   const relay = await deploy0(signers[0], MockRelayFactory);
   const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
   const writerRegistry = await deploy0(signers[0], WriterRegistryFactory);
@@ -118,26 +99,11 @@ async function main(): Promise<void> {
   console.log('WriterRegistry:', writerRegistry.address);
 
   // get collateral for everyone
-  await reconnect(collateral, MockCollateralFactory, alice).mint(
-    aliceAddress,
-    newBigNum(100_000, 18)
-  );
-  await reconnect(collateral, MockCollateralFactory, alice).mint(
-    bobAddress,
-    newBigNum(100_000, 18)
-  );
-  await reconnect(collateral, MockCollateralFactory, alice).mint(
-    charlieAddress,
-    newBigNum(100_000, 18)
-  );
-  await reconnect(collateral, MockCollateralFactory, alice).mint(
-    eveAddress,
-    newBigNum(100_000, 18)
-  );
-  await reconnect(collateral, MockCollateralFactory, alice).mint(
-    daveAddress,
-    newBigNum(100_000, 18)
-  );
+  await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, newBigNum(100_000, 18));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(bobAddress, newBigNum(100_000, 18));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(charlieAddress, newBigNum(100_000, 18));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(eveAddress, newBigNum(100_000, 18));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(daveAddress, newBigNum(100_000, 18));
 
   console.log('Generating expired option');
   // get the current time

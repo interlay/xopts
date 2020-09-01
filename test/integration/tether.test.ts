@@ -10,11 +10,7 @@ import {ITetherTokenFactory} from '../../typechain/ITetherTokenFactory';
 import {Obligation} from '../../typechain/Obligation';
 import {OptionPairFactory} from '../../typechain/OptionPairFactory';
 import {newBigNum} from '../../lib/conversion';
-import {
-  MockContract,
-  deployMockContract,
-  deployContract
-} from 'ethereum-waffle';
+import {MockContract, deployMockContract, deployContract} from 'ethereum-waffle';
 import RefereeArtifact from '../../artifacts/BTCReferee.json';
 import {OptionLib} from '../../typechain/OptionLib';
 import {IUniswapV2Factory} from '../../typechain/IUniswapV2Factory';
@@ -58,12 +54,7 @@ describe('Tether (USDT)', () => {
 
     optionFactory = await deploy0(alice, OptionPairFactoryFactory);
     uniswapFactory = await deployUniswapFactory(alice, aliceAddress);
-    optionLib = await deploy2(
-      alice,
-      OptionLibFactory,
-      uniswapFactory.address,
-      constants.AddressZero
-    );
+    optionLib = await deploy2(alice, OptionLibFactory, uniswapFactory.address, constants.AddressZero);
     referee = await deployMockContract(alice, RefereeArtifact.abi);
   });
 
@@ -107,10 +98,7 @@ describe('Tether (USDT)', () => {
   });
 
   it('should write to an option pair', async () => {
-    await reconnect(tether, ITetherTokenFactory, alice).approve(
-      optionLib.address,
-      collateralAmount.add(premiumAmount)
-    );
+    await reconnect(tether, ITetherTokenFactory, alice).approve(optionLib.address, collateralAmount.add(premiumAmount));
 
     const pair = bitcoin.ECPair.makeRandom();
     const p2pkh = bitcoin.payments.p2pkh({pubkey: pair.publicKey});
@@ -127,19 +115,13 @@ describe('Tether (USDT)', () => {
       Script.p2pkh
     );
 
-    const pairAddress = await uniswapFactory.getPair(
-      tether.address,
-      option.address
-    );
+    const pairAddress = await uniswapFactory.getPair(tether.address, option.address);
     const optionBalance = await option.balanceOf(pairAddress);
     expect(optionBalance, 'options should be in pool').to.eq(collateralAmount);
   });
 
   it('should purchase options from uniswap', async () => {
-    await reconnect(tether, ITetherTokenFactory, bob).approve(
-      optionLib.address,
-      amountInMax
-    );
+    await reconnect(tether, ITetherTokenFactory, bob).approve(optionLib.address, amountInMax);
 
     await reconnect(optionLib, OptionLibFactory, bob).swapTokensForExactTokens(
       amountOut,

@@ -1,12 +1,7 @@
 import chai from 'chai';
 import {ethers, network} from '@nomiclabs/buidler';
 import {Signer, constants, BigNumber} from 'ethers';
-import {
-  deploy0,
-  reconnect,
-  getEvent,
-  getRequestEvent
-} from '../../lib/contracts';
+import {deploy0, reconnect, getEvent, getRequestEvent} from '../../lib/contracts';
 import {ObligationFactory} from '../../typechain/ObligationFactory';
 import {Obligation} from '../../typechain/Obligation';
 import {getTimeNow} from '../common';
@@ -99,48 +94,28 @@ describe('Obligation.sol', () => {
   });
 
   it('should fail to mint obligations with no btc address', async () => {
-    const result = obligation.mint(
-      aliceAddress,
-      aliceAddress,
-      1000,
-      constants.AddressZero,
-      Script.p2sh
-    );
+    const result = obligation.mint(aliceAddress, aliceAddress, 1000, constants.AddressZero, Script.p2sh);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_BTC_HASH);
   });
 
   it('should mint obligations with btc address', async () => {
     await treasury.mock.lock.returns();
     await option.mock.mint.returns();
-    const tx = await obligation.mint(
-      aliceAddress,
-      aliceAddress,
-      1000,
-      btcHash,
-      Script.p2sh
-    );
+    const tx = await obligation.mint(aliceAddress, aliceAddress, 1000, btcHash, Script.p2sh);
 
     const result = await obligation.getBtcAddress(aliceAddress);
     expect(result.btcHash).to.eq(btcHash);
     expect(result.format).to.eq(Script.p2sh);
 
-    const fragment =
-      obligation.interface.events['Transfer(address,address,uint256)'];
-    const event = await getEvent(
-      fragment,
-      [constants.AddressZero, aliceAddress],
-      await tx.wait(0),
-      obligation
-    );
+    const fragment = obligation.interface.events['Transfer(address,address,uint256)'];
+    const event = await getEvent(fragment, [constants.AddressZero, aliceAddress], await tx.wait(0), obligation);
     expect(event.value).to.eq(BigNumber.from(1000));
   });
 
   it('should fail to request exercise against seller with insufficient balance', async () => {
     return evmSnapFastForward(1000, async () => {
       const result = obligation.requestExercise(bobAddress, amountOutSat);
-      await expect(result).to.be.revertedWith(
-        ErrorCode.ERR_INSUFFICIENT_OBLIGATIONS
-      );
+      await expect(result).to.be.revertedWith(ErrorCode.ERR_INSUFFICIENT_OBLIGATIONS);
     });
   });
 
@@ -148,24 +123,13 @@ describe('Obligation.sol', () => {
     await treasury.mock.lock.returns();
     await option.mock.mint.returns();
     await option.mock.requestExercise.returns();
-    await obligation.mint(
-      bobAddress,
-      bobAddress,
-      amountIn,
-      btcHash,
-      Script.p2sh
-    );
+    await obligation.mint(bobAddress, bobAddress, amountIn, btcHash, Script.p2sh);
     const obligationBalance = await obligation.obligations(bobAddress);
     expect(obligationBalance).to.eq(amountIn);
 
     return evmSnapFastForward(1000, async () => {
       const tx = await obligation.requestExercise(bobAddress, amountOutSat);
-      const event = await getRequestEvent(
-        obligation,
-        aliceAddress,
-        bobAddress,
-        await tx.wait(0)
-      );
+      const event = await getRequestEvent(obligation, aliceAddress, bobAddress, await tx.wait(0));
       expect(event.amount).to.eq(amountIn);
     });
   });
@@ -192,25 +156,11 @@ describe('Obligation.sol', () => {
     await treasury.mock.lock.returns();
     await option.mock.mint.returns();
     await option.mock.requestExercise.returns();
-    await obligation.mint(
-      bobAddress,
-      bobAddress,
-      amountIn,
-      btcHash,
-      Script.p2sh
-    );
+    await obligation.mint(bobAddress, bobAddress, amountIn, btcHash, Script.p2sh);
 
     return evmSnapFastForward(1000, async () => {
-      const requestTx = await obligation.requestExercise(
-        bobAddress,
-        amountOutSat
-      );
-      const requestEvent = await getRequestEvent(
-        obligation,
-        aliceAddress,
-        bobAddress,
-        await requestTx.wait(0)
-      );
+      const requestTx = await obligation.requestExercise(bobAddress, amountOutSat);
+      const requestEvent = await getRequestEvent(obligation, aliceAddress, bobAddress, await requestTx.wait(0));
       await referee.mock.verifyTx.returns(amountOutSat.sub(1000));
       const result = obligation.executeExercise(
         requestEvent.id,
@@ -221,9 +171,7 @@ describe('Obligation.sol', () => {
         constants.HashZero,
         constants.HashZero
       );
-      await expect(result).to.be.revertedWith(
-        ErrorCode.ERR_INVALID_OUTPUT_AMOUNT
-      );
+      await expect(result).to.be.revertedWith(ErrorCode.ERR_INVALID_OUTPUT_AMOUNT);
     });
   });
 
@@ -232,25 +180,11 @@ describe('Obligation.sol', () => {
     await treasury.mock.release.returns();
     await option.mock.mint.returns();
     await option.mock.requestExercise.returns();
-    await obligation.mint(
-      bobAddress,
-      bobAddress,
-      amountIn,
-      btcHash,
-      Script.p2sh
-    );
+    await obligation.mint(bobAddress, bobAddress, amountIn, btcHash, Script.p2sh);
 
     return evmSnapFastForward(1000, async () => {
-      const requestTx = await obligation.requestExercise(
-        bobAddress,
-        amountOutSat
-      );
-      const requestEvent = await getRequestEvent(
-        obligation,
-        aliceAddress,
-        bobAddress,
-        await requestTx.wait(0)
-      );
+      const requestTx = await obligation.requestExercise(bobAddress, amountOutSat);
+      const requestEvent = await getRequestEvent(obligation, aliceAddress, bobAddress, await requestTx.wait(0));
       await referee.mock.verifyTx.returns(amountOutSat);
       const tx = await obligation.executeExercise(
         requestEvent.id,
@@ -261,14 +195,8 @@ describe('Obligation.sol', () => {
         constants.HashZero,
         constants.HashZero
       );
-      const fragment =
-        obligation.interface.events['ExecuteExercise(address,address,uint256)'];
-      const event = await getEvent(
-        fragment,
-        [aliceAddress, bobAddress],
-        await tx.wait(0),
-        obligation
-      );
+      const fragment = obligation.interface.events['ExecuteExercise(address,address,uint256)'];
+      const event = await getEvent(fragment, [aliceAddress, bobAddress], await tx.wait(0), obligation);
       expect(event.amount).to.eq(amountIn);
     });
   });
@@ -289,12 +217,8 @@ describe('Obligation.sol', () => {
     await treasury.mock.release.returns();
 
     return evmSnapFastForward(2000, async () => {
-      const result = reconnect(obligation, ObligationFactory, bob).refund(
-        amountIn
-      );
-      await expect(result).to.be.revertedWith(
-        ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE
-      );
+      const result = reconnect(obligation, ObligationFactory, bob).refund(amountIn);
+      await expect(result).to.be.revertedWith(ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE);
     });
   });
 
@@ -302,13 +226,7 @@ describe('Obligation.sol', () => {
     await treasury.mock.lock.returns();
     await treasury.mock.release.returns();
     await option.mock.mint.returns();
-    await obligation.mint(
-      bobAddress,
-      bobAddress,
-      amountIn,
-      btcHash,
-      Script.p2sh
-    );
+    await obligation.mint(bobAddress, bobAddress, amountIn, btcHash, Script.p2sh);
 
     return evmSnapFastForward(2000, async () => {
       await reconnect(obligation, ObligationFactory, bob).refund(amountIn);
@@ -328,13 +246,7 @@ describe('Obligation.sol', () => {
     await treasury.mock.lock.returns();
     await treasury.mock.release.returns();
     await option.mock.mint.returns();
-    await obligation.mint(
-      aliceAddress,
-      aliceAddress,
-      amountIn,
-      btcHash,
-      Script.p2sh
-    );
+    await obligation.mint(aliceAddress, aliceAddress, amountIn, btcHash, Script.p2sh);
 
     // alice sells obligations to bob (pool)
     await obligation.transfer(bobAddress, amountIn);
@@ -344,19 +256,11 @@ describe('Obligation.sol', () => {
     expect(poolBalance).to.eq(amountIn);
 
     // charlie requires btc address to purchase
-    await reconnect(obligation, ObligationFactory, charlie).setBtcAddress(
-      btcHash,
-      Script.p2sh
-    );
+    await reconnect(obligation, ObligationFactory, charlie).setBtcAddress(btcHash, Script.p2sh);
 
     // bob sells obligations to charlie
-    await reconnect(obligation, ObligationFactory, bob).transfer(
-      charlieAddress,
-      amountIn
-    );
-    const obligationBalanceCharlie = await obligation.obligations(
-      charlieAddress
-    );
+    await reconnect(obligation, ObligationFactory, bob).transfer(charlieAddress, amountIn);
+    const obligationBalanceCharlie = await obligation.obligations(charlieAddress);
     expect(obligationBalanceCharlie).to.eq(amountIn);
 
     // alice can now withdraw her collateral

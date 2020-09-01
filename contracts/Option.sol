@@ -2,14 +2,14 @@
 
 pragma solidity ^0.6.0;
 
-import '@nomiclabs/buidler/console.sol';
+import "@nomiclabs/buidler/console.sol";
 
-import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
-import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOption} from './interface/IOption.sol';
-import {European} from './European.sol';
-import {Bitcoin} from './types/Bitcoin.sol';
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IOption} from "./interface/IOption.sol";
+import {European} from "./European.sol";
+import {Bitcoin} from "./types/Bitcoin.sol";
 
 /// @title Option ERC20
 /// @author Interlay
@@ -18,16 +18,11 @@ import {Bitcoin} from './types/Bitcoin.sol';
 contract Option is IOption, IERC20, European, Ownable {
     using SafeMath for uint256;
 
-    string
-        internal constant ERR_TRANSFER_EXCEEDS_BALANCE = 'Amount exceeds balance';
-    string
-        internal constant ERR_APPROVE_TO_ZERO_ADDRESS = 'Approve to zero address';
-    string
-        internal constant ERR_TRANSFER_TO_ZERO_ADDRESS = 'Transfer to zero address';
-    string
-        internal constant ERR_APPROVE_FROM_ZERO_ADDRESS = 'Approve from zero address';
-    string
-        internal constant ERR_TRANSFER_FROM_ZERO_ADDRESS = 'Transfer from zero address';
+    string internal constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
+    string internal constant ERR_APPROVE_TO_ZERO_ADDRESS = "Approve to zero address";
+    string internal constant ERR_TRANSFER_TO_ZERO_ADDRESS = "Transfer to zero address";
+    string internal constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
+    string internal constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
 
     string public name;
     string public symbol;
@@ -59,8 +54,8 @@ contract Option is IOption, IERC20, European, Ownable {
         uint256 _windowSize
     ) external override onlyOwner setExpiry(_expiryTime, _windowSize) {
         // ERC20
-        name = 'Option';
-        symbol = 'OPT';
+        name = "Option";
+        symbol = "OPT";
         decimals = _decimals;
     }
 
@@ -71,12 +66,7 @@ contract Option is IOption, IERC20, European, Ownable {
      * @param account Destination address
      * @param amount Total credit
      **/
-    function mint(address account, uint256 amount)
-        external
-        override
-        onlyOwner
-        notExpired
-    {
+    function mint(address account, uint256 amount) external override onlyOwner notExpired {
         // collateral:(options/obligations) are 1:1
         _balances[account] = _balances[account].add(amount);
         totalSupply = totalSupply.add(amount);
@@ -84,10 +74,7 @@ contract Option is IOption, IERC20, European, Ownable {
     }
 
     function _burn(address account, uint256 amount) internal {
-        _balances[account] = _balances[account].sub(
-            amount,
-            ERR_TRANSFER_EXCEEDS_BALANCE
-        );
+        _balances[account] = _balances[account].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE);
         totalSupply = totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
@@ -98,33 +85,18 @@ contract Option is IOption, IERC20, European, Ownable {
      * @param buyer Account that bought the options.
      * @param options Input amount.
      **/
-    function requestExercise(address buyer, uint256 options)
-        external
-        override
-        onlyOwner
-        canExercise
-    {
+    function requestExercise(address buyer, uint256 options) external override onlyOwner canExercise {
         // burn options to prevent double spends
         _burn(buyer, options);
     }
 
     /// @dev See {IERC20-allowance}
-    function allowance(address owner, address spender)
-        external
-        override
-        view
-        returns (uint256)
-    {
+    function allowance(address owner, address spender) external override view returns (uint256) {
         return _allowances[owner][spender];
     }
 
     /// @dev See {IERC20-approve}
-    function approve(address spender, uint256 amount)
-        external
-        override
-        notExpired
-        returns (bool)
-    {
+    function approve(address spender, uint256 amount) external override notExpired returns (bool) {
         _approve(msg.sender, spender, amount);
         return true;
     }
@@ -142,22 +114,12 @@ contract Option is IOption, IERC20, European, Ownable {
     }
 
     /// @dev See {IERC20-balanceOf}
-    function balanceOf(address account)
-        external
-        override
-        view
-        returns (uint256)
-    {
+    function balanceOf(address account) external override view returns (uint256) {
         return _balances[account];
     }
 
     /// @dev See {IERC20-transfer}
-    function transfer(address recipient, uint256 amount)
-        external
-        override
-        notExpired
-        returns (bool)
-    {
+    function transfer(address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(msg.sender, recipient, amount);
         return true;
     }
@@ -169,14 +131,7 @@ contract Option is IOption, IERC20, European, Ownable {
         uint256 amount
     ) external override notExpired returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(
-            sender,
-            msg.sender,
-            _allowances[sender][msg.sender].sub(
-                amount,
-                ERR_TRANSFER_EXCEEDS_BALANCE
-            )
-        );
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         return true;
     }
 
@@ -194,10 +149,7 @@ contract Option is IOption, IERC20, European, Ownable {
         require(sender != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
         require(recipient != address(0), ERR_TRANSFER_TO_ZERO_ADDRESS);
 
-        _balances[sender] = _balances[sender].sub(
-            amount,
-            ERR_TRANSFER_EXCEEDS_BALANCE
-        );
+        _balances[sender] = _balances[sender].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE);
         _balances[recipient] = _balances[recipient].add(amount);
 
         emit Transfer(sender, recipient, amount);

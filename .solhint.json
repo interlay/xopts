@@ -5,8 +5,9 @@
     "avoid-throw": "off",
     "avoid-suicide": "error",
     "avoid-sha3": "warn",
-    "quotes": ["error", "single"],
-    "compiler-version": ["error", "^0.6.0"]
+    "quotes": ["error", "double"],
+    "compiler-version": ["error", "^0.6.0"],
+    "max-line-length": ["error", 120]
   },
   "plugins": ["prettier"]
 }

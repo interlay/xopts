@@ -33,13 +33,7 @@ async function main(): Promise<void> {
   const currentTime = Math.round(new Date().getTime() / 1000);
   const expiry = currentTime + 60;
 
-  let tx = await contract.createPair(
-    expiry,
-    2000,
-    newBigNum(9_200, 18),
-    collateral.address,
-    referee.address
-  );
+  let tx = await contract.createPair(expiry, 2000, newBigNum(9_200, 18), collateral.address, referee.address);
   receipt = await tx.wait(0);
   console.log(`Gas [Create]: ${receipt.gasUsed?.toString()}`);
 
@@ -49,19 +43,10 @@ async function main(): Promise<void> {
 
   const options = await contract.getOptions();
 
-  await reconnect(collateral, MockCollateralFactory, alice).mint(
-    aliceAddress,
-    newBigNum(100_000, 18)
-  );
-  await reconnect(collateral, MockCollateralFactory, alice).mint(
-    bobAddress,
-    newBigNum(100_000, 18)
-  );
+  await reconnect(collateral, MockCollateralFactory, alice).mint(aliceAddress, newBigNum(100_000, 18));
+  await reconnect(collateral, MockCollateralFactory, alice).mint(bobAddress, newBigNum(100_000, 18));
 
-  await reconnect(collateral, MockCollateralFactory, bob).approve(
-    contract.address,
-    newBigNum(10_000, 18)
-  );
+  await reconnect(collateral, MockCollateralFactory, bob).approve(contract.address, newBigNum(10_000, 18));
   tx = await reconnect(contract, OptionPairFactoryFactory, bob).writeOption(
     options[0],
     newBigNum(5_000, 18),
@@ -78,10 +63,7 @@ async function main(): Promise<void> {
   tx = await option.transfer(charlieAddress, newBigNum(5_000, 18));
   receipt = await tx.wait(0);
   console.log(`Gas [Transfer (Unsold)]: ${receipt.gasUsed?.toString()}`);
-  await reconnect(option, OptionFactory, charlie).setBtcAddress(
-    btcHash,
-    Script.p2wpkh
-  );
+  await reconnect(option, OptionFactory, charlie).setBtcAddress(btcHash, Script.p2wpkh);
 
   // alice claims against charlie's options
   // await reconnect(collateral, MockCollateralFactory, alice).approve(contract.address, daiToWeiDai(200));

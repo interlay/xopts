@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.0;
 
-import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
  * @dev Contract module which provides a timed access control mechanism,
@@ -12,10 +12,10 @@ import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 contract European {
     using SafeMath for uint256;
 
-    string internal constant ERR_INIT_EXPIRED = 'Cannot init expired';
-    string internal constant ERR_EXPIRED = 'Contract has expired';
-    string internal constant ERR_NOT_EXPIRED = 'Contract not expired';
-    string internal constant ERR_WINDOW_ZERO = 'Window cannot be zero';
+    string internal constant ERR_INIT_EXPIRED = "Cannot init expired";
+    string internal constant ERR_EXPIRED = "Contract has expired";
+    string internal constant ERR_NOT_EXPIRED = "Contract not expired";
+    string internal constant ERR_WINDOW_ZERO = "Window cannot be zero";
 
     // expiry timestamp
     uint256 public expiryTime;

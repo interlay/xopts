@@ -2,8 +2,8 @@
 
 pragma solidity ^0.6.0;
 
-import {BTCReferee} from '../BTCReferee.sol';
-import {Bitcoin} from '../types/Bitcoin.sol';
+import {BTCReferee} from "../BTCReferee.sol";
+import {Bitcoin} from "../types/Bitcoin.sol";
 
 contract MockBTCReferee is BTCReferee {
     constructor() public BTCReferee(address(0)) {

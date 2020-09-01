@@ -2,18 +2,18 @@
 
 pragma solidity ^0.6.0;
 
-import '@nomiclabs/buidler/console.sol';
+import "@nomiclabs/buidler/console.sol";
 
-import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
-import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
-import {IERC20} from '@uniswap/v2-periphery/contracts/interfaces/IERC20.sol';
-import {IReferee} from './interface/IReferee.sol';
-import {Option} from './Option.sol';
-import {IOption} from './interface/IOption.sol';
-import {Obligation} from './Obligation.sol';
-import {IObligation} from './interface/IObligation.sol';
-import {IOptionPairFactory} from './interface/IOptionPairFactory.sol';
-import {Treasury} from './Treasury.sol';
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {IERC20} from "@uniswap/v2-periphery/contracts/interfaces/IERC20.sol";
+import {IReferee} from "./interface/IReferee.sol";
+import {Option} from "./Option.sol";
+import {IOption} from "./interface/IOption.sol";
+import {Obligation} from "./Obligation.sol";
+import {IObligation} from "./interface/IObligation.sol";
+import {IOptionPairFactory} from "./interface/IOptionPairFactory.sol";
+import {Treasury} from "./Treasury.sol";
 
 /// @title Parent Factory
 /// @author Interlay
@@ -21,7 +21,7 @@ import {Treasury} from './Treasury.sol';
 contract OptionPairFactory is IOptionPairFactory, Ownable {
     using SafeMath for uint256;
 
-    string internal constant ERR_NOT_SUPPORTED = 'Collateral not supported';
+    string internal constant ERR_NOT_SUPPORTED = "Collateral not supported";
 
     /// @notice Emit upon successful creation of a new option pair.
     event CreatePair(
@@ -84,15 +84,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
             // solium-disable-previous-line security/no-inline-assembly
             obligation := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IObligation(obligation).initialize(
-            decimals,
-            expiryTime,
-            windowSize,
-            strikePrice,
-            option,
-            referee,
-            treasury
-        );
+        IObligation(obligation).initialize(decimals, expiryTime, windowSize, strikePrice, option, referee, treasury);
         return obligation;
     }
 
@@ -126,15 +118,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
 
         // deterministic creation of option pair to ensure
         // that liquidity ends up in the same pool
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                expiryTime,
-                windowSize,
-                strikePrice,
-                collateral,
-                referee
-            )
-        );
+        bytes32 salt = keccak256(abi.encodePacked(expiryTime, windowSize, strikePrice, collateral, referee));
 
         // query the decimals of the collateral token to
         // ensure the option and obligation use the same
@@ -142,16 +126,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
         uint8 decimals = IERC20(collateral).decimals();
 
         option = _createOption(decimals, expiryTime, windowSize, salt);
-        obligation = _createObligation(
-            decimals,
-            expiryTime,
-            windowSize,
-            strikePrice,
-            option,
-            referee,
-            treasury,
-            salt
-        );
+        obligation = _createObligation(decimals, expiryTime, windowSize, strikePrice, option, referee, treasury, salt);
         Ownable(option).transferOwnership(obligation);
 
         getObligation[option] = obligation;
@@ -159,14 +134,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
         getCollateral[option] = collateral;
         options.push(option);
 
-        emit CreatePair(
-            option,
-            obligation,
-            collateral,
-            expiryTime,
-            windowSize,
-            strikePrice
-        );
+        emit CreatePair(option, obligation, collateral, expiryTime, windowSize, strikePrice);
     }
 
     function allOptions() external override view returns (address[] memory) {

@@ -41,40 +41,24 @@ type saltArgs = {
   referee: string;
 };
 
-export function getCreate2Address(
-  salt: saltArgs,
-  factory: string,
-  bytecode: string
-): string {
+export function getCreate2Address(salt: saltArgs, factory: string, bytecode: string): string {
   return utils.getCreate2Address(
     factory,
     utils.keccak256(
       utils.solidityPack(
         ['uint256', 'uint256', 'uint256', 'address', 'address'],
-        [
-          salt.expiryTime,
-          salt.windowSize,
-          salt.strikePrice,
-          salt.collateral,
-          salt.referee
-        ]
+        [salt.expiryTime, salt.windowSize, salt.strikePrice, salt.collateral, salt.referee]
       )
     ),
     utils.keccak256(bytecode)
   );
 }
 
-export function getCreate2OptionAddress(
-  salt: saltArgs,
-  factory: string
-): string {
+export function getCreate2OptionAddress(salt: saltArgs, factory: string): string {
   return getCreate2Address(salt, factory, OptionArtifact.bytecode);
 }
 
-export function getCreate2ObligationAddress(
-  salt: saltArgs,
-  factory: string
-): string {
+export function getCreate2ObligationAddress(salt: saltArgs, factory: string): string {
   return getCreate2Address(salt, factory, ObligationArtifact.bytecode);
 }
 
@@ -85,9 +69,7 @@ function getProvider(signerOrProvider: SignerOrProvider): Optional<Provider> {
   return signerOrProvider.provider;
 }
 
-export async function resolveAddresses(
-  signerOrProvider: SignerOrProvider
-): Promise<Optional<Addresses>> {
+export async function resolveAddresses(signerOrProvider: SignerOrProvider): Promise<Optional<Addresses>> {
   const provider = getProvider(signerOrProvider);
   if (!provider) {
     return;
@@ -106,9 +88,7 @@ export async function resolveAddresses(
   }
 }
 
-export async function mustResolveAddresses(
-  signerOrProvider: SignerOrProvider
-): Promise<Addresses> {
+export async function mustResolveAddresses(signerOrProvider: SignerOrProvider): Promise<Addresses> {
   const addresses = await resolveAddresses(signerOrProvider);
   if (addresses !== undefined) {
     return addresses;

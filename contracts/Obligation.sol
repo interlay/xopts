@@ -2,18 +2,18 @@
 
 pragma solidity ^0.6.0;
 
-import '@nomiclabs/buidler/console.sol';
+import "@nomiclabs/buidler/console.sol";
 
-import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
-import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {European} from './European.sol';
-import {IOption} from './interface/IOption.sol';
-import {IObligation} from './interface/IObligation.sol';
-import {Bitcoin} from './types/Bitcoin.sol';
-import {ITreasury} from './interface/ITreasury.sol';
-import {WriterRegistry} from './WriterRegistry.sol';
-import {IReferee} from './interface/IReferee.sol';
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {European} from "./European.sol";
+import {IOption} from "./interface/IOption.sol";
+import {IObligation} from "./interface/IObligation.sol";
+import {Bitcoin} from "./types/Bitcoin.sol";
+import {ITreasury} from "./interface/ITreasury.sol";
+import {WriterRegistry} from "./WriterRegistry.sol";
+import {IReferee} from "./interface/IReferee.sol";
 
 /// @title Obligation ERC20
 /// @notice Represents a writer's obligation to sell the
@@ -23,30 +23,19 @@ import {IReferee} from './interface/IReferee.sol';
 contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     using SafeMath for uint256;
 
-    string
-        internal constant ERR_TRANSFER_EXCEEDS_BALANCE = 'Amount exceeds balance';
-    string
-        internal constant ERR_APPROVE_TO_ZERO_ADDRESS = 'Approve to zero address';
-    string
-        internal constant ERR_TRANSFER_TO_ZERO_ADDRESS = 'Transfer to zero address';
-    string
-        internal constant ERR_APPROVE_FROM_ZERO_ADDRESS = 'Approve from zero address';
-    string
-        internal constant ERR_TRANSFER_FROM_ZERO_ADDRESS = 'Transfer from zero address';
+    string internal constant ERR_TRANSFER_EXCEEDS_BALANCE = "Amount exceeds balance";
+    string internal constant ERR_APPROVE_TO_ZERO_ADDRESS = "Approve to zero address";
+    string internal constant ERR_TRANSFER_TO_ZERO_ADDRESS = "Transfer to zero address";
+    string internal constant ERR_APPROVE_FROM_ZERO_ADDRESS = "Approve from zero address";
+    string internal constant ERR_TRANSFER_FROM_ZERO_ADDRESS = "Transfer from zero address";
 
-    string
-        internal constant ERR_INVALID_OUTPUT_AMOUNT = 'Invalid output amount';
-    string internal constant ERR_NO_BTC_ADDRESS = 'Account lacks BTC address';
-    string
-        internal constant ERR_INSUFFICIENT_OBLIGATIONS = 'Seller has insufficient obligations';
-    string
-        internal constant ERR_INVALID_REQUEST = 'Cannot exercise without an amount';
-    string
-        internal constant ERR_SUB_WITHDRAW_BALANCE = 'Insufficient pool balance';
-    string
-        internal constant ERR_SUB_WITHDRAW_AVAILABLE = 'Insufficient available';
-    string
-        internal constant ERR_ZERO_STRIKE_PRICE = 'Requires non-zero strike price';
+    string internal constant ERR_INVALID_OUTPUT_AMOUNT = "Invalid output amount";
+    string internal constant ERR_NO_BTC_ADDRESS = "Account lacks BTC address";
+    string internal constant ERR_INSUFFICIENT_OBLIGATIONS = "Seller has insufficient obligations";
+    string internal constant ERR_INVALID_REQUEST = "Cannot exercise without an amount";
+    string internal constant ERR_SUB_WITHDRAW_BALANCE = "Insufficient pool balance";
+    string internal constant ERR_SUB_WITHDRAW_AVAILABLE = "Insufficient available";
+    string internal constant ERR_ZERO_STRIKE_PRICE = "Requires non-zero strike price";
 
     // 1 BTC = 10**10 Satoshis
     uint256 internal constant SATOSHI_DECIMALS = 10;
@@ -89,19 +78,10 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     mapping(address => mapping(address => uint256)) internal _allowances;
 
     /// @notice Emit upon successful exercise request.
-    event RequestExercise(
-        address indexed buyer,
-        address indexed seller,
-        bytes32 id,
-        uint256 amount
-    );
+    event RequestExercise(address indexed buyer, address indexed seller, bytes32 id, uint256 amount);
 
     /// @notice Emit upon successful exercise execution (tx inclusion & verification).
-    event ExecuteExercise(
-        address indexed buyer,
-        address indexed seller,
-        uint256 amount
-    );
+    event ExecuteExercise(address indexed buyer, address indexed seller, uint256 amount);
 
     /// @notice Emit once collateral is reclaimed by a writer after `expiryTime + windowSize`.
     event Refund(address indexed seller, uint256 amount);
@@ -134,8 +114,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
 
         // ERC20
-        name = 'Obligation';
-        symbol = 'OBL';
+        name = "Obligation";
+        symbol = "OBL";
         decimals = _decimals;
 
         // Obligation
@@ -159,14 +139,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         )
     {
         address collateral = ITreasury(treasury).collateral();
-        return (
-            expiryTime,
-            windowSize,
-            strikePrice,
-            decimals,
-            collateral,
-            option
-        );
+        return (expiryTime, windowSize, strikePrice, decimals, collateral, option);
     }
 
     /**
@@ -174,11 +147,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param btcHash Recipient address for exercising
      * @param format Recipient script format
      **/
-    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format)
-        external
-        override
-        notExpired
-    {
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external override notExpired {
         _setBtcAddress(msg.sender, btcHash, format);
     }
 
@@ -219,10 +188,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     function _burn(address account, uint256 amount) internal {
         // we only allow the owner to withdraw
-        _obligations[account] = _obligations[account].sub(
-            amount,
-            ERR_TRANSFER_EXCEEDS_BALANCE
-        );
+        _obligations[account] = _obligations[account].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE);
 
         totalSupply = totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
@@ -236,19 +202,12 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param seller Account that wrote the options.
      * @param satoshis Input amount.
      **/
-    function requestExercise(address seller, uint256 satoshis)
-        external
-        override
-        canExercise
-    {
+    function requestExercise(address seller, uint256 satoshis) external override canExercise {
         address buyer = msg.sender;
 
         uint256 options = calculateAmountIn(satoshis);
         _locked[seller] = _locked[seller].add(options);
-        require(
-            _locked[seller] <= _obligations[seller],
-            ERR_INSUFFICIENT_OBLIGATIONS
-        );
+        require(_locked[seller] <= _obligations[seller], ERR_INSUFFICIENT_OBLIGATIONS);
 
         bytes32 id = keccak256(
             abi.encodePacked(
@@ -358,10 +317,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
         // caller should have pool credit
         uint256 balance = _poolBalance[pool][seller];
-        _poolBalance[pool][seller] = balance.sub(
-            amount,
-            ERR_SUB_WITHDRAW_BALANCE
-        );
+        _poolBalance[pool][seller] = balance.sub(amount, ERR_SUB_WITHDRAW_BALANCE);
 
         // pool must have supply > balance
         uint256 available = _poolSupply[pool].sub(_balances[pool]);
@@ -377,22 +333,12 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     }
 
     /// @dev See {IERC20-allowance}
-    function allowance(address owner, address spender)
-        external
-        override
-        view
-        returns (uint256)
-    {
+    function allowance(address owner, address spender) external override view returns (uint256) {
         return _allowances[owner][spender];
     }
 
     /// @dev See {IERC20-approve}
-    function approve(address spender, uint256 amount)
-        external
-        override
-        notExpired
-        returns (bool)
-    {
+    function approve(address spender, uint256 amount) external override notExpired returns (bool) {
         _approve(msg.sender, spender, amount);
         return true;
     }
@@ -410,12 +356,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     }
 
     /// @dev See {IERC20-balanceOf}
-    function balanceOf(address account)
-        external
-        override
-        view
-        returns (uint256)
-    {
+    function balanceOf(address account) external override view returns (uint256) {
         // must show immediate balance (not written / remaining)
         // required by uniswap to mint
         return _balances[account];
@@ -429,12 +370,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param account An account which owns obligations.
      * @return The total balance of the account.
      **/
-    function obligations(address account)
-        external
-        override
-        view
-        returns (uint256)
-    {
+    function obligations(address account) external override view returns (uint256) {
         return _obligations[account];
     }
 
@@ -443,22 +379,12 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param account An account which owns obligations.
      * @return The total exercisable balance of the account.
      **/
-    function available(address account)
-        external
-        override
-        view
-        returns (uint256)
-    {
+    function available(address account) external override view returns (uint256) {
         return _obligations[account].sub(_locked[account]);
     }
 
     /// @dev See {IERC20-transfer}
-    function transfer(address recipient, uint256 amount)
-        external
-        override
-        notExpired
-        returns (bool)
-    {
+    function transfer(address recipient, uint256 amount) external override notExpired returns (bool) {
         _transfer(msg.sender, recipient, amount);
         return true;
     }
@@ -470,14 +396,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         uint256 amount
     ) external override notExpired returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(
-            sender,
-            msg.sender,
-            _allowances[sender][msg.sender].sub(
-                amount,
-                ERR_TRANSFER_EXCEEDS_BALANCE
-            )
-        );
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE));
         return true;
     }
 
@@ -495,16 +414,10 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         require(sender != address(0), ERR_TRANSFER_FROM_ZERO_ADDRESS);
         require(recipient != address(0), ERR_TRANSFER_TO_ZERO_ADDRESS);
 
-        _balances[sender] = _balances[sender].sub(
-            amount,
-            ERR_TRANSFER_EXCEEDS_BALANCE
-        );
+        _balances[sender] = _balances[sender].sub(amount, ERR_TRANSFER_EXCEEDS_BALANCE);
         _balances[recipient] = _balances[recipient].add(amount);
 
-        if (
-            _btcAddresses[sender].btcHash != 0 &&
-            _btcAddresses[recipient].btcHash != 0
-        ) {
+        if (_btcAddresses[sender].btcHash != 0 && _btcAddresses[recipient].btcHash != 0) {
             // simple transfer, lock recipient collateral
             // Note: the market must have 'unlocked' funds
             ITreasury(treasury).lock(recipient, amount);
@@ -514,14 +427,10 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             _obligations[sender] = _obligations[sender].sub(amount);
             _obligations[recipient] = _obligations[recipient].add(amount);
             _writers.push(recipient);
-        } else if (
-            _btcAddresses[sender].btcHash != 0 &&
-            _btcAddresses[recipient].btcHash == 0
-        ) {
+        } else if (_btcAddresses[sender].btcHash != 0 && _btcAddresses[recipient].btcHash == 0) {
             // selling obligations to a pool
             _poolSupply[recipient] = _poolSupply[recipient].add(amount);
-            _poolBalance[recipient][sender] = _poolBalance[recipient][sender]
-                .add(amount);
+            _poolBalance[recipient][sender] = _poolBalance[recipient][sender].add(amount);
         } else {
             // buying obligations from a pool
             require(_btcAddresses[recipient].btcHash != 0, ERR_NO_BTC_ADDRESS);
@@ -548,11 +457,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @dev This will underflow if the collateral's precision is less than 10.
      * @param amount The number of tokens to exercise.
      **/
-    function calculateAmountOut(uint256 amount)
-        external
-        view
-        returns (uint256)
-    {
+    function calculateAmountOut(uint256 amount) external view returns (uint256) {
         // we lose some precision here
         // ((4500*10**6)*10**10)/(9000*10**6) = 5000000000.0 = 0.5 BTC
         // ((4500*10**18)*10**10)/(9000*10**18) = 5000000000.0 = 0.5 BTC

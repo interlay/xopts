@@ -36,10 +36,7 @@ interface ITetherToken {
     function approve(address _spender, uint256 _value) external;
 
     // Forward ERC20 methods to upgraded contract if this one is deprecated
-    function allowance(address _owner, address _spender)
-        external
-        view
-        returns (uint256 remaining);
+    function allowance(address _owner, address _spender) external view returns (uint256 remaining);
 
     // deprecate current contract in favour of a new one
     function deprecate(address _upgradedAddress) external;

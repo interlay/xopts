@@ -22,14 +22,7 @@ export async function deployPair(
   obligation: Obligation;
 }> {
   await optionFactory.enableAsset(collateral);
-  const pairAddresses = await createPair(
-    optionFactory,
-    expiryTime,
-    windowSize,
-    strikePrice,
-    collateral,
-    btcReferee
-  );
+  const pairAddresses = await createPair(optionFactory, expiryTime, windowSize, strikePrice, collateral, btcReferee);
   const option = OptionFactory.connect(pairAddresses.option, signer);
 
   const obligationAddress = await optionFactory.getObligation(option.address);

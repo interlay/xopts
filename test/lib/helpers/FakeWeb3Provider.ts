@@ -16,11 +16,7 @@ interface RegisteredResponse {
 export default class ExternalProvider {
   private responses: Array<RegisteredResponse> = [];
 
-  constructor(
-    public isMetaMask?: boolean,
-    public host?: string,
-    public path?: string
-  ) {}
+  constructor(public isMetaMask?: boolean, public host?: string, public path?: string) {}
 
   register(
     method: string,
@@ -42,12 +38,7 @@ export default class ExternalProvider {
     }
     if (options.to) {
       filters.push((params?: Array<any>) => {
-        return (
-          params &&
-          params.length > 0 &&
-          params[0].to &&
-          params[0].to.toLowerCase() === options.to?.toLowerCase()
-        );
+        return params && params.length > 0 && params[0].to && params[0].to.toLowerCase() === options.to?.toLowerCase();
       });
     }
 
@@ -64,17 +55,11 @@ export default class ExternalProvider {
     }
   }
 
-  sendAsync(
-    request: RPCRequest,
-    callback: (error: any, response: any) => void
-  ): void {
+  sendAsync(request: RPCRequest, callback: (error: any, response: any) => void): void {
     this.send(request, callback);
   }
 
-  send(
-    request: RPCRequest,
-    callback: (error: any, response: any) => void
-  ): void {
+  send(request: RPCRequest, callback: (error: any, response: any) => void): void {
     try {
       callback(null, this.getResponse(request));
     } catch (err) {
@@ -93,24 +78,13 @@ export default class ExternalProvider {
     // https://github.com/ethers-io/ethers.js/blob/d817416bae2fbc7adb8391fd038613241b7ab8ba/packages/abi/src.ts/interface.ts#L311
     if (typeof response === 'string' && response.startsWith('0x')) {
       const length = (response.length - 2) / 2;
-      response = utils.hexZeroPad(
-        response,
-        Math.ceil(length / WORD_SIZE) * WORD_SIZE
-      );
+      response = utils.hexZeroPad(response, Math.ceil(length / WORD_SIZE) * WORD_SIZE);
     }
     return response;
   }
 
-  private getResponse({
-    method,
-    params
-  }: {
-    method: string;
-    params?: Array<any>;
-  }): any {
-    const index = this.responses.findIndex((response) =>
-      response.shouldExecute(method, params)
-    );
+  private getResponse({method, params}: {method: string; params?: Array<any>}): any {
+    const index = this.responses.findIndex((response) => response.shouldExecute(method, params));
     if (index === -1) {
       throw new Error(`${method} not registered`);
     }

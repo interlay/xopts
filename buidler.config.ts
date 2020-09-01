@@ -11,8 +11,7 @@ usePlugin('buidler-gas-reporter');
 let ganacheConfig = {
   url: 'http://127.0.0.1:8545',
   deterministic: true,
-  mnemonic:
-    'lion album emotion suffer october belt uphold mind chronic stool february flag',
+  mnemonic: 'lion album emotion suffer october belt uphold mind chronic stool february flag',
   networkId: 2222,
   timeout: 0
 };

@@ -2,11 +2,11 @@
 
 pragma solidity ^0.6.0;
 
-import {IWriterRegistry} from './interface/IWriterRegistry.sol';
-import {Bitcoin} from './types/Bitcoin.sol';
+import {IWriterRegistry} from "./interface/IWriterRegistry.sol";
+import {Bitcoin} from "./types/Bitcoin.sol";
 
 contract WriterRegistry is IWriterRegistry {
-    string internal constant ERR_NO_BTC_HASH = 'Cannot set empty BTC address';
+    string internal constant ERR_NO_BTC_HASH = "Cannot set empty BTC address";
 
     // for external enumeration
     address[] internal _writers;
@@ -32,11 +32,7 @@ contract WriterRegistry is IWriterRegistry {
      * @param btcHash Address hash
      * @param format Payment format
      **/
-    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format)
-        external
-        virtual
-        override
-    {
+    function setBtcAddress(bytes20 btcHash, Bitcoin.Script format) external virtual override {
         _setBtcAddress(msg.sender, btcHash, format);
     }
 
@@ -46,12 +42,7 @@ contract WriterRegistry is IWriterRegistry {
      * @return btcHash Address hash
      * @return format Expected payment format
      **/
-    function getBtcAddress(address account)
-        external
-        override
-        view
-        returns (bytes20 btcHash, Bitcoin.Script format)
-    {
+    function getBtcAddress(address account) external override view returns (bytes20 btcHash, Bitcoin.Script format) {
         return (_btcAddresses[account].btcHash, _btcAddresses[account].format);
     }
 

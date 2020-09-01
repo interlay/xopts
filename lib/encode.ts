@@ -31,10 +31,7 @@ export function decodeBtcAddress(
   );
 }
 
-function toAddress<P extends bitcoin.Payment, O>(
-  p: P,
-  f: (payment: P, options?: O) => P
-): string | undefined {
+function toAddress<P extends bitcoin.Payment, O>(p: P, f: (payment: P, options?: O) => P): string | undefined {
   try {
     const pay = f(p);
     return pay.address ? pay.address : undefined;
@@ -43,11 +40,7 @@ function toAddress<P extends bitcoin.Payment, O>(
   }
 }
 
-export function encodeBtcAddress(
-  hex: string,
-  format: Script,
-  network: bitcoin.Network
-): string | undefined {
+export function encodeBtcAddress(hex: string, format: Script, network: bitcoin.Network): string | undefined {
   const hash = Buffer.from(hex, 'hex');
   switch (format) {
     case Script.p2sh:

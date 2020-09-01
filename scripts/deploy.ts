@@ -29,12 +29,7 @@ async function main(): Promise<void> {
   const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
   // TODO: make conditional
   const uniswapFactory = await deployUniswapFactory(signers[0], account);
-  const optionLib = await deploy2(
-    signers[0],
-    OptionLibFactory,
-    uniswapFactory.address,
-    constants.AddressZero
-  );
+  const optionLib = await deploy2(signers[0], OptionLibFactory, uniswapFactory.address, constants.AddressZero);
   const relay = await deploy0(signers[0], MockRelayFactory);
   const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
   const writerRegistry = await deploy0(signers[0], WriterRegistryFactory);
@@ -60,54 +55,12 @@ async function main(): Promise<void> {
   // volatility per year 48.5% (see https://www.bitpremier.com/volatility-index)
   // time to expiration as indicated
   // premium based on American option calculated by http://www.math.columbia.edu/~smirnov/options.html
-  await optionFactory.createPair(
-    inAWeek,
-    2000,
-    newBigNum(9_100, 18),
-    collateral.address,
-    referee.address,
-    overrides
-  );
-  await optionFactory.createPair(
-    inAWeek,
-    2000,
-    newBigNum(8_850, 18),
-    collateral.address,
-    referee.address,
-    overrides
-  );
-  await optionFactory.createPair(
-    inAWeek,
-    2000,
-    newBigNum(8_600, 18),
-    collateral.address,
-    referee.address,
-    overrides
-  );
-  await optionFactory.createPair(
-    inAMonth,
-    2000,
-    newBigNum(9_100, 18),
-    collateral.address,
-    referee.address,
-    overrides
-  );
-  await optionFactory.createPair(
-    inAMonth,
-    2000,
-    newBigNum(8_850, 18),
-    collateral.address,
-    referee.address,
-    overrides
-  );
-  await optionFactory.createPair(
-    inAMonth,
-    2000,
-    newBigNum(8_600, 18),
-    collateral.address,
-    referee.address,
-    overrides
-  );
+  await optionFactory.createPair(inAWeek, 2000, newBigNum(9_100, 18), collateral.address, referee.address, overrides);
+  await optionFactory.createPair(inAWeek, 2000, newBigNum(8_850, 18), collateral.address, referee.address, overrides);
+  await optionFactory.createPair(inAWeek, 2000, newBigNum(8_600, 18), collateral.address, referee.address, overrides);
+  await optionFactory.createPair(inAMonth, 2000, newBigNum(9_100, 18), collateral.address, referee.address, overrides);
+  await optionFactory.createPair(inAMonth, 2000, newBigNum(8_850, 18), collateral.address, referee.address, overrides);
+  await optionFactory.createPair(inAMonth, 2000, newBigNum(8_600, 18), collateral.address, referee.address, overrides);
 }
 
 main()

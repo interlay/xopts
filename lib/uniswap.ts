@@ -9,21 +9,12 @@ import {IUniswapV2Factory} from '../typechain/IUniswapV2Factory';
 import {IUniswapV2FactoryFactory} from '../typechain/IUniswapV2FactoryFactory';
 import {TransactionResponse} from '@ethersproject/abstract-provider';
 
-export async function deployUniswapFactory(
-  signer: Signer,
-  feeToSetter: string
-): Promise<IUniswapV2Factory> {
-  const contract = await deployContract(signer as Wallet, UniswapV2Factory, [
-    feeToSetter
-  ]);
+export async function deployUniswapFactory(signer: Signer, feeToSetter: string): Promise<IUniswapV2Factory> {
+  const contract = await deployContract(signer as Wallet, UniswapV2Factory, [feeToSetter]);
   return IUniswapV2FactoryFactory.connect(contract.address, signer);
 }
 
-export async function createUniswapPair(
-  factory: Contract,
-  tokenA: string,
-  tokenB: string
-): Promise<string> {
+export async function createUniswapPair(factory: Contract, tokenA: string, tokenB: string): Promise<string> {
   const tx: TransactionResponse = await factory.createPair(tokenA, tokenB);
 
   return ethers.utils.defaultAbiCoder.decode(
@@ -32,10 +23,7 @@ export async function createUniswapPair(
   )[0];
 }
 
-export function getUniswapPair(
-  signer: Signer,
-  pairAddress: string
-): IUniswapV2Pair {
+export function getUniswapPair(signer: Signer, pairAddress: string): IUniswapV2Pair {
   return IUniswapV2PairFactory.connect(pairAddress, signer);
 }
 

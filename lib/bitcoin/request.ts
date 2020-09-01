@@ -12,11 +12,7 @@ interface AddrApi {
   getTxHistory(addr: string): Promise<Array<Tx>>;
 }
 
-async function getRequestsFromTx(
-  txId: string,
-  data: string,
-  txApi: TxApi
-): Promise<string[]> {
+async function getRequestsFromTx(txId: string, data: string, txApi: TxApi): Promise<string[]> {
   const hex = await txApi.getTxHex(txId);
   const btx = bitcoin.Transaction.fromHex(hex);
   return btx.outs
@@ -36,12 +32,7 @@ async function getRequestsFromTx(
     });
 }
 
-async function getRequestsFromHistory(
-  addr: string,
-  data: string,
-  addrApi: AddrApi,
-  txApi: TxApi
-): Promise<string[][]> {
+async function getRequestsFromHistory(addr: string, data: string, addrApi: AddrApi, txApi: TxApi): Promise<string[][]> {
   const txs = await addrApi.getTxHistory(addr);
   return Promise.all(txs.map((tx) => getRequestsFromTx(tx.txid, data, txApi)));
 }
@@ -52,8 +43,6 @@ export async function getRequest(
   addrApi: AddrApi,
   txApi: TxApi
 ): Promise<string | undefined> {
-  const txIds = ([] as string[]).concat(
-    ...(await getRequestsFromHistory(addr, data, addrApi, txApi))
-  );
+  const txIds = ([] as string[]).concat(...(await getRequestsFromHistory(addr, data, addrApi, txApi)));
   return txIds.length >= 1 ? txIds[0] : undefined;
 }

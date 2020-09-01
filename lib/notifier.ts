@@ -31,9 +31,7 @@ export class Notifier<T> {
   }
 }
 
-export class ConfirmationNotifier extends Notifier<
-  ContractTransaction | ContractReceipt
-> {
+export class ConfirmationNotifier extends Notifier<ContractTransaction | ContractReceipt> {
   on(event: 'error' | 'confirmation', callback: any): void {
     super.on(event, callback);
   }
