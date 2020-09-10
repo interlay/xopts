@@ -407,10 +407,10 @@
   resolved "https://registry.yarnpkg.com/@interlay/bitcoin-spv-sol/-/bitcoin-spv-sol-3.2.2.tgz#5d4afb571b0c9868799a9ce7c7bc4aee2daaf3d9"
   integrity sha512-Srf5XVyDGE/U6fQ9fEo6RCAgUSYhZJsI5YaJVc3O7dtyiprzjSuh/pFKxZOydL7y3AFetCEJxLLMzjbMDQntfQ==
 
-"@interlay/btc-relay-sol@0.3.8":
-  version "0.3.8"
-  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.3.8.tgz#7bbb3f487457f65cb8fd7b452e461386eb18ed2e"
-  integrity sha512-Zf+B5c+sTQMFXhPldmMHQFma1/3V5oCI6Sy0yv/eoAKxn4B/b0WfMfFQxPnFQ6DvE8JDR7XgJv5neuTz07OYtg==
+"@interlay/btc-relay-sol@0.3.12":
+  version "0.3.12"
+  resolved "https://registry.yarnpkg.com/@interlay/btc-relay-sol/-/btc-relay-sol-0.3.12.tgz#e650740bca03872559ea063b27ca8bfca6fa43f7"
+  integrity sha512-1ArT3rhX9AoMDzhoWOfyQZlDv2vG1qyV0fHujWBoVo4HnRmodItivpScVvlAUcWENpRn1PCClQOzZ7h/7fII0A==
   dependencies:
     "@interlay/bitcoin-spv-sol" "3.2.2"
     "@openzeppelin/contracts" "3.1.0"
