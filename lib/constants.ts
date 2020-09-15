@@ -60,5 +60,6 @@ export const WETH = {
 };
 
 export const USDT = {
-  mainnet: '0xdac17f958d2ee523a2206206994597c13d831ec7'
+  mainnet: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+  owner: '0xc6cde7c39eb2f0f0095f41570af89efc2c1ea828'
 };

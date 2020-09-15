@@ -7,3 +7,4 @@ export {
   ReadWriteOptionPair
 } from './lib/contracts';
 export {Deployments} from './lib/addresses';
+export {XOpts} from './lib/xopts';
