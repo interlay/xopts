@@ -22,6 +22,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
     using SafeMath for uint256;
 
     string internal constant ERR_NO_TREASURY = 'No treasury found';
+    string internal constant ERR_NOT_SUPPORTED = 'Collateral not supported';
 
     /// @notice Emit upon successful creation of a new option pair.
     event CreatePair(
@@ -39,6 +40,16 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
 
     constructor(address _uniswap) public Ownable() {
         uniswap = _uniswap;
+    }
+
+    mapping(address => bool) private isEnabled;
+
+    function enableAsset(address collateral) external override onlyOwner {
+        isEnabled[collateral] = true;
+    }
+
+    function disableAsset(address collateral) external override onlyOwner {
+        isEnabled[collateral] = false;
     }
 
     function _createOption(
@@ -113,7 +124,11 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
         address collateral,
         address referee
     ) external override returns (address option, address obligation) {
-        // load treasury for collateral type
+        // fail early if the collateral asset has not been whitelisted
+        require(isEnabled[collateral], ERR_NOT_SUPPORTED);
+
+        // load treasury for collateral type or create
+        // a new treasury if it does not exist yet
         address treasury = getTreasury[collateral];
         require(treasury != address(0), ERR_NO_TREASURY);
 

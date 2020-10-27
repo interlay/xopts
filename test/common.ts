@@ -1,6 +1,6 @@
 import {OptionPairFactory} from '../typechain/OptionPairFactory';
 import {BigNumberish, Signer, constants} from 'ethers';
-import {createPair, deploy1, deploy2} from '../lib/contracts';
+import {createPair, deploy2} from '../lib/contracts';
 import {OptionFactory, ObligationFactory, TreasuryFactory} from '../typechain';
 import {Obligation} from '../typechain/Obligation';
 import {Option} from '../typechain/Option';
@@ -37,6 +37,7 @@ export async function deployPair(
     treasury = TreasuryFactory.connect(treasuryAddress, signer);
   }
 
+  await optionFactory.enableAsset(collateral);
   const pairAddresses = await createPair(
     optionFactory,
     expiryTime,

@@ -23,7 +23,6 @@ describe('Conversion for number of obligation and option tokens with number of s
   let alice: Signer;
 
   let optionFactory: OptionPairFactory;
-  let uniswapFactory: MockContract;
   let collateral: MockContract;
 
   const expiryTime = getTimeNow() + 1000;
@@ -31,16 +30,16 @@ describe('Conversion for number of obligation and option tokens with number of s
 
   beforeEach('should deploy option factory', async () => {
     [alice] = await ethers.getSigners();
-    uniswapFactory = await deployMockContract(
-      alice,
-      IUniswapV2FactoryArtifact.abi
-    );
-    optionFactory = await deploy1(
-      alice,
-      OptionPairFactoryFactory,
-      uniswapFactory.address
-    );
-    collateral = await deployMockContract(alice, IERC20Artifact.abi);
+    [optionFactory, collateral] = await Promise.all([
+      deployMockContract(
+        alice,
+        IUniswapV2FactoryArtifact.abi
+      ).then((uniswapFactory: MockContract) =>
+        deploy1(alice, OptionPairFactoryFactory, uniswapFactory.address)
+      ),
+      deployMockContract(alice, IERC20Artifact.abi)
+    ]);
+    await optionFactory.enableAsset(collateral.address);
   });
 
   it('should validate amountIn', async () => {
