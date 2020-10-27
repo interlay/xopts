@@ -79,7 +79,7 @@ describe('OptionPairFactory.sol', () => {
       collateral.address,
       referee.address
     );
-    await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_TREASURY);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_NOT_SUPPORTED);
   });
 
   it('should fail to create an expired option pair', async () => {
