@@ -35,6 +35,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
     );
 
     address internal uniswap;
+    address[] public options;
 
     mapping(address => address) public getTreasury;
 
@@ -127,8 +128,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
         // fail early if the collateral asset has not been whitelisted
         require(isEnabled[collateral], ERR_NOT_SUPPORTED);
 
-        // load treasury for collateral type or create
-        // a new treasury if it does not exist yet
+        // load treasury for collateral type
         address treasury = getTreasury[collateral];
         require(treasury != address(0), ERR_NO_TREASURY);
 
@@ -162,6 +162,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
         );
         Ownable(option).transferOwnership(obligation);
         ITreasury(treasury).authorize(obligation);
+        options.push(option);
 
         emit CreatePair(
             option,
@@ -171,5 +172,9 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
             windowSize,
             strikePrice
         );
+    }
+
+    function allOptions() external override view returns (address[] memory) {
+        return options;
     }
 }

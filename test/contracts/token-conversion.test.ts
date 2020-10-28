@@ -90,22 +90,20 @@ describe('Conversion for number of obligation and option tokens with number of s
       }
     ];
 
-    await Promise.all(
-      tests.map(async (t) => {
-        await collateral.mock.decimals.returns(t.decimals);
-        const {obligation} = await deployPair(
-          optionFactory,
-          expiryTime,
-          windowSize,
-          t.strike,
-          collateral.address,
-          constants.AddressZero,
-          alice
-        );
-        const result = await obligation.calculateAmountIn(t.satoshis);
-        expect(result).to.eq(t.amount);
-      })
-    );
+    for (const t of tests) {
+      await collateral.mock.decimals.returns(t.decimals);
+      const {obligation} = await deployPair(
+        optionFactory,
+        expiryTime,
+        windowSize,
+        t.strike,
+        collateral.address,
+        constants.AddressZero,
+        alice
+      );
+      const result = await obligation.calculateAmountIn(t.satoshis);
+      expect(result).to.eq(t.amount);
+    }
   });
 
   it('should validate amountOut', async () => {
@@ -130,21 +128,19 @@ describe('Conversion for number of obligation and option tokens with number of s
       }
     ];
 
-    await Promise.all(
-      tests.map(async (t) => {
-        await collateral.mock.decimals.returns(t.decimals);
-        const {obligation} = await deployPair(
-          optionFactory,
-          expiryTime,
-          windowSize,
-          t.strike,
-          collateral.address,
-          constants.AddressZero,
-          alice
-        );
-        const output = await obligation.calculateAmountOut(t.amount);
-        expect(output).to.eq(t.satoshis);
-      })
-    );
+    for (const t of tests) {
+      await collateral.mock.decimals.returns(t.decimals);
+      const {obligation} = await deployPair(
+        optionFactory,
+        expiryTime,
+        windowSize,
+        t.strike,
+        collateral.address,
+        constants.AddressZero,
+        alice
+      );
+      const output = await obligation.calculateAmountOut(t.amount);
+      expect(output).to.eq(t.satoshis);
+    }
   });
 });
