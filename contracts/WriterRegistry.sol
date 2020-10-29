@@ -40,6 +40,14 @@ contract WriterRegistry is IWriterRegistry {
         _setBtcAddress(msg.sender, btcHash, format);
     }
 
+    function _getBtcAddress(address account)
+        internal
+        view
+        returns (bytes20 btcHash, Bitcoin.Script format)
+    {
+        return (_btcAddresses[account].btcHash, _btcAddresses[account].format);
+    }
+
     /**
      * @notice Get the configured BTC address for an account.
      * @param account Minter address
@@ -52,7 +60,7 @@ contract WriterRegistry is IWriterRegistry {
         view
         returns (bytes20 btcHash, Bitcoin.Script format)
     {
-        return (_btcAddresses[account].btcHash, _btcAddresses[account].format);
+        return _getBtcAddress(account);
     }
 
     /**

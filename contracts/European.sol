@@ -3,13 +3,14 @@
 pragma solidity ^0.6.0;
 
 import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {IEuropean} from './interface/IEuropean.sol';
 
 /**
  * @dev Contract module which provides a timed access control mechanism,
  * specifically to model a European Option with an expiry and settlement phase.
  * It must be used through inheritance which provides several modifiers.
  */
-contract European {
+contract European is IEuropean {
     using SafeMath for uint256;
 
     string internal constant ERR_INIT_EXPIRED = 'Cannot init expired';
@@ -18,10 +19,10 @@ contract European {
     string internal constant ERR_WINDOW_ZERO = 'Window cannot be zero';
 
     // expiry timestamp
-    uint256 public expiryTime;
+    uint256 public override expiryTime;
 
     // window post expiry
-    uint256 public windowSize;
+    uint256 public override windowSize;
 
     modifier setExpiry(uint256 _expiryTime, uint256 _windowSize) {
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
@@ -63,11 +64,10 @@ contract European {
     }
 
     /**
-     * @dev Throws if called before the exercise window has expired
+     * @dev Returns true if the `expiryTime + windowSize` has elapsed.
      */
-    modifier canRefund() {
+    function canExit() external override returns (bool) {
         // solium-disable-next-line security/no-block-members
-        require(block.timestamp > expiryTime.add(windowSize), ERR_NOT_EXPIRED);
-        _;
+        return block.timestamp > expiryTime.add(windowSize);
     }
 }

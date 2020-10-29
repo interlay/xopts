@@ -1,9 +1,10 @@
 import {OptionPairFactory} from '../typechain/OptionPairFactory';
-import {BigNumberish, Signer} from 'ethers';
-import {createPair} from '../lib/contracts';
-import {OptionFactory, ObligationFactory} from '../typechain';
+import {BigNumberish, Signer, constants} from 'ethers';
+import {createPair, deploy2} from '../lib/contracts';
+import {OptionFactory, ObligationFactory, TreasuryFactory} from '../typechain';
 import {Obligation} from '../typechain/Obligation';
 import {Option} from '../typechain/Option';
+import {Treasury} from '../typechain/Treasury';
 
 export function getTimeNow(): number {
   return Math.round(new Date().getTime() / 1000);
@@ -20,7 +21,22 @@ export async function deployPair(
 ): Promise<{
   option: Option;
   obligation: Obligation;
+  treasury: Treasury;
 }> {
+  const treasuryAddress = await optionFactory.getTreasury(collateral);
+  let treasury: Treasury;
+  if (treasuryAddress === constants.AddressZero) {
+    treasury = await deploy2(
+      signer,
+      TreasuryFactory,
+      collateral,
+      optionFactory.address
+    );
+    await optionFactory.setTreasuryFor(collateral, treasury.address);
+  } else {
+    treasury = TreasuryFactory.connect(treasuryAddress, signer);
+  }
+
   await optionFactory.enableAsset(collateral);
   const pairAddresses = await createPair(
     optionFactory,
@@ -31,9 +47,10 @@ export async function deployPair(
     btcReferee
   );
   const option = OptionFactory.connect(pairAddresses.option, signer);
+  const obligation = ObligationFactory.connect(
+    pairAddresses.obligation,
+    signer
+  );
 
-  const obligationAddress = await optionFactory.getObligation(option.address);
-  const obligation = ObligationFactory.connect(obligationAddress, signer);
-
-  return {option, obligation};
+  return {option, obligation, treasury};
 }

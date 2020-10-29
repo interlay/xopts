@@ -13,7 +13,7 @@ import {IOption} from './interface/IOption.sol';
 import {Obligation} from './Obligation.sol';
 import {IObligation} from './interface/IObligation.sol';
 import {IOptionPairFactory} from './interface/IOptionPairFactory.sol';
-import {Treasury} from './Treasury.sol';
+import {ITreasury} from './interface/ITreasury.sol';
 
 /// @title Parent Factory
 /// @author Interlay
@@ -21,6 +21,7 @@ import {Treasury} from './Treasury.sol';
 contract OptionPairFactory is IOptionPairFactory, Ownable {
     using SafeMath for uint256;
 
+    string internal constant ERR_NO_TREASURY = 'No treasury found';
     string internal constant ERR_NOT_SUPPORTED = 'Collateral not supported';
 
     /// @notice Emit upon successful creation of a new option pair.
@@ -33,16 +34,16 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
         uint256 strikePrice
     );
 
-    mapping(address => address) public getObligation;
-    mapping(address => address) public getTreasury;
-    mapping(address => address) public getCollateral;
+    address internal uniswap;
     address[] public options;
 
-    mapping(address => bool) private isEnabled;
+    mapping(address => address) public getTreasury;
 
-    constructor() public Ownable() {
-        // solhint-disable-previous-line no-empty-blocks
+    constructor(address _uniswap) public Ownable() {
+        uniswap = _uniswap;
     }
+
+    mapping(address => bool) private isEnabled;
 
     function enableAsset(address collateral) external override onlyOwner {
         isEnabled[collateral] = true;
@@ -91,9 +92,19 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
             strikePrice,
             option,
             referee,
-            treasury
+            treasury,
+            uniswap
         );
         return obligation;
+    }
+
+    function setTreasuryFor(address collateral, address treasury)
+        external
+        onlyOwner
+    {
+        // treasury must be created separately due to the contract
+        // size limit of 24576 bytes
+        getTreasury[collateral] = treasury;
     }
 
     /**
@@ -117,12 +128,9 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
         // fail early if the collateral asset has not been whitelisted
         require(isEnabled[collateral], ERR_NOT_SUPPORTED);
 
-        // load treasury for collateral type or create
-        // a new treasury if it does not exist yet
+        // load treasury for collateral type
         address treasury = getTreasury[collateral];
-        if (treasury == address(0)) {
-            treasury = address(new Treasury(collateral));
-        }
+        require(treasury != address(0), ERR_NO_TREASURY);
 
         // deterministic creation of option pair to ensure
         // that liquidity ends up in the same pool
@@ -153,10 +161,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
             salt
         );
         Ownable(option).transferOwnership(obligation);
-
-        getObligation[option] = obligation;
-        getTreasury[collateral] = treasury;
-        getCollateral[option] = collateral;
+        ITreasury(treasury).authorize(obligation);
         options.push(option);
 
         emit CreatePair(

@@ -51,6 +51,7 @@
   ],
   "homepage": "https://gitlab.com/interlay/xopts#readme",
   "devDependencies": {
+    "@gregdhill/mock-contract": "3.0.4",
     "@interlay/bitcoin-spv-sol": "3.2.2",
     "@interlay/btc-relay-sol": "0.3.10",
     "@nodefactory/buidler-typechain": "^0.2.0",

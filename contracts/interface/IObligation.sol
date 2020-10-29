@@ -2,8 +2,6 @@
 
 pragma solidity ^0.6.0;
 
-import {Bitcoin} from '../types/Bitcoin.sol';
-
 interface IObligation {
     function initialize(
         uint8 _decimals,
@@ -12,7 +10,8 @@ interface IObligation {
         uint256 _strikePrice,
         address _option,
         address _referee,
-        address _treasury
+        address _treasury,
+        address _uniswap
     ) external;
 
     function getDetails()
@@ -37,13 +36,7 @@ interface IObligation {
 
     function available(address account) external view returns (uint256);
 
-    function mint(
-        address account,
-        address pool,
-        uint256 amount,
-        bytes20 btcHash,
-        Bitcoin.Script format
-    ) external;
+    function mint(address account, uint256 amount) external;
 
     function requestExercise(address seller, uint256 satoshis) external;
 
@@ -56,8 +49,6 @@ interface IObligation {
         bytes calldata proof,
         bytes calldata rawtx
     ) external;
-
-    function refund(uint256 amount) external;
 
     function withdraw(uint256 amount, address pool) external;
 }

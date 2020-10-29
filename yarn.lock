@@ -417,6 +417,14 @@
     "@ethersproject/properties" "^5.0.0"
     "@ethersproject/strings" "^5.0.0"
 
+"@gregdhill/mock-contract@3.0.4":
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/@gregdhill/mock-contract/-/mock-contract-3.0.4.tgz#9e9db93aab26d583f9e21fd9abc13bbbcc396505"
+  integrity sha512-beT5F88pQQtOvgGXdhdMS5vlBcP6lofskWfymnAmXzcMMUrPN82KQGGaAvJe5jjV8Ii739cDaqmS8MAA7Pycog==
+  dependencies:
+    "@ethersproject/abi" "^5.0.1"
+    ethers "^5.0.1"
+
 "@interlay/bitcoin-spv-sol@3.2.2":
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/@interlay/bitcoin-spv-sol/-/bitcoin-spv-sol-3.2.2.tgz#5d4afb571b0c9868799a9ce7c7bc4aee2daaf3d9"
@@ -750,11 +758,6 @@
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.5.2.tgz#4d74670ead39e4f4fdab605a393ba8ea2390a2c4"
   integrity sha512-uRyvnvVYmgNmTBpWDbBsH/0kPESQhQpEc4KsvMRLVzFJ1o1s0uIv0Y6Y9IB5vI1Dwz2CbS4X/y4Wyw/75cTFnQ==
-
-"@solidity-parser/parser@^0.6.0":
-  version "0.6.2"
-  resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.6.2.tgz#49707fc4e06649d39d6b25bdab2e9093d372ce50"
-  integrity sha512-kUVUvrqttndeprLoXjI5arWHeiP3uh4XODAKbG+ZaWHCVQeelxCbnXBeWxZ2BPHdXgH0xR9dU1b916JhDhbgAA==
 
 "@solidity-parser/parser@^0.7.0":
   version "0.7.0"
@@ -8741,11 +8744,11 @@ solhint-plugin-prettier@^0.0.4:
     prettier-linter-helpers "^1.0.0"
 
 solhint@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/solhint/-/solhint-3.1.0.tgz#50d58c9af921a01350164350144a9809d5ec2975"
-  integrity sha512-Cc0wqKzg0NviDF7H5zsrGJ/hVwwkGqi0Hkc3YtedTev4alkJv4YADdJg4y586MpfEvMX4QPp7LugsmJzoeChkQ==
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/solhint/-/solhint-3.2.0.tgz#e3b3e568f64f71328f410a97f06e802033f0d7d2"
+  integrity sha512-BGp7JnnoLzknGC/arcH33oN/LjOz0hKgdauOcBOO5jNjhjnPQ3cAacSMH64fWYShAg5+HYQaSRubInpSKSvzLg==
   dependencies:
-    "@solidity-parser/parser" "^0.6.0"
+    "@solidity-parser/parser" "^0.7.0"
     ajv "^6.6.1"
     antlr4 "4.7.1"
     ast-parents "0.0.1"

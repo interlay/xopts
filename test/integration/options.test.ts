@@ -8,7 +8,13 @@ import {ErrorCode, Script} from '../../lib/constants';
 import {MockCollateral} from '../../typechain/MockCollateral';
 import {OptionLibFactory} from '../../typechain/OptionLibFactory';
 import {OptionLib} from '../../typechain/OptionLib';
-import {deploy0, reconnect, getRequestEvent} from '../../lib/contracts';
+import {
+  deploy0,
+  reconnect,
+  getRequestEvent,
+  deploy2,
+  deploy1
+} from '../../lib/contracts';
 import {Option} from '../../typechain/Option';
 import {OptionPairFactory} from '../../typechain/OptionPairFactory';
 import {ObligationFactory} from '../../typechain/ObligationFactory';
@@ -22,6 +28,8 @@ import {evmSnapFastForward} from '../../lib/mock';
 import {BigNumberish} from 'ethers';
 import {deployPair, getTimeNow} from '../common';
 import {newBigNum} from '../../lib/conversion';
+import {Treasury} from '../../typechain/Treasury';
+import {TreasuryFactory} from '../../typechain';
 
 chai.use(solidity);
 const {expect} = chai;
@@ -38,26 +46,25 @@ const btcHash = '0x5587090c3288b46df8cc928c6910a8c1bbea508f';
 
 async function loadContracts(signer: Signer): Promise<Contracts> {
   const account = await signer.getAddress();
-  const uniswapFactory = (await deployUniswapFactory(
-    signer,
-    account
-  )) as IUniswapV2Factory;
-  const optionPairFactory = await deploy0(signer, OptionPairFactoryFactory);
-  const optionLibFactory = new OptionLibFactory(signer);
-  const optionLib = await optionLibFactory.deploy(
-    uniswapFactory.address,
-    constants.AddressZero
-  );
+  const uniswapFactory = await deployUniswapFactory(signer, account);
+  const [optionFactory, optionLib, collateral, btcReferee] = await Promise.all([
+    deploy1(signer, OptionPairFactoryFactory, uniswapFactory.address),
+    deploy2(
+      signer,
+      OptionLibFactory,
+      uniswapFactory.address,
+      constants.AddressZero
+    ),
+    deploy0(signer, MockCollateralFactory),
+    deployMockContract(signer as Wallet, BTCRefereeArtifact.abi)
+  ]);
 
   return {
-    uniswapFactory: uniswapFactory,
-    collateral: await deploy0(signer, MockCollateralFactory),
-    optionFactory: optionPairFactory,
-    optionLib: optionLib,
-    btcReferee: await deployMockContract(
-      signer as Wallet,
-      BTCRefereeArtifact.abi
-    )
+    uniswapFactory,
+    collateral,
+    optionFactory,
+    optionLib,
+    btcReferee
   };
 }
 
@@ -99,6 +106,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
 
   let option: Option;
   let obligation: Obligation;
+  let treasury: Treasury;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -122,7 +130,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
       alice.getAddress(),
       bob.getAddress()
     ]);
-    ({option, obligation} = await deployPair(
+    ({option, obligation, treasury} = await deployPair(
       optionFactory,
       expiryTime,
       windowSize,
@@ -147,6 +155,14 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
       premiumAmount.add(collateralAmount)
     );
 
+    await reconnect(treasury, TreasuryFactory, alice).position(
+      0,
+      constants.MaxUint256,
+      expiryTime + windowSize,
+      btcHash,
+      Script.p2sh
+    );
+
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
       obligation.address,
       collateral.address,
@@ -154,9 +170,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
       collateralAmount,
       premiumAmount,
       0,
-      0,
-      btcHash,
-      Script.p2sh
+      0
     );
 
     const pairAddress = await uniswapFactory.getPair(
@@ -198,7 +212,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
         obligation,
         ObligationFactory,
         bob
-      ).requestExercise(aliceAddress, amountOutSat.add(1));
+      ).requestExercise(aliceAddress, amountOutSat.add(100));
       await expect(result).to.be.revertedWith(
         ErrorCode.ERR_TRANSFER_EXCEEDS_BALANCE
       );
@@ -256,6 +270,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
 
   let option: Option;
   let obligation: Obligation;
+  let treasury: Treasury;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -279,7 +294,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
       alice.getAddress(),
       bob.getAddress()
     ]);
-    ({option, obligation} = await deployPair(
+    ({option, obligation, treasury} = await deployPair(
       optionFactory,
       expiryTime,
       windowSize,
@@ -304,6 +319,14 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
       premiumAmount.add(collateralAmount)
     );
 
+    await reconnect(treasury, TreasuryFactory, alice).position(
+      0,
+      constants.MaxUint256,
+      expiryTime + windowSize,
+      btcHash,
+      Script.p2sh
+    );
+
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
       obligation.address,
       collateral.address,
@@ -311,9 +334,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
       collateralAmount,
       premiumAmount,
       0,
-      0,
-      btcHash,
-      Script.p2sh
+      0
     );
 
     const pairAddress = await uniswapFactory.getPair(
@@ -413,6 +434,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
 
   let option: Option;
   let obligation: Obligation;
+  let treasury: Treasury;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -435,7 +457,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
       alice.getAddress(),
       bob.getAddress()
     ]);
-    ({option, obligation} = await deployPair(
+    ({option, obligation, treasury} = await deployPair(
       optionFactory,
       expiryTime,
       windowSize,
@@ -460,6 +482,14 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
       collateralAmount.add(premiumAmount)
     );
 
+    await reconnect(treasury, TreasuryFactory, alice).position(
+      0,
+      constants.MaxUint256,
+      expiryTime + windowSize,
+      btcHash,
+      Script.p2sh
+    );
+
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
       obligation.address,
       collateral.address,
@@ -467,9 +497,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
       collateralAmount,
       premiumAmount,
       collateralAmount,
-      premiumAmount,
-      btcHash,
-      Script.p2sh
+      premiumAmount
     );
 
     const pairAddress: string = await uniswapFactory.getPair(
@@ -502,11 +530,9 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
     const obligationBalance = await obligation.obligations(aliceAddress);
     expect(obligationBalance).to.eq(collateralAmount);
     await evmSnapFastForward(2000, async () => {
-      await reconnect(obligation, ObligationFactory, alice).refund(
+      await reconnect(treasury, TreasuryFactory, alice).withdraw(
         collateralAmount
       );
-      const obligationBalance = await obligation.obligations(aliceAddress);
-      expect(obligationBalance).to.eq(constants.Zero);
       const collateralBalance = await collateral.balanceOf(aliceAddress);
       expect(collateralBalance).to.eq(collateralAmount);
     });
@@ -529,6 +555,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
 
   let option: Option;
   let obligation: Obligation;
+  let treasury: Treasury;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -553,7 +580,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
       alice.getAddress(),
       eve.getAddress()
     ]);
-    ({option, obligation} = await deployPair(
+    ({option, obligation, treasury} = await deployPair(
       optionFactory,
       expiryTime,
       windowSize,
@@ -578,6 +605,14 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
       collateralAmount.add(premiumAmount)
     );
 
+    await reconnect(treasury, TreasuryFactory, alice).position(
+      0,
+      constants.MaxUint256,
+      expiryTime + windowSize,
+      btcHash,
+      Script.p2sh
+    );
+
     await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
       obligation.address,
       collateral.address,
@@ -585,9 +620,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
       collateralAmount,
       premiumAmount,
       collateralAmount,
-      premiumAmount,
-      btcHash,
-      Script.p2sh
+      premiumAmount
     );
 
     const obligationBalance = await obligation.balanceOf(aliceAddress);
@@ -659,10 +692,14 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
       amountOut
     );
 
-    await reconnect(obligation, ObligationFactory, eve).setBtcAddress(
+    await reconnect(treasury, TreasuryFactory, eve).position(
+      0,
+      constants.MaxUint256,
+      expiryTime + windowSize,
       btcHash,
       Script.p2sh
     );
+
     await reconnect(optionLib, OptionLibFactory, eve).lockAndBuy(
       amountOut,
       amountInMax,
@@ -697,6 +734,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
 
   let option: Option;
   let obligation: Obligation;
+  let treasury: Treasury;
 
   const expiryTime = getTimeNow() + 1000;
   const windowSize = 1000;
@@ -722,7 +760,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
       bob.getAddress(),
       eve.getAddress()
     ]);
-    ({option, obligation} = await deployPair(
+    ({option, obligation, treasury} = await deployPair(
       optionFactory,
       expiryTime,
       windowSize,
@@ -748,6 +786,14 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
         collateralAmount.add(premiumAmount)
       );
 
+      await reconnect(treasury, TreasuryFactory, signer).position(
+        0,
+        constants.MaxUint256,
+        expiryTime + windowSize,
+        btcHash,
+        Script.p2sh
+      );
+
       await reconnect(optionLib, OptionLibFactory, signer).lockAndWrite(
         obligation.address,
         collateral.address,
@@ -755,9 +801,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
         collateralAmount,
         premiumAmount,
         collateralAmount,
-        premiumAmount,
-        btcHash,
-        Script.p2sh
+        premiumAmount
       );
 
       const obligationBalance = await obligation.obligations(address);
@@ -815,10 +859,19 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
       amountInMax.add(amountOut)
     );
 
+    await reconnect(treasury, TreasuryFactory, bob).position(
+      0,
+      constants.MaxUint256,
+      expiryTime + windowSize,
+      btcHash,
+      Script.p2sh
+    );
+
     const pairAddress = await uniswapFactory.getPair(
       collateral.address,
       obligation.address
     );
+
     const input = await estimateInput(
       pairAddress,
       collateral,

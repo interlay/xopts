@@ -13,6 +13,7 @@ export const ErrorCode = {
   ERR_TRANSFER_FROM_ZERO_ADDRESS: 'Transfer from zero address',
 
   // OptionPairFactory
+  ERR_NO_TREASURY: 'No treasury found',
   ERR_NOT_SUPPORTED: 'Collateral not supported',
 
   // Expirable
@@ -34,6 +35,14 @@ export const ErrorCode = {
   ERR_INSUFFICIENT_DEPOSIT: 'Insufficient deposit amount',
   ERR_INSUFFICIENT_LOCKED: 'Insufficient collateral locked',
   ERR_INSUFFICIENT_UNLOCKED: 'Insufficient collateral unlocked',
+  ERR_POSITION_INVALID_EXPIRY: 'Invalid position expiry',
+  ERR_POSITION_NOT_SET: 'Position not set',
+  ERR_POSITION_NOT_EXPIRED: 'Position not expired',
+  ERR_NOT_AUTHORIZED: 'Caller not authorized',
+  ERR_MARKET_HAS_EXPIRED: 'Market has expired',
+  ERR_MARKET_NOT_EXPIRED: 'Market not expired',
+  ERR_MARKET_EXPIRY: 'Market expiry invalid',
+  ERR_MARKET_STRIKE: 'Market strike invalid',
 
   // WriterRegistry
   ERR_NO_BTC_HASH: 'Cannot set empty BTC address',

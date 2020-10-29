@@ -4,6 +4,9 @@ pragma solidity ^0.6.0;
 
 import '@nomiclabs/buidler/console.sol';
 
+import {
+    UniswapV2Library
+} from '@uniswap/v2-periphery/contracts/libraries/UniswapV2Library.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -65,15 +68,18 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
 
     address public override treasury;
 
+    address public uniswap;
+
     uint256 internal _nonce;
 
     struct Request {
         uint256 amount;
+        address buyer;
         address seller;
     }
 
     // accounting to track and ensure correct payouts
-    mapping(address => mapping(bytes32 => Request)) internal _requests;
+    mapping(bytes32 => Request) internal _requests;
     mapping(address => uint256) internal _locked;
 
     mapping(address => uint256) internal _balances;
@@ -129,7 +135,8 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         uint256 _strikePrice,
         address _option,
         address _referee,
-        address _treasury
+        address _treasury,
+        address _uniswap
     ) external override onlyOwner setExpiry(_expiryTime, _windowSize) {
         require(_strikePrice > 0, ERR_ZERO_STRIKE_PRICE);
 
@@ -143,6 +150,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         option = _option;
         referee = _referee;
         treasury = _treasury;
+        uniswap = _uniswap;
     }
 
     function getDetails()
@@ -188,33 +196,31 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * this function to be called atomically after depositing in the treasury. The `OptionLib`
      * contract should provide helpers to facilitate this.
      * @dev Once the expiry date has lapsed this function is no longer valid.
-     * @param account Origin address
-     * @param pool Destination address (i.e. uniswap pool)
+     * @param writer Writer address
      * @param amount Total credit
-     * @param btcHash Bitcoin hash
-     * @param format Bitcoin script format
      **/
-    function mint(
-        address account,
-        address pool,
-        uint256 amount,
-        bytes20 btcHash,
-        Bitcoin.Script format
-    ) external override notExpired {
+    function mint(address writer, uint256 amount) external override notExpired {
         // insert into the accounts balance
-        _balances[account] = _balances[account].add(amount);
-        _obligations[account] = _obligations[account].add(amount);
+        _balances[writer] = _balances[writer].add(amount);
+        _obligations[writer] = _obligations[writer].add(amount);
         totalSupply = totalSupply.add(amount);
-        _writers.push(account);
-
-        _setBtcAddress(account, btcHash, format);
+        _writers.push(writer);
 
         // check treasury has enough unlocked
-        ITreasury(treasury).lock(account, amount);
-        emit Transfer(address(0), account, amount);
+        (bytes20 btcHash, Bitcoin.Script format) = ITreasury(treasury).lock(
+            writer,
+            amount
+        );
+        _setBtcAddress(writer, btcHash, format);
+
+        emit Transfer(address(0), writer, amount);
+
+        // we need to calculate this here to prevent minting to any contract
+        address premium = ITreasury(treasury).collateral();
+        address pair = UniswapV2Library.pairFor(uniswap, option, premium);
 
         // mint the equivalent options
-        IOption(option).mint(pool, amount);
+        IOption(option).mint(writer, pair, amount);
     }
 
     function _burn(address account, uint256 amount) internal {
@@ -260,8 +266,9 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         );
         _nonce = _nonce.add(1);
 
-        _requests[buyer][id].amount = options;
-        _requests[buyer][id].seller = seller;
+        _requests[id].amount = options;
+        _requests[id].buyer = buyer;
+        _requests[id].seller = seller;
 
         emit RequestExercise(buyer, seller, id, options);
 
@@ -289,7 +296,7 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         bytes calldata proof,
         bytes calldata rawtx
     ) external override canExercise {
-        address seller = _requests[msg.sender][id].seller;
+        address seller = _requests[id].seller;
         Bitcoin.Address memory addr = _btcAddresses[seller];
 
         // verify & validate tx, use default confirmations
@@ -305,24 +312,21 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
             addr.format
         );
 
-        _verifyReceipt(msg.sender, id, satoshis);
+        _verifyReceipt(id, satoshis);
     }
 
-    function _verifyReceipt(
-        address buyer,
-        bytes32 id,
-        uint256 satoshis
-    ) internal {
-        uint256 amount = _requests[buyer][id].amount;
+    function _verifyReceipt(bytes32 id, uint256 satoshis) internal {
+        uint256 amount = _requests[id].amount;
         require(amount > 0, ERR_INVALID_REQUEST);
 
         // pending op_return validation
         uint256 options = calculateAmountIn(satoshis);
         require(amount == options, ERR_INVALID_OUTPUT_AMOUNT);
 
-        address seller = _requests[buyer][id].seller;
+        address buyer = _requests[id].buyer;
+        address seller = _requests[id].seller;
         _locked[seller] = _locked[seller].sub(amount);
-        delete _requests[buyer][id];
+        delete _requests[id];
 
         // remove seller's obligations
         _burn(seller, amount);
@@ -334,26 +338,16 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
     }
 
     /**
-     * @notice Refund written collateral after `expiryTime + windowSize`.
-     * @dev Caller must own obligations.
-     * @param amount Amount of collateral.
-     **/
-    function refund(uint256 amount) external override canRefund {
-        address seller = msg.sender;
-        _burn(seller, amount);
-
-        // transfers from the treasury to the seller
-        ITreasury(treasury).release(seller, seller, amount);
-
-        emit Refund(seller, amount);
-    }
-
-    /**
      * @notice Withdraw collateral for obligation tokens if sold.
      * @param amount Amount of collateral
      * @param pool Address of the liquidity pool (i.e. Uniswap)
      **/
-    function withdraw(uint256 amount, address pool) external override {
+    function withdraw(uint256 amount, address pool)
+        external
+        override
+        notExpired
+    {
+        // TODO: how do liquidity changes affect this?
         address seller = msg.sender;
 
         // caller should have pool credit
@@ -524,9 +518,12 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
                 .add(amount);
         } else {
             // buying obligations from a pool
-            require(_btcAddresses[recipient].btcHash != 0, ERR_NO_BTC_ADDRESS);
             // call to treasury should revert if insufficient locked
-            ITreasury(treasury).lock(recipient, amount);
+            (bytes20 btcHash, Bitcoin.Script format) = ITreasury(treasury).lock(
+                recipient,
+                amount
+            );
+            _setBtcAddress(recipient, btcHash, format);
             _obligations[recipient] = _obligations[recipient].add(amount);
             _writers.push(recipient);
         }
