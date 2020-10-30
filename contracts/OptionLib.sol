@@ -61,7 +61,7 @@ contract OptionLib is UniswapV2Router02 {
     /// Uniswap pair based on the specified premium.
     /// @dev The output `optionsAmount` describes both the number of option tokens minted
     /// as well as the total amount of collateral transferred.
-    function lockAndWrite(
+    function lockAndWriteToPool(
         address obligation,
         address premium,
         address collateral,
@@ -102,7 +102,7 @@ contract OptionLib is UniswapV2Router02 {
     /// @param obligation The obligation tokens
     /// @param collateral The collateral tokens
     /// @param optionsAmount The amount of options that will be minted (hence the amount of collateral that must be locked)
-    function lockAndWriteToSelf(
+    function lockAndWriteToWriter(
         address obligation,
         address collateral,
         uint256 optionsAmount
