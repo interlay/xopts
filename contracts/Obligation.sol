@@ -199,7 +199,46 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
      * @param writer Writer address
      * @param amount Total credit
      **/
-    function mint(address writer, uint256 amount) external override notExpired {
+    function mintToPool(address writer, uint256 amount)
+        external
+        override
+        notExpired
+    {
+        _mintObligations(writer, amount);
+
+        // we need to calculate this here to prevent minting to any contract
+        address premium = ITreasury(treasury).collateral();
+        address pair = UniswapV2Library.pairFor(uniswap, option, premium);
+
+        // mint the equivalent options, transferring to the pool
+        IOption(option).mintToPool(writer, pair, amount);
+    }
+
+    /**
+     * @notice Mints obligation tokens to `writer`, crediting the same with the appropriate
+     * options. To prevent misappropriation of funds we expect this function to be called
+     * atomically after depositing in the treasury. The `OptionLib` contract should provide
+     * helpers to facilitate this.
+     * @dev Once the expiry date has lapsed this function is no longer valid.
+     * @param writer Writer address
+     * @param amount Total credit
+     **/
+    function mintToWriter(address writer, uint256 amount)
+        external
+        override
+        notExpired
+    {
+        _mintObligations(writer, amount);
+
+        // mint the equivalent options, crediting the writer
+        IOption(option).mintToWriter(writer, amount);
+    }
+
+    /**
+     * @dev Performs a mint, creating `amount` obligations and crediting `writer`
+     * appropriately. Does NOT mint the corresponding options.
+     **/
+    function _mintObligations(address writer, uint256 amount) internal {
         // insert into the accounts balance
         _balances[writer] = _balances[writer].add(amount);
         _obligations[writer] = _obligations[writer].add(amount);
@@ -214,13 +253,6 @@ contract Obligation is IObligation, IERC20, European, Ownable, WriterRegistry {
         _setBtcAddress(writer, btcHash, format);
 
         emit Transfer(address(0), writer, amount);
-
-        // we need to calculate this here to prevent minting to any contract
-        address premium = ITreasury(treasury).collateral();
-        address pair = UniswapV2Library.pairFor(uniswap, option, premium);
-
-        // mint the equivalent options
-        IOption(option).mint(writer, pair, amount);
     }
 
     function _burn(address account, uint256 amount) internal {

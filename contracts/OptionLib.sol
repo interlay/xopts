@@ -94,7 +94,22 @@ contract OptionLib is UniswapV2Router02 {
         );
 
         // mint options and obligations - locking collateral
-        IObligation(obligation).mint(msg.sender, optionsAmount);
+        IObligation(obligation).mintToPool(msg.sender, optionsAmount);
+    }
+
+    /// @notice Atomically deposit collateral into a treasury and directly credit
+    /// the writer with the resulting options.
+    /// @param obligation The obligation tokens
+    /// @param collateral The collateral tokens
+    /// @param optionsAmount The amount of options that will be minted (hence the amount of collateral that must be locked)
+    function lockAndWriteToSelf(
+        address obligation,
+        address collateral,
+        uint256 optionsAmount
+    ) external {
+        _deposit(obligation, collateral, msg.sender, optionsAmount);
+        // mint options and obligations - locking collateral
+        IObligation(obligation).mintToWriter(msg.sender, optionsAmount);
     }
 
     /// @notice Redistribute collateral subject to position.
@@ -136,7 +151,7 @@ contract OptionLib is UniswapV2Router02 {
         );
 
         // relock collateral and mint options / obligations
-        IObligation(obligationB).mint(writer, optionsAmount);
+        IObligation(obligationB).mintToPool(writer, optionsAmount);
 
         address[] memory path = new address[](2);
         path[0] = premium;
@@ -150,6 +165,26 @@ contract OptionLib is UniswapV2Router02 {
         require(amounts[0] <= amountInMax, 'EXCESSIVE_INPUT_AMOUNT');
         TransferHelper.safeTransferFrom(premium, msg.sender, pair, amounts[0]);
         _swap(amounts, path, msg.sender);
+    }
+
+    /// @notice Reuses existing (expired) collateral to write a new option,
+    /// crediting the collateral provider directly.
+    /// @param obligationA The expired obligation whose collateral is to be reused
+    /// @param obligationB The new obligation, for which options will be written
+    /// @param writer The writer whose obligationA collateral will be reused
+    /// @param optionsAmount The amount of obligationB options to write and credit to the writer
+    function unlockAndMintToWriter(
+        address obligationA,
+        address obligationB,
+        address writer,
+        uint256 optionsAmount
+    ) external {
+        // reuse alice's collateral
+        address treasury = IObligation(obligationA).treasury();
+        ITreasury(treasury).unlock(obligationA, writer, optionsAmount);
+
+        // relock collateral and mint options / obligations
+        IObligation(obligationB).mintToWriter(writer, optionsAmount);
     }
 
     /// @notice Atomically deposit collateral into a treasury and purchase `amountOut`

@@ -75,7 +75,7 @@ contract Option is IOption, IERC20, European, Ownable {
      * @param pair Uniswap liquidity pair
      * @param amount Total credit
      **/
-    function mint(
+    function mintToPool(
         address writer,
         address pair,
         uint256 amount
@@ -86,6 +86,24 @@ contract Option is IOption, IERC20, European, Ownable {
         emit Transfer(address(0), pair, amount);
 
         IUniswapV2Pair(pair).mint(writer);
+    }
+
+    /**
+     * @notice Mints `amount` of option tokens, directly crediting the `writer`.
+     * @dev Can only be called by the parent Obligation contract.
+     * @dev Once the expiry date has lapsed this function is no longer valid.
+     * @param writer Option writer (destination for the tokens)
+     * @param amount Total credit
+     */
+    function mintToWriter(address writer, uint256 amount)
+        external
+        override
+        onlyOwner
+        notExpired
+    {
+        _balances[writer] = _balances[writer].add(amount);
+        totalSupply = totalSupply.add(amount);
+        emit Transfer(address(0), writer, amount);
     }
 
     function _burn(address account, uint256 amount) internal {

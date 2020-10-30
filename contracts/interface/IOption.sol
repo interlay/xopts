@@ -11,11 +11,13 @@ interface IOption {
         uint256 _windowSize
     ) external;
 
-    function mint(
+    function mintToPool(
         address writer,
         address pair,
         uint256 amount
     ) external;
+
+    function mintToWriter(address writer, uint256 amount) external;
 
     function requestExercise(address buyer, uint256 satoshis) external;
 }

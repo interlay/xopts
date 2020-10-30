@@ -46,8 +46,8 @@ describe('Option.sol', () => {
     await expect(result).to.be.revertedWith(ErrorCode.ERR_INIT_EXPIRED);
   });
 
-  it('should only allow owner to mint', async () => {
-    const result = reconnect(option, OptionFactory, bob).mint(
+  it('should only allow owner to mint to pool', async () => {
+    const result = reconnect(option, OptionFactory, bob).mintToPool(
       aliceAddress,
       bobAddress,
       1000
@@ -55,9 +55,17 @@ describe('Option.sol', () => {
     await expect(result).to.be.revertedWith(ErrorCode.ERR_CALLER_NOT_OWNER);
   });
 
-  it('should mint options', async () => {
+  it('should only allow owner to mint to writer', async () => {
+    const result = reconnect(option, OptionFactory, bob).mintToWriter(
+      aliceAddress,
+      1000
+    );
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_CALLER_NOT_OWNER);
+  });
+
+  it('should mint options to pool', async () => {
     await uniswapPair.mock.mint.returns(0);
-    const tx = await option.mint(aliceAddress, uniswapPair.address, 1000);
+    const tx = await option.mintToPool(aliceAddress, uniswapPair.address, 1000);
 
     const fragment =
       option.interface.events['Transfer(address,address,uint256)'];
@@ -70,6 +78,25 @@ describe('Option.sol', () => {
     expect(event.value).to.eq(BigNumber.from(1000));
 
     const optionBalance = await option.balanceOf(uniswapPair.address);
+    expect(optionBalance).to.eq(BigNumber.from(1000));
+    const optionSupply = await option.totalSupply();
+    expect(optionSupply).to.eq(BigNumber.from(1000));
+  });
+
+  it('should mint options to writer', async () => {
+    const tx = await option.mintToWriter(aliceAddress, 1000);
+
+    const fragment =
+      option.interface.events['Transfer(address,address,uint256)'];
+    const event = await getEvent(
+      fragment,
+      [constants.AddressZero, aliceAddress],
+      await tx.wait(0),
+      option
+    );
+    expect(event.value).to.eq(BigNumber.from(1000));
+
+    const optionBalance = await option.balanceOf(aliceAddress);
     expect(optionBalance).to.eq(BigNumber.from(1000));
     const optionSupply = await option.totalSupply();
     expect(optionSupply).to.eq(BigNumber.from(1000));
@@ -94,7 +121,7 @@ describe('Option.sol', () => {
 
   it('should request exercise with sufficient balance', async () => {
     await uniswapPair.mock.mint.returns(0);
-    await option.mint(aliceAddress, uniswapPair.address, 1000);
+    await option.mintToPool(aliceAddress, uniswapPair.address, 1000);
     return evmSnapFastForward(1000, async () => {
       await option.requestExercise(uniswapPair.address, 1000);
       const optionBalance = await option.balanceOf(uniswapPair.address);
