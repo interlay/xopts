@@ -36,7 +36,9 @@ interface IObligation {
 
     function available(address account) external view returns (uint256);
 
-    function mint(address account, uint256 amount) external;
+    function mintToPool(address account, uint256 amount) external;
+
+    function mintToWriter(address account, uint256 amount) external;
 
     function requestExercise(address seller, uint256 satoshis) external;
 

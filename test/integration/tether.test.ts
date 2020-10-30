@@ -131,7 +131,7 @@ describe('Tether (USDT)', () => {
       Script.p2pkh
     );
 
-    await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
+    await reconnect(optionLib, OptionLibFactory, alice).lockAndWriteToPool(
       obligation.address,
       tether.address,
       tether.address,

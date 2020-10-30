@@ -126,7 +126,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
       Script.p2sh
     );
 
-    await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
+    await reconnect(optionLib, OptionLibFactory, alice).lockAndWriteToPool(
       obligationA.address,
       collateral.address,
       collateral.address,

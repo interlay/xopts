@@ -163,7 +163,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**18]', () => {
       Script.p2sh
     );
 
-    await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
+    await reconnect(optionLib, OptionLibFactory, alice).lockAndWriteToPool(
       obligation.address,
       collateral.address,
       collateral.address,
@@ -327,7 +327,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Exercise Options [10**6]', () => {
       Script.p2sh
     );
 
-    await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
+    await reconnect(optionLib, OptionLibFactory, alice).lockAndWriteToPool(
       obligation.address,
       collateral.address,
       collateral.address,
@@ -490,7 +490,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Refund Options [10**18]', () => {
       Script.p2sh
     );
 
-    await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
+    await reconnect(optionLib, OptionLibFactory, alice).lockAndWriteToPool(
       obligation.address,
       collateral.address,
       collateral.address,
@@ -613,7 +613,7 @@ describe('Put Option (1 Writer, 1 Buyer) - Transfer Obligations [10**18]', () =>
       Script.p2sh
     );
 
-    await reconnect(optionLib, OptionLibFactory, alice).lockAndWrite(
+    await reconnect(optionLib, OptionLibFactory, alice).lockAndWriteToPool(
       obligation.address,
       collateral.address,
       collateral.address,
@@ -794,7 +794,7 @@ describe('Put Option (2 Writers, 1 Buyer) - Transfer Obligations [10*18]', () =>
         Script.p2sh
       );
 
-      await reconnect(optionLib, OptionLibFactory, signer).lockAndWrite(
+      await reconnect(optionLib, OptionLibFactory, signer).lockAndWriteToPool(
         obligation.address,
         collateral.address,
         collateral.address,

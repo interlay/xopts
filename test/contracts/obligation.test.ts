@@ -1,5 +1,5 @@
 import chai from 'chai';
-import {ethers, network} from '@nomiclabs/buidler';
+import {ethers} from '@nomiclabs/buidler';
 import {Signer, constants, BigNumber} from 'ethers';
 import {
   deploy0,
@@ -12,7 +12,6 @@ import {Obligation} from '../../typechain/Obligation';
 import {getTimeNow} from '../common';
 import {MockContract, deployMockContract} from 'ethereum-waffle';
 import TreasuryArtifact from '../../artifacts/Treasury.json';
-import ERC20Artifact from '../../artifacts/ERC20.json';
 import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
 import OptionArtifact from '../../artifacts/Option.json';
 import IUniswapV2FactoryArtifact from '../../artifacts/IUniswapV2Factory.json';
@@ -112,17 +111,44 @@ describe('Obligation.sol', () => {
     expect(result.format).to.eq(Script.p2sh);
   });
 
-  it('should fail to mint obligations with no btc address', async () => {
+  it('should fail to mint obligations to pool with no btc address', async () => {
     await treasury.mock.lock.returns(constants.AddressZero, Script.p2sh);
-    const result = obligation.mint(aliceAddress, 1000);
+    const result = obligation.mintToPool(aliceAddress, 1000);
     await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_BTC_HASH);
   });
 
-  it('should mint obligations with btc address', async () => {
+  it('should fail to mint obligations to writer with no btc address', async () => {
+    await treasury.mock.lock.returns(constants.AddressZero, Script.p2sh);
+    const result = obligation.mintToWriter(aliceAddress, 1000);
+    await expect(result).to.be.revertedWith(ErrorCode.ERR_NO_BTC_HASH);
+  });
+
+  it('should mint obligations to pool with btc address', async () => {
     await treasury.mock.lock.returns(btcHash, Script.p2sh);
     await treasury.mock.collateral.returns(collateral.address);
-    await option.mock.mint.returns();
-    const tx = await obligation.mint(aliceAddress, 1000);
+    await option.mock.mintToPool.returns();
+    const tx = await obligation.mintToPool(aliceAddress, 1000);
+
+    const result = await obligation.getBtcAddress(aliceAddress);
+    expect(result.btcHash).to.eq(btcHash);
+    expect(result.format).to.eq(Script.p2sh);
+
+    const fragment =
+      obligation.interface.events['Transfer(address,address,uint256)'];
+    const event = await getEvent(
+      fragment,
+      [constants.AddressZero, aliceAddress],
+      await tx.wait(0),
+      obligation
+    );
+    expect(event.value).to.eq(BigNumber.from(1000));
+  });
+
+  it('should mint obligations to writer with btc address', async () => {
+    await treasury.mock.lock.returns(btcHash, Script.p2sh);
+    await treasury.mock.collateral.returns(collateral.address);
+    await option.mock.mintToWriter.returns();
+    const tx = await obligation.mintToWriter(aliceAddress, 1000);
 
     const result = await obligation.getBtcAddress(aliceAddress);
     expect(result.btcHash).to.eq(btcHash);
@@ -152,9 +178,9 @@ describe('Obligation.sol', () => {
   it('should request exercise against seller with sufficient balance', async () => {
     await treasury.mock.lock.returns(btcHash, Script.p2sh);
     await treasury.mock.collateral.returns(collateral.address);
-    await option.mock.mint.returns();
+    await option.mock.mintToPool.returns();
     await option.mock.requestExercise.returns();
-    await obligation.mint(bobAddress, amountIn);
+    await obligation.mintToPool(bobAddress, amountIn);
     const obligationBalance = await obligation.obligations(bobAddress);
     expect(obligationBalance).to.eq(amountIn);
 
@@ -191,9 +217,9 @@ describe('Obligation.sol', () => {
     await referee.mock.verifyTx.returns(amountOutSat);
     await treasury.mock.lock.returns(btcHash, Script.p2sh);
     await treasury.mock.collateral.returns(collateral.address);
-    await option.mock.mint.returns();
+    await option.mock.mintToPool.returns();
     await option.mock.requestExercise.returns();
-    await obligation.mint(bobAddress, amountIn);
+    await obligation.mintToPool(bobAddress, amountIn);
 
     return evmSnapFastForward(1000, async () => {
       const requestTx = await obligation.requestExercise(
@@ -226,9 +252,9 @@ describe('Obligation.sol', () => {
     await treasury.mock.lock.returns(btcHash, Script.p2sh);
     await treasury.mock.collateral.returns(collateral.address);
     await treasury.mock.release.returns();
-    await option.mock.mint.returns();
+    await option.mock.mintToPool.returns();
     await option.mock.requestExercise.returns();
-    await obligation.mint(bobAddress, amountIn);
+    await obligation.mintToPool(bobAddress, amountIn);
 
     return evmSnapFastForward(1000, async () => {
       const requestTx = await obligation.requestExercise(
@@ -274,8 +300,8 @@ describe('Obligation.sol', () => {
     await treasury.mock.lock.returns(btcHash, Script.p2sh);
     await treasury.mock.collateral.returns(collateral.address);
     await treasury.mock.release.returns();
-    await option.mock.mint.returns();
-    await obligation.mint(aliceAddress, amountIn);
+    await option.mock.mintToPool.returns();
+    await obligation.mintToPool(aliceAddress, amountIn);
 
     // alice sells obligations to bob (pool)
     await obligation.transfer(bobAddress, amountIn);
