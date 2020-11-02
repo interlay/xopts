@@ -1,5 +1,5 @@
 import chai from 'chai';
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {Signer, constants, BigNumber} from 'ethers';
 import {
   deploy0,
@@ -11,11 +11,11 @@ import {ObligationFactory} from '../../typechain/ObligationFactory';
 import {Obligation} from '../../typechain/Obligation';
 import {getTimeNow} from '../common';
 import {MockContract, deployMockContract} from 'ethereum-waffle';
-import TreasuryArtifact from '../../artifacts/Treasury.json';
-import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
-import OptionArtifact from '../../artifacts/Option.json';
-import IUniswapV2FactoryArtifact from '../../artifacts/IUniswapV2Factory.json';
-import IERC20Artifact from '../../artifacts/IERC20.json';
+import TreasuryArtifact from '../../artifacts/contracts/Treasury.sol/Treasury.json';
+import BTCRefereeArtifact from '../../artifacts/contracts/BTCReferee.sol/BTCReferee.json';
+import OptionArtifact from '../../artifacts/contracts/Option.sol/Option.json';
+import IUniswapV2FactoryArtifact from '../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol/IUniswapV2Factory.json';
+import IERC20Artifact from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json';
 import {ErrorCode, Script} from '../../lib/constants';
 import {evmSnapFastForward} from '../../lib/mock';
 import {newBigNum} from '../../lib/conversion';

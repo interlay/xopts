@@ -1,5 +1,5 @@
 import chai from 'chai';
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {Signer, BigNumber, constants} from 'ethers';
 import {deploy2, reconnect, deploy1} from '../../lib/contracts';
 import {getTimeNow, deployPair} from '../common';
@@ -19,7 +19,7 @@ import {
   deployMockContract,
   deployContract
 } from 'ethereum-waffle';
-import RefereeArtifact from '../../artifacts/BTCReferee.json';
+import RefereeArtifact from '../../artifacts/contracts/BTCReferee.sol/BTCReferee.json';
 import {OptionLib} from '../../typechain/OptionLib';
 import {IUniswapV2Factory} from '../../typechain/IUniswapV2Factory';
 import TetherTokenArtifact from './static/TetherToken.json';
@@ -37,7 +37,6 @@ describe('Tether (USDT)', () => {
 
   let aliceAddress: string;
   let bobAddress: string;
-  let charlieAddress: string;
 
   let optionFactory: OptionPairFactory;
   let uniswapFactory: IUniswapV2Factory;
@@ -58,7 +57,7 @@ describe('Tether (USDT)', () => {
 
   before('should deploy contracts', async () => {
     [alice, bob, charlie] = await ethers.getSigners();
-    [aliceAddress, bobAddress, charlieAddress] = await Promise.all(
+    [aliceAddress, bobAddress] = await Promise.all(
       [alice, bob, charlie].map((acc) => acc.getAddress())
     );
 

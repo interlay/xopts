@@ -14,11 +14,6 @@
   "exclude": ["./node_modules/*"],
   "files": [
     "./index.ts",
-    "./buidler.config.ts",
-    "node_modules/buidler-gas-reporter/src/type-extensions.d.ts",
-    "node_modules/@nomiclabs/buidler-ethers/src/type-extensions.d.ts",
-    "node_modules/@nomiclabs/buidler-waffle/src/type-extensions.d.ts",
-    "node_modules/@nomiclabs/buidler-ganache/src/type-extensions.d.ts",
-    "node_modules/@nodefactory/buidler-typechain/src/type-extensions.d.ts"
+    "./hardhat.config.ts"
   ]
 }

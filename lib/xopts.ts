@@ -2,7 +2,7 @@ import {ReadOnlyContracts, ReadWriteContracts} from './contracts';
 
 import {Addresses, mustResolveAddresses} from './addresses';
 import {BTCAmount, MonetaryAmount, Tether} from './monetary';
-import {Signer, SignerOrProvider, Optional} from './core';
+import {Signer, SignerOrProvider} from './core';
 import {GlobalActions} from './actions/global';
 
 import {

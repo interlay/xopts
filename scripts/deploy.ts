@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {deploy0, deploy1, deploy2} from '../lib/contracts';
 import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
 import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';

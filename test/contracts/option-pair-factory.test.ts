@@ -1,21 +1,16 @@
 import chai from 'chai';
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {Signer} from 'ethers';
-import {
-  deploy0,
-  getCreatePairEvent,
-  getEvent,
-  deploy1
-} from '../../lib/contracts';
+import {getCreatePairEvent, getEvent, deploy1} from '../../lib/contracts';
 import {getTimeNow} from '../common';
 import {ErrorCode} from '../../lib/constants';
 import {OptionPairFactoryFactory, OptionFactory} from '../../typechain';
 import {OptionPairFactory} from '../../typechain/OptionPairFactory';
 import {deployMockContract, MockContract} from 'ethereum-waffle';
-import ERC20Artifact from '../../artifacts/ERC20.json';
-import IUniswapV2FactoryArtifact from '../../artifacts/IUniswapV2Factory.json';
-import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
-import TreasuryArtifact from '../../artifacts/Treasury.json';
+import ERC20Artifact from '../../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json';
+import IUniswapV2FactoryArtifact from '../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol/IUniswapV2Factory.json';
+import BTCRefereeArtifact from '../../artifacts/contracts/BTCReferee.sol/BTCReferee.json';
+import TreasuryArtifact from '../../artifacts/contracts/Treasury.sol/Treasury.json';
 import {
   getCreate2OptionAddress,
   getCreate2ObligationAddress
@@ -26,7 +21,6 @@ const {expect} = chai;
 
 describe('OptionPairFactory.sol', () => {
   let alice: Signer;
-  let bob: Signer;
 
   let optionFactory: OptionPairFactory;
   let collateral: MockContract;
@@ -40,7 +34,7 @@ describe('OptionPairFactory.sol', () => {
   const strikePrice = newBigNum(9000, decimals);
 
   beforeEach('should deploy option pair factory', async () => {
-    [alice, bob] = await ethers.getSigners();
+    [alice] = await ethers.getSigners();
     [optionFactory, collateral, referee] = await Promise.all([
       deployMockContract(
         alice,

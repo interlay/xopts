@@ -1,5 +1,5 @@
 import chai from 'chai';
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {Signer, constants} from 'ethers';
 import {deploy1} from '../../lib/contracts';
 import {OptionPairFactoryFactory} from '../../typechain/OptionPairFactoryFactory';
@@ -7,8 +7,8 @@ import {BigNumber, BigNumberish} from 'ethers';
 import {OptionPairFactory} from '../../typechain/OptionPairFactory';
 import {getTimeNow, deployPair} from '../common';
 import {MockContract, deployMockContract} from 'ethereum-waffle';
-import IUniswapV2FactoryArtifact from '../../artifacts/IUniswapV2Factory.json';
-import IERC20Artifact from '../../artifacts/IERC20.json';
+import IUniswapV2FactoryArtifact from '../../artifacts/@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol/IUniswapV2Factory.json';
+import IERC20Artifact from '../../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json';
 
 const {expect} = chai;
 
