@@ -1,4 +1,4 @@
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {Signer, Wallet, constants} from 'ethers';
 import chai from 'chai';
 import {solidity, deployMockContract, MockContract} from 'ethereum-waffle';
@@ -23,7 +23,7 @@ import {Ierc20} from '../../typechain/Ierc20';
 import {Ierc20Factory} from '../../typechain/Ierc20Factory';
 import {Obligation} from '../../typechain/Obligation';
 import {IUniswapV2Factory} from '../../typechain/IUniswapV2Factory';
-import BTCRefereeArtifact from '../../artifacts/BTCReferee.json';
+import BTCRefereeArtifact from '../../artifacts/contracts/BTCReferee.sol/BTCReferee.json';
 import {evmSnapFastForward} from '../../lib/mock';
 import {BigNumberish} from 'ethers';
 import {deployPair, getTimeNow} from '../common';

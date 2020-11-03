@@ -1,6 +1,6 @@
 import {utils, BigNumberish} from 'ethers';
-import OptionArtifact from '../artifacts/Option.json';
-import ObligationArtifact from '../artifacts/Obligation.json';
+import OptionArtifact from '../artifacts/contracts/Option.sol/Option.json';
+import ObligationArtifact from '../artifacts/contracts/Obligation.sol/Obligation.json';
 import {Optional, SignerOrProvider, Provider} from './core';
 
 export interface Addresses {

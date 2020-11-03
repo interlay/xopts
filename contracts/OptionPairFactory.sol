@@ -2,7 +2,7 @@
 
 pragma solidity ^0.6.0;
 
-import '@nomiclabs/buidler/console.sol';
+import 'hardhat/console.sol';
 
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';

@@ -1,11 +1,11 @@
 import chai from 'chai';
 import {Treasury} from '../../typechain/Treasury';
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {Signer, constants} from 'ethers';
 import {deploy2, reconnect} from '../../lib/contracts';
 import {TreasuryFactory} from '../../typechain/TreasuryFactory';
-import ERC20Artifact from '../../artifacts/ERC20.json';
-import ObligationArtifact from '../../artifacts/Obligation.json';
+import ERC20Artifact from '../../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json';
+import ObligationArtifact from '../../artifacts/contracts/Obligation.sol/Obligation.json';
 import * as bitcoin from 'bitcoinjs-lib';
 import {MockContract, deployMockContract} from '@gregdhill/mock-contract';
 import {ErrorCode, Script} from '../../lib/constants';

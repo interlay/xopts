@@ -1,4 +1,4 @@
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {Wallet} from 'ethers';
 
 export const MockSigner = (): Wallet => ethers.Wallet.createRandom();

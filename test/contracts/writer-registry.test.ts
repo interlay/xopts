@@ -1,5 +1,5 @@
 import chai from 'chai';
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {Signer, constants} from 'ethers';
 import {deploy0} from '../../lib/contracts';
 import {WriterRegistry} from '../../typechain/WriterRegistry';

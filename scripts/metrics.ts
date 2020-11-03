@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {newBigNum} from '../lib/conversion';
 import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
 import {Script} from '../lib/constants';
