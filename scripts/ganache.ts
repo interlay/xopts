@@ -3,7 +3,7 @@
 import * as child from 'child_process';
 import {USDT} from '../lib/constants';
 
-const ganacheCmd = 'ganache-cli ';
+const ganacheCmd = 'yarn ganache-cli ';
 const port = '-p 8545';
 
 // if infura is available, fork from mainnet
