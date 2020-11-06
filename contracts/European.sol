@@ -27,8 +27,6 @@ contract European is IEuropean {
     uint256 public override windowSize;
 
     modifier setExpiry(uint256 _expiryTime, uint256 _windowSize) {
-        console.log(_expiryTime);
-        console.log(block.timestamp);
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
         require(_windowSize > 0, ERR_WINDOW_ZERO);
 

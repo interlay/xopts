@@ -66,21 +66,14 @@ async function createAndLockAndWrite(
     amount.add(premium)
   );
 
-  await reconnect(
-    optionLib,
-    OptionLibFactory,
-    signer
-  ).lockAndWriteToPoolWithPosition(
+  await reconnect(optionLib, OptionLibFactory, signer).lockAndWriteToPool(
     obligation.address,
     collateral.address,
     collateral.address,
     amount,
     premium,
     amount,
-    premium,
-    0,
-    100000000000,
-    100000000000
+    premium
   );
 
   return addressesPair;
@@ -160,15 +153,25 @@ async function main(): Promise<void> {
   );
 
   // register Bob as writer
-  console.log('registering bob');
+  console.log('Registering Bob and setting position');
   await reconnect(treasury, TreasuryFactory, bob).setBtcAddress(
     btcHash,
     Script.p2pkh
   );
 
-  console.log('Generating expired option');
   // get the current time
   const currentTime = Math.round(new Date().getTime() / 1000);
+
+  const inAYear = currentTime + 60 * 60 * 24 * 365;
+  await reconnect(treasury, TreasuryFactory, bob).position(
+    0,
+    newBigNum(100_000, 18),
+    inAYear,
+    btcHash,
+    Script.p2pkh
+  );
+
+  console.log('Generating expired option');
   // generate and write option that expires in 60 secs
   const inSixtySeconds = currentTime + 60;
 

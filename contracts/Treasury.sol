@@ -104,7 +104,7 @@ contract Treasury is ITreasury, ReentrancyGuard, Ownable, WriterRegistry {
         uint256 expiryTime,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) external override {
+    ) external {
         // solium-disable-next-line security/no-block-members
         require(expiryTime >= block.timestamp, ERR_POSITION_INVALID_EXPIRY);
         require(
@@ -121,17 +121,6 @@ contract Treasury is ITreasury, ReentrancyGuard, Ownable, WriterRegistry {
 
     function authorize(address account) external override onlyOwner {
         _isAuthorized[account] = true;
-    }
-
-    /// @notice Returns true if the writer has a currently outstanding position.
-    /// @param writer The address against which to check the position's existence.
-    function hasValidPosition(address writer)
-        external
-        override
-        view
-        returns (bool)
-    {
-        return _positions[writer].expiryTime > block.timestamp;
     }
 
     /// @notice Deposit collateral in the specified `market`. Assumes
