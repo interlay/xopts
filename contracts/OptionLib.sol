@@ -20,6 +20,7 @@ import {
 import {IOption} from './interface/IOption.sol';
 import {IObligation} from './interface/IObligation.sol';
 import {ITreasury} from './interface/ITreasury.sol';
+import {IWriterRegistry} from './interface/IWriterRegistry.sol';
 import {Bitcoin} from './types/Bitcoin.sol';
 
 /// @title OptionLib Helper
@@ -31,6 +32,8 @@ contract OptionLib is UniswapV2Router02 {
 
     string
         internal constant ERR_EXPECTED_COLLATERAL = 'Expected collateral address';
+    string
+        internal constant ERR_NOT_REGISTERED = 'BTC address is not registered with Treasury';
 
     constructor(address _factory, address _weth)
         public
@@ -39,27 +42,86 @@ contract OptionLib is UniswapV2Router02 {
         // solhint-disable-previous-line no-empty-blocks
     }
 
+    /// @dev If minStrike and maxStrike are zero, no position is set. (If one exists,
+    /// it's reused, else the transaction will error and revert.)
     function _deposit(
         address obligation,
         address collateral,
         address writer,
-        uint256 optionsAmount
+        uint256 optionsAmount,
+        uint256 minStrike,
+        uint256 maxStrike,
+        uint256 expiryTime
     ) internal {
         // lock collateral for exercising
         address treasury = IObligation(obligation).treasury();
+
+        // 1. set position if necessary
+        if (
+            (minStrike == 0 && maxStrike == 0 && expiryTime == 0) && // if no override passed...
+            (!ITreasury(treasury).hasValidPosition(writer)) // and no existing position exists...
+        ) {
+            // then tailor a position to the desired obligation
+            (
+                uint256 expiry,
+                uint256 window,
+                uint256 strike,
+                ,
+                ,
+
+            ) = IObligation(obligation).getDetails();
+
+            minStrike = maxStrike = strike;
+            expiryTime = expiry + window;
+        }
+        if (minStrike != 0 || maxStrike != 0 || expiryTime != 0) {
+            // if a position was either passed, or set above, then set it
+        }
+        (bytes20 btcHash, Bitcoin.Script format) = IWriterRegistry(treasury)
+            .getBtcAddress(writer);
+        console.log('Setting position');
+        console.logBytes20(btcHash);
+        ITreasury(treasury).position(
+            minStrike,
+            maxStrike,
+            expiryTime,
+            btcHash,
+            format
+        );
+
+        // 2. send funds for deposit
         TransferHelper.safeTransferFrom(
             collateral,
             writer,
             treasury,
             optionsAmount
         );
-        // deposit 'unlocked' balance for writing
+
+        // 3. deposit 'unlocked' balance for writing
         ITreasury(treasury).deposit(writer);
     }
 
+    /// @notice Allows a user to ensure they are registered (as a writer with a BTC
+    /// address) with a given Obligation's Treasury.
+    /// @param obligation The obligation the user wishes to write.
+    /// @return registered True if the writer is registered; false otherwise.
+    /// @return treasury The treasury against which registration was checked (and must be performed if necessary).
+    function isRegisteredFor(address obligation)
+        external
+        returns (bool registered, address treasury)
+    {
+        treasury = IObligation(obligation).treasury();
+        (bytes20 btcHash, ) = IWriterRegistry(treasury).getBtcAddress(
+            msg.sender
+        );
+        registered = (btcHash != 0);
+    }
+
     /// @notice Atomically deposit collateral into a treasury and add liquidity to a
-    /// Uniswap pair based on the specified premium.
-    /// @dev The output `optionsAmount` describes both the number of option tokens minted
+    /// Uniswap pair based on the specified premium. If the writer has a specified position,
+    /// preserves it, otherwise sets it to match the specified obligation.
+    /// @dev This is a wrapper around lockAndWriteToPoolWithPosition.
+    /// The output `optionsAmount` describes both the number of option tokens minted
     /// as well as the total amount of collateral transferred.
     function lockAndWriteToPool(
         address obligation,
@@ -70,6 +132,41 @@ contract OptionLib is UniswapV2Router02 {
         uint256 optionsMin,
         uint256 premiumMin
     ) external returns (uint256 optionsAmount, uint256 premiumAmount) {
+        return
+            lockAndWriteToPoolWithPosition(
+                obligation,
+                premium,
+                collateral,
+                optionsDesired,
+                premiumDesired,
+                optionsMin,
+                premiumMin,
+                0,
+                0,
+                0
+            );
+    }
+
+    /// @notice Atomically deposit collateral into a treasury and add liquidity to a
+    /// Uniswap pair based on the specified premium. Sets the writer's position (for
+    /// future collateral reuse) to the specified parameters.
+    /// @dev The output `optionsAmount` describes both the number of option tokens minted
+    /// as well as the total amount of collateral transferred.
+    /// Additionally, if maxStrike, minStrike and expiry are all zero, IF no position exist
+    /// then one is set to match the obligation ELSE the existing position is left untouched.
+    /// Consider calling lockAndWriteToPool for this case.
+    function lockAndWriteToPoolWithPosition(
+        address obligation,
+        address premium,
+        address collateral,
+        uint256 optionsDesired,
+        uint256 premiumDesired,
+        uint256 optionsMin,
+        uint256 premiumMin,
+        uint256 minStrike,
+        uint256 maxStrike,
+        uint256 expiry
+    ) public returns (uint256 optionsAmount, uint256 premiumAmount) {
         address option = IObligation(obligation).option();
 
         // options, premium
@@ -82,7 +179,15 @@ contract OptionLib is UniswapV2Router02 {
             premiumMin
         );
 
-        _deposit(obligation, collateral, msg.sender, optionsAmount);
+        _deposit(
+            obligation,
+            collateral,
+            msg.sender,
+            optionsAmount,
+            minStrike,
+            maxStrike,
+            expiry
+        );
 
         address pair = UniswapV2Library.pairFor(factory, option, premium);
         // send premium to uniswap pair
@@ -98,16 +203,50 @@ contract OptionLib is UniswapV2Router02 {
     }
 
     /// @notice Atomically deposit collateral into a treasury and directly credit
-    /// the writer with the resulting options.
-    /// @param obligation The obligation tokens
-    /// @param collateral The collateral tokens
-    /// @param optionsAmount The amount of options that will be minted (hence the amount of collateral that must be locked)
+    /// the writer with the resulting options. Only sets the writer's position --- to
+    /// one tailored to the selected obligation --- none is already set.
+    /// @dev This is a wrapper around lockAndWriteToWriterWithPosition.
     function lockAndWriteToWriter(
         address obligation,
         address collateral,
         uint256 optionsAmount
     ) external {
-        _deposit(obligation, collateral, msg.sender, optionsAmount);
+        lockAndWriteToWriterWithPosition(
+            obligation,
+            collateral,
+            optionsAmount,
+            0,
+            0,
+            0
+        );
+    }
+
+    /// @notice Atomically deposit collateral into a treasury and directly credit
+    /// the writer with the resulting options. Sets the writer's position for future
+    /// collateral reuse.
+    /// @param obligation The obligation tokens
+    /// @param collateral The collateral tokens
+    /// @param optionsAmount The amount of options that will be minted (hence the amount of collateral that must be locked)
+    /// @param minStrike The minimum strike price to set the position to
+    /// @param maxStrike The maximum strike price to set the position to
+    /// @param expiryTime The set position expiry time
+    function lockAndWriteToWriterWithPosition(
+        address obligation,
+        address collateral,
+        uint256 optionsAmount,
+        uint256 minStrike,
+        uint256 maxStrike,
+        uint256 expiryTime
+    ) public {
+        _deposit(
+            obligation,
+            collateral,
+            msg.sender,
+            optionsAmount,
+            minStrike,
+            maxStrike,
+            expiryTime
+        );
         // mint options and obligations - locking collateral
         IObligation(obligation).mintToWriter(msg.sender, optionsAmount);
     }
@@ -189,6 +328,7 @@ contract OptionLib is UniswapV2Router02 {
 
     /// @notice Atomically deposit collateral into a treasury and purchase `amountOut`
     /// obligations from a Uniswap pool.
+    /// @dev TODO: needs position manually set prior to buying; decide whether this is right.
     function lockAndBuy(
         uint256 amountOut,
         uint256 amountInMax,

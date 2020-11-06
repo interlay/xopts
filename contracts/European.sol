@@ -2,6 +2,8 @@
 
 pragma solidity ^0.6.0;
 
+import 'hardhat/console.sol';
+
 import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 import {IEuropean} from './interface/IEuropean.sol';
 
@@ -25,6 +27,8 @@ contract European is IEuropean {
     uint256 public override windowSize;
 
     modifier setExpiry(uint256 _expiryTime, uint256 _windowSize) {
+        console.log(_expiryTime);
+        console.log(block.timestamp);
         require(_expiryTime > block.timestamp, ERR_INIT_EXPIRED);
         require(_windowSize > 0, ERR_WINDOW_ZERO);
 

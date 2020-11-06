@@ -65,6 +65,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
             // solium-disable-previous-line security/no-inline-assembly
             option := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
+        console.log('Initializing option');
         IOption(option).initialize(decimals, expiryTime, windowSize);
         return option;
     }
@@ -85,6 +86,7 @@ contract OptionPairFactory is IOptionPairFactory, Ownable {
             // solium-disable-previous-line security/no-inline-assembly
             obligation := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
+        console.log('initializing obligation');
         IObligation(obligation).initialize(
             decimals,
             expiryTime,

@@ -14,6 +14,16 @@ interface ITreasury {
         view
         returns (uint256);
 
+    function position(
+        uint256 minStrike,
+        uint256 maxStrike,
+        uint256 expiryTime,
+        bytes20 btcHash,
+        Bitcoin.Script format
+    ) external;
+
+    function hasValidPosition(address writer) external view returns (bool);
+
     function deposit(address account) external;
 
     function lock(address account, uint256 amount)

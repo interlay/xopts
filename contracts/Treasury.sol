@@ -33,6 +33,8 @@ contract Treasury is ITreasury, ReentrancyGuard, Ownable, WriterRegistry {
         internal constant ERR_POSITION_INVALID_EXPIRY = 'Invalid position expiry';
     string internal constant ERR_POSITION_NOT_SET = 'Position not set';
     string internal constant ERR_POSITION_NOT_EXPIRED = 'Position not expired';
+    string
+        internal constant ERR_POSITION_STRIKE_RANGE_INVALID = 'Invalid strike range: minimum greater than maximum';
     string internal constant ERR_NOT_AUTHORIZED = 'Caller not authorized';
     string internal constant ERR_MARKET_HAS_EXPIRED = 'Market has expired';
     string internal constant ERR_MARKET_NOT_EXPIRED = 'Market not expired';
@@ -102,13 +104,14 @@ contract Treasury is ITreasury, ReentrancyGuard, Ownable, WriterRegistry {
         uint256 expiryTime,
         bytes20 btcHash,
         Bitcoin.Script format
-    ) external {
+    ) external override {
         // solium-disable-next-line security/no-block-members
         require(expiryTime >= block.timestamp, ERR_POSITION_INVALID_EXPIRY);
         require(
             expiryTime >= _positions[msg.sender].expiryTime,
             ERR_POSITION_INVALID_EXPIRY
         );
+        require(minStrike <= maxStrike, ERR_POSITION_STRIKE_RANGE_INVALID);
 
         _positions[msg.sender].minStrike = minStrike;
         _positions[msg.sender].maxStrike = maxStrike;
@@ -118,6 +121,17 @@ contract Treasury is ITreasury, ReentrancyGuard, Ownable, WriterRegistry {
 
     function authorize(address account) external override onlyOwner {
         _isAuthorized[account] = true;
+    }
+
+    /// @notice Returns true if the writer has a currently outstanding position.
+    /// @param writer The address against which to check the position's existence.
+    function hasValidPosition(address writer)
+        external
+        override
+        view
+        returns (bool)
+    {
+        return _positions[writer].expiryTime > block.timestamp;
     }
 
     /// @notice Deposit collateral in the specified `market`. Assumes

@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
 import {Signer, constants} from 'ethers';
 import * as bitcoin from 'bitcoinjs-lib';
@@ -26,7 +26,8 @@ import {OptionLib} from '../typechain/OptionLib';
 import {
   BtcRefereeFactory,
   MockRelayFactory,
-  WriterRegistryFactory
+  WriterRegistryFactory,
+  TreasuryFactory
 } from '../typechain';
 
 const keyPair = bitcoin.ECPair.makeRandom();
@@ -48,6 +49,7 @@ async function createAndLockAndWrite(
   premium: BigNumber,
   amount: BigNumber
 ): Promise<AddressesPair> {
+  console.log('Creating pair');
   const addressesPair = await createPair(
     optionFactory,
     expiryTime,
@@ -64,7 +66,11 @@ async function createAndLockAndWrite(
     amount.add(premium)
   );
 
-  await reconnect(optionLib, OptionLibFactory, signer).lockAndWrite(
+  await reconnect(
+    optionLib,
+    OptionLibFactory,
+    signer
+  ).lockAndWriteToPoolWithPosition(
     obligation.address,
     collateral.address,
     collateral.address,
@@ -72,8 +78,9 @@ async function createAndLockAndWrite(
     premium,
     amount,
     premium,
-    btcHash,
-    Script.p2pkh
+    0,
+    100000000000,
+    100000000000
   );
 
   return addressesPair;
@@ -96,14 +103,24 @@ async function main(): Promise<void> {
 
   const collateral = await deploy0(signers[0], MockCollateralFactory);
   await collateral.mint(await signers[0].getAddress(), newBigNum(100_000, 18));
-  const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
-  // TODO: make conditional
   const uniswapFactory = await deployUniswapFactory(alice, aliceAddress);
+  const optionFactory = await deploy1(
+    signers[0],
+    OptionPairFactoryFactory,
+    uniswapFactory.address
+  );
+  // TODO: make conditional
   const optionLib = await deploy2(
     signers[0],
     OptionLibFactory,
     uniswapFactory.address,
     constants.AddressZero
+  );
+  const treasury = await deploy2(
+    signers[0],
+    TreasuryFactory,
+    collateral.address,
+    optionFactory.address
   );
   const relay = await deploy0(signers[0], MockRelayFactory);
   const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
@@ -116,6 +133,9 @@ async function main(): Promise<void> {
   console.log('MockRelay:', relay.address);
   console.log('BTCReferee:', referee.address);
   console.log('WriterRegistry:', writerRegistry.address);
+
+  await optionFactory.enableAsset(collateral.address);
+  await optionFactory.setTreasuryFor(collateral.address, treasury.address);
 
   // get collateral for everyone
   await reconnect(collateral, MockCollateralFactory, alice).mint(
@@ -137,6 +157,13 @@ async function main(): Promise<void> {
   await reconnect(collateral, MockCollateralFactory, alice).mint(
     daveAddress,
     newBigNum(100_000, 18)
+  );
+
+  // register Bob as writer
+  console.log('registering bob');
+  await reconnect(treasury, TreasuryFactory, bob).setBtcAddress(
+    btcHash,
+    Script.p2pkh
   );
 
   console.log('Generating expired option');
