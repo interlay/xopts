@@ -87,12 +87,7 @@ contract OptionLib is UniswapV2Router02 {
             premiumMin
         );
 
-        _deposit(
-            obligation,
-            collateral,
-            msg.sender,
-            optionsAmount
-        );
+        _deposit(obligation, collateral, msg.sender, optionsAmount);
 
         address pair = UniswapV2Library.pairFor(factory, option, premium);
         // send premium to uniswap pair
@@ -117,12 +112,7 @@ contract OptionLib is UniswapV2Router02 {
         address collateral,
         uint256 optionsAmount
     ) external {
-        _deposit(
-            obligation,
-            collateral,
-            msg.sender,
-            optionsAmount
-        );
+        _deposit(obligation, collateral, msg.sender, optionsAmount);
         // mint options and obligations - locking collateral
         IObligation(obligation).mintToWriter(msg.sender, optionsAmount);
     }
