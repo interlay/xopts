@@ -12,7 +12,7 @@ export interface Addresses {
   writerRegistry: string;
 }
 
-type Networks = 'buidler' | 'ganache';
+type Networks = 'buidler' | 'ganache' | 'mock';
 
 export const Deployments: Record<Networks, Addresses> = {
   buidler: {
@@ -30,6 +30,14 @@ export const Deployments: Record<Networks, Addresses> = {
     relay: '0xA7102d753442D827A853FeFE3DD88E182aea622D',
     referee: '0x5429c8fafa53b09386E41F07CbA2479C170faf0b',
     writerRegistry: '0x5Ee87DE59a4701B3d073be6244cdf7ddE32c8D49'
+  },
+  mock: {
+    collateral: '0xf980CA9C3A0A586A70A501767679156D88AC61E5',
+    optionFactory: '0x1675212F75433bE66A9bcb59a47D4d477346Fbde',
+    optionLib: '0x6E294F067dbFA0D61aD57ca3801BDB16646303fC',
+    relay: '0x507751554971AC8Ca44e922334913E00Ce2104AA',
+    referee: '0x5dbb454Ab7AeDc9eD396E8461F58cA5F76599F8c',
+    writerRegistry: '0x731b9aB59DCAE3d59164AC9Fc97cf5C4CC66652b'
   }
 };
 

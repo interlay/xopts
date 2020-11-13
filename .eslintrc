@@ -14,13 +14,16 @@
     "prettier"
   ],
   "rules": {
-    "no-console": 1,
-    "prettier/prettier": 2,
+    "no-console": "warn",
+    "prettier/prettier": "error",
     "@typescript-eslint/no-inferrable-types": [
-      1, {
+      "warn", {
         "ignoreParameters": true,
         "ignoreProperties": true
       }
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "warn", { "argsIgnorePattern": "^_" }
     ]
   }
 }
