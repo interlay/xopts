@@ -12,9 +12,9 @@ export interface Addresses {
   writerRegistry: string;
 }
 
-type Networks = 'buidler' | 'ganache';
+type Network = 'buidler' | 'ganache' | 'hardhat';
 
-export const Deployments: Record<Networks, Addresses> = {
+export const Deployments: Record<Network, Addresses> = {
   buidler: {
     collateral: '0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F',
     optionFactory: '0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7',
@@ -30,6 +30,14 @@ export const Deployments: Record<Networks, Addresses> = {
     relay: '0xA7102d753442D827A853FeFE3DD88E182aea622D',
     referee: '0x5429c8fafa53b09386E41F07CbA2479C170faf0b',
     writerRegistry: '0x5Ee87DE59a4701B3d073be6244cdf7ddE32c8D49'
+  },
+  hardhat: {
+    collateral: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    optionFactory: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+    optionLib: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+    relay: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+    referee: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
+    writerRegistry: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
   }
 };
 
@@ -101,6 +109,8 @@ export async function resolveAddresses(
     case 2222:
       // Ganache
       return Deployments.ganache;
+    case 1337:
+      return Deployments.hardhat;
     default:
       return;
   }

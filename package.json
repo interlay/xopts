@@ -67,9 +67,6 @@
     "@types/node": "^13.13.2",
     "@typescript-eslint/eslint-plugin": "^2.21.0",
     "@typescript-eslint/parser": "^2.21.0",
-    "@uniswap/sdk": "^2.0.6",
-    "@uniswap/v2-core": "^1.0.1",
-    "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "hardhat-gas-reporter": "^1.0.0-beta.0",
     "chai": "^4.2.0",
     "eslint": "^6.8.0",
@@ -91,6 +88,9 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "@uniswap/sdk": "^2.0.6",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "bitcoinjs-lib": "^5.1.10",
     "ethers": "^5.0.8"
   }

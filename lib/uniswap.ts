@@ -1,6 +1,5 @@
-import UniswapV2Factory from '@uniswap/v2-core/build/UniswapV2Factory.json';
-import {deployContract} from 'ethereum-waffle';
-import {Wallet, Signer, Contract, BigNumberish} from 'ethers';
+import UniswapV2FactoryBytecode from '@uniswap/v2-core/build/UniswapV2Factory.json';
+import {Signer, Contract, ContractFactory, BigNumberish} from 'ethers';
 import ethers from 'ethers';
 import {IUniswapV2PairFactory} from '../typechain/IUniswapV2PairFactory';
 import {IUniswapV2Pair} from '../typechain/IUniswapV2Pair';
@@ -13,9 +12,15 @@ export async function deployUniswapFactory(
   signer: Signer,
   feeToSetter: string
 ): Promise<IUniswapV2Factory> {
-  const contract = await deployContract(signer as Wallet, UniswapV2Factory, [
-    feeToSetter
-  ]);
+  const UniswapFactoryFactory = new ContractFactory(
+    UniswapV2FactoryBytecode.abi,
+    UniswapV2FactoryBytecode.bytecode,
+    signer
+  );
+  const contract = await UniswapFactoryFactory.deploy(feeToSetter);
+  // const contract = await deployContract(signer as Wallet, UniswapV2Factory, [
+  //   feeToSetter
+  // ]);
   return IUniswapV2FactoryFactory.connect(contract.address, signer);
 }
 
