@@ -12,7 +12,7 @@ export interface Addresses {
   writerRegistry: string;
 }
 
-type Network = 'buidler' | 'ganache' | 'hardhat';
+type Network = 'buidler' | 'ganache' | 'hardhat' | 'mock';
 
 export const Deployments: Record<Network, Addresses> = {
   buidler: {
@@ -38,6 +38,14 @@ export const Deployments: Record<Network, Addresses> = {
     relay: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
     referee: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
     writerRegistry: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
+  },
+  mock: {
+    collateral: '0xf980CA9C3A0A586A70A501767679156D88AC61E5',
+    optionFactory: '0x1675212F75433bE66A9bcb59a47D4d477346Fbde',
+    optionLib: '0x6E294F067dbFA0D61aD57ca3801BDB16646303fC',
+    relay: '0x507751554971AC8Ca44e922334913E00Ce2104AA',
+    referee: '0x5dbb454Ab7AeDc9eD396E8461F58cA5F76599F8c',
+    writerRegistry: '0x731b9aB59DCAE3d59164AC9Fc97cf5C4CC66652b'
   }
 };
 
@@ -109,7 +117,7 @@ export async function resolveAddresses(
     case 2222:
       // Ganache
       return Deployments.ganache;
-    case 1337:
+    case 1337: // I have no idea why but it's consistent for me, someone else needs to confirm
       return Deployments.hardhat;
     default:
       return;
