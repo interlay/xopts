@@ -1,6 +1,6 @@
 import {ReadOnlyContracts, ReadWriteContracts} from './contracts';
 
-import {Addresses, mustResolveAddresses} from './addresses';
+import {Addresses, Deployments, mustResolveAddresses} from './addresses';
 import {BTCAmount, MonetaryAmount, Tether} from './monetary';
 import {Signer, SignerOrProvider} from './core';
 import {GlobalActions} from './actions/global';
@@ -16,6 +16,7 @@ import {
 } from './actions/options/read-only';
 
 import {Factory} from './actions/factory';
+import {MockXOpts} from './mock/xopts';
 
 export type OptionActions<T extends SignerOrProvider> = T extends Signer
   ? OptionsReadWriteActions
@@ -25,10 +26,19 @@ export type FactoryActions<T extends SignerOrProvider> = T extends Signer
   ? Factory
   : null;
 
-export class XOpts<T extends SignerOrProvider> implements GlobalActions {
+export interface XOpts<T extends SignerOrProvider> extends GlobalActions {
+  readonly addresses: Addresses;
+  readonly options: OptionActions<T>;
+
+  totalLiquidity(): Promise<MonetaryAmount<Tether>>;
+  optionMarketsCount(): Promise<number>;
+  bitcoinTransferredAmount(): Promise<BTCAmount>;
+}
+
+export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
   constructor(
     readonly addresses: Addresses,
-    readonly readOnlyContracts: ReadOnlyContracts,
+    private readonly readOnlyContracts: ReadOnlyContracts,
     readonly options: OptionActions<T> // readonly factory: FactoryActions<T>
   ) {}
 
@@ -63,7 +73,7 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
       const optionActions: OptionsReadWriteActions = new ContractsOptionsReadWriteActions(
         contracts
       );
-      return new XOpts(
+      return new DefaultXOpts(
         addresses,
         roContracts,
         optionActions as OptionActions<T>
@@ -72,11 +82,21 @@ export class XOpts<T extends SignerOrProvider> implements GlobalActions {
       const optionActions: OptionsReadOnlyActions = new ContractsOptionsReadOnlyActions(
         roContracts
       );
-      return new XOpts(
+      return new DefaultXOpts(
         addresses,
         roContracts,
         optionActions as OptionActions<T>
       );
     }
   }
+}
+
+export async function createXOpts<T extends SignerOrProvider>(
+  provider: T,
+  addresses?: Addresses
+): Promise<XOpts<T>> {
+  if (addresses && addresses.collateral == Deployments.mock.collateral) {
+    return MockXOpts.load(provider, addresses);
+  }
+  return DefaultXOpts.load(provider, addresses);
 }
