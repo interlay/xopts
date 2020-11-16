@@ -11,3 +11,4 @@ keys.json
 dist/
 docs/contracts/*
 yarn-error.log
+.vscode/*
