@@ -193,16 +193,17 @@ describe('MonetaryAmount', () => {
   type toBTCAmount = 'toSatoshi' | 'toMSatoshi' | 'toBTC';
 
   describe('BTCAmount', () => {
-    const cases: [
-      (amount: BigSource) => monetary.BTCAmount,
-      toBTCAmount,
-      number
-    ][] = [
-      [monetary.BTCAmount.fromSatoshi, 'toSatoshi', 100_000_000],
-      [monetary.BTCAmount.fromMSatoshi, 'toMSatoshi', 100_000],
-      [monetary.BTCAmount.fromBTC, 'toBTC', 1]
+    const Amount = monetary.BTCAmount;
+    const cases: {
+      from: (amount: BigSource) => monetary.BTCAmount;
+      toName: toBTCAmount;
+      decimalMul: number;
+    }[] = [
+      {from: Amount.fromSatoshi, toName: 'toSatoshi', decimalMul: 100_000_000},
+      {from: Amount.fromMSatoshi, toName: 'toMSatoshi', decimalMul: 100_000},
+      {from: monetary.BTCAmount.fromBTC, toName: 'toBTC', decimalMul: 1}
     ];
-    cases.forEach(([from, toName, decimalMul]) => {
+    cases.forEach(({from, toName, decimalMul}) => {
       describe(from.name, () => {
         it('should be symmetric with toSatoshi', () => {
           fc.assert(
@@ -237,16 +238,17 @@ describe('MonetaryAmount', () => {
   type toETHAmount = 'toWei' | 'toGWei' | 'toEther';
 
   describe('ETHAmount', () => {
-    const cases: [
-      (amount: BigSource) => monetary.ETHAmount,
-      toETHAmount,
-      number
-    ][] = [
-      [monetary.ETHAmount.fromWei, 'toWei', Math.pow(10, 18)],
-      [monetary.ETHAmount.fromGWei, 'toGWei', Math.pow(10, 9)],
-      [monetary.ETHAmount.fromEther, 'toEther', 1]
+    const Amount = monetary.ETHAmount;
+    const cases: {
+      from: (amount: BigSource) => monetary.ETHAmount;
+      toName: toETHAmount;
+      decimalMul: number;
+    }[] = [
+      {from: Amount.fromWei, toName: 'toWei', decimalMul: Math.pow(10, 18)},
+      {from: Amount.fromGWei, toName: 'toGWei', decimalMul: Math.pow(10, 9)},
+      {from: Amount.fromEther, toName: 'toEther', decimalMul: 1}
     ];
-    cases.forEach(([from, toName, decimalMul]) => {
+    cases.forEach(({from, toName, decimalMul}) => {
       describe(from.name, () => {
         it('should be symmetric with toWei', () => {
           fc.assert(
