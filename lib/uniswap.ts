@@ -7,6 +7,7 @@ import {BigNumber} from 'ethers';
 import {IUniswapV2Factory} from '../typechain/IUniswapV2Factory';
 import {IUniswapV2FactoryFactory} from '../typechain/IUniswapV2FactoryFactory';
 import {TransactionResponse} from '@ethersproject/abstract-provider';
+import {SignerOrProvider} from './core';
 
 export async function deployUniswapFactory(
   signer: Signer,
@@ -38,7 +39,7 @@ export async function createUniswapPair(
 }
 
 export function getUniswapPair(
-  signer: Signer,
+  signer: SignerOrProvider,
   pairAddress: string
 ): IUniswapV2Pair {
   return IUniswapV2PairFactory.connect(pairAddress, signer);

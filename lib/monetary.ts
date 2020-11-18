@@ -77,12 +77,9 @@ export class MonetaryAmount<C extends Currency> {
     return parseFloat(amount.toString()).toLocaleString();
   }
 
-  toBig(decimals: number = 0): Big {
-    return this._amount.div(new Big(10).pow(decimals));
-  }
-
-  toWholeBig(): Big {
-    return this.toBig(this.currency.decimals);
+  toBig(decimals: number = this.currency.decimals): Big {
+    const exponent = this.currency.decimals - decimals;
+    return this._amount.div(new Big(10).pow(exponent));
   }
 
   add(amount: this): this {
@@ -219,7 +216,7 @@ export class ExchangeRate<Base extends Currency, Counter extends Currency> {
   }
 
   toCounter(amount: MonetaryAmount<Base>): MonetaryAmount<Counter> {
-    const converted = amount.toWholeBig().mul(this.rate);
+    const converted = amount.toBig(0).mul(this.rate);
     return new MonetaryAmount(this.counter, converted);
   }
 }

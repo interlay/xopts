@@ -25,10 +25,12 @@ export class MockContractsOptionsReadOnlyActions
   list(): Promise<Array<Option<Currency, ERC20>>> {
     return Promise.resolve(
       mockDb.options.map((rawOption) => {
-        const expiry = new Date(rawOption.expiry * 1000);
-        const windowSize = rawOption.windowSize * 1000;
+        const expiry = new Date(rawOption.expiry);
+        const windowSize = rawOption.windowSize;
         const collateral = new Tether(USDT.mainnet);
-        const rawStrikePrice = new Big(rawOption.strikePrice.toString());
+        const rawStrikePrice = new Big(10)
+          .pow(collateral.decimals)
+          .times(rawOption.strikePrice);
         const strikePrice = new ExchangeRate(BTC, collateral, rawStrikePrice);
         return {
           expiry,
