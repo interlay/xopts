@@ -5,7 +5,7 @@ import {newBigNum} from '../lib/conversion';
 import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
 import {Script} from '../lib/constants';
 import * as bitcoin from 'bitcoinjs-lib';
-import {deploy0, reconnect} from '../lib/contracts';
+import {deploy0, deploy1, reconnect} from '../lib/contracts';
 import {MockBtcRefereeFactory} from '../typechain/MockBtcRefereeFactory';
 import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
 import {OptionFactory} from '../typechain/OptionFactory';
@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   const collateral = await deploy0(alice, MockCollateralFactory);
   const referee = await deploy0(alice, MockBtcRefereeFactory);
 
-  const contract = await deploy0(alice, OptionPairFactoryFactory);
+  const contract = await deploy1(alice, OptionPairFactoryFactory, '');
 
   let receipt = await contract.deployTransaction.wait(0);
   console.log(`Gas [Deploy]: ${receipt.gasUsed?.toString()}`);

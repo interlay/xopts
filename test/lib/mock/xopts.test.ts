@@ -1,10 +1,9 @@
 import {expect} from 'chai';
-import {MockProvider} from 'ethereum-waffle';
 import {providers, Signer, VoidSigner} from 'ethers';
-import {Deployments, XOpts} from '../../..';
+import {Deployments} from '../../../lib/addresses';
 import mockDb from '../../../lib/mock/db.json';
 import {MockXOpts} from '../../../lib/mock/xopts';
-import {createXOpts} from '../../../lib/xopts';
+import {createXOpts, XOpts} from '../../../lib/xopts';
 
 describe('MockXOpts', () => {
   describe('unit', () => {

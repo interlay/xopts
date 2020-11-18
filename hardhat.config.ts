@@ -1,8 +1,7 @@
-import {USDT} from './lib/constants';
-
 // Plugins
 import '@nomiclabs/hardhat-ganache';
 import '@nomiclabs/hardhat-waffle';
+import '@nomiclabs/hardhat-ethers';
 import 'hardhat-typechain';
 import 'hardhat-gas-reporter';
 

@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import {ethers} from '@nomiclabs/buidler';
+import {ethers} from 'hardhat';
 import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
 import {Signer, constants} from 'ethers';
 import * as bitcoin from 'bitcoinjs-lib';
@@ -96,7 +96,7 @@ async function main(): Promise<void> {
 
   const collateral = await deploy0(signers[0], MockCollateralFactory);
   await collateral.mint(await signers[0].getAddress(), newBigNum(100_000, 18));
-  const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
+  const optionFactory = await deploy1(signers[0], OptionPairFactoryFactory, '');
   // TODO: make conditional
   const uniswapFactory = await deployUniswapFactory(alice, aliceAddress);
   const optionLib = await deploy2(

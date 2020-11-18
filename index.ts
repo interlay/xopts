@@ -7,4 +7,4 @@ export {
   ReadWriteContracts,
   ReadWriteOptionPair
 } from './lib/contracts';
-export {XOpts} from './lib/xopts';
+export {XOpts, createXOpts} from './lib/xopts';
