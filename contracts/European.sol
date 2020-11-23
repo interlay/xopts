@@ -2,8 +2,6 @@
 
 pragma solidity ^0.6.0;
 
-import 'hardhat/console.sol';
-
 import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 import {IEuropean} from './interface/IEuropean.sol';
 

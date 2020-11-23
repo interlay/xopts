@@ -10,4 +10,4 @@ export {
 export {SignerOrProvider} from './lib/core';
 export {Option} from './lib/option';
 export * from './lib/monetary';
-export {XOpts, CreateXOpts} from './lib/xopts';
+export {XOpts, createXOpts} from './lib/xopts';

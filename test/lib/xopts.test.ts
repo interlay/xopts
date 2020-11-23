@@ -3,7 +3,7 @@ import {providers, VoidSigner, utils} from 'ethers';
 import FakeWeb3Provider from './helpers/FakeWeb3Provider';
 
 import {Provider, Signer} from '../../lib/core';
-import {CreateXOpts, XOpts} from '../../lib/xopts';
+import {createXOpts, XOpts} from '../../lib/xopts';
 import {Deployments} from '../../lib/addresses';
 import {expect} from 'chai';
 import {Tether} from '../../lib/monetary';
@@ -34,7 +34,7 @@ describe('XOpts', () => {
 
     describe('constructor', () => {
       it('should work with provider', async () => {
-        const xopts = await CreateXOpts(provider, addresses);
+        const xopts = await createXOpts(provider, addresses);
         expect(xopts.options).to.have.property('list');
         // we have static typing for the following
         expect(xopts.options).to.not.have.property('write');
@@ -42,7 +42,7 @@ describe('XOpts', () => {
 
       it('should work with signer', async () => {
         const signer = new VoidSigner('0x');
-        const xopts = await CreateXOpts(signer, addresses);
+        const xopts = await createXOpts(signer, addresses);
         expect(xopts.options).to.have.property('list');
         expect(xopts.options).to.have.property('write');
       });
@@ -52,7 +52,7 @@ describe('XOpts', () => {
       let xopts: XOpts<Provider>;
 
       beforeEach(async () => {
-        xopts = await CreateXOpts(provider, addresses);
+        xopts = await createXOpts(provider, addresses);
       });
 
       describe('totalLiquidity', () => {
@@ -102,7 +102,7 @@ describe('XOpts', () => {
     beforeEach(async () => {
       const provider = new providers.JsonRpcProvider(web3URI);
       signer = provider.getSigner();
-      xopts = await CreateXOpts(signer);
+      xopts = await createXOpts(signer);
       bob = await provider.getSigner(1).getAddress();
     });
 

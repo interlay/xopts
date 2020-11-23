@@ -91,7 +91,7 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
   }
 }
 
-export async function CreateXOpts<T extends SignerOrProvider>(
+export async function createXOpts<T extends SignerOrProvider>(
   provider: T,
   addresses?: Addresses
 ): Promise<XOpts<T>> {

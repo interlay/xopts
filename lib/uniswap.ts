@@ -19,9 +19,6 @@ export async function deployUniswapFactory(
     signer
   );
   const contract = await UniswapFactoryFactory.deploy(feeToSetter);
-  // const contract = await deployContract(signer as Wallet, UniswapV2Factory, [
-  //   feeToSetter
-  // ]);
   return IUniswapV2FactoryFactory.connect(contract.address, signer);
 }
 
