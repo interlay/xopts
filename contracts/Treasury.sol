@@ -33,6 +33,8 @@ contract Treasury is ITreasury, ReentrancyGuard, Ownable, WriterRegistry {
         internal constant ERR_POSITION_INVALID_EXPIRY = 'Invalid position expiry';
     string internal constant ERR_POSITION_NOT_SET = 'Position not set';
     string internal constant ERR_POSITION_NOT_EXPIRED = 'Position not expired';
+    string
+        internal constant ERR_POSITION_STRIKE_RANGE_INVALID = 'Invalid strike range: minimum greater than maximum';
     string internal constant ERR_NOT_AUTHORIZED = 'Caller not authorized';
     string internal constant ERR_MARKET_HAS_EXPIRED = 'Market has expired';
     string internal constant ERR_MARKET_NOT_EXPIRED = 'Market not expired';
@@ -109,6 +111,7 @@ contract Treasury is ITreasury, ReentrancyGuard, Ownable, WriterRegistry {
             expiryTime >= _positions[msg.sender].expiryTime,
             ERR_POSITION_INVALID_EXPIRY
         );
+        require(minStrike <= maxStrike, ERR_POSITION_STRIKE_RANGE_INVALID);
 
         _positions[msg.sender].minStrike = minStrike;
         _positions[msg.sender].maxStrike = maxStrike;

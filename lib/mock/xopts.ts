@@ -31,7 +31,7 @@ export class MockXOpts<T extends SignerOrProvider> implements XOpts<T> {
     addresses?: Addresses
   ): Promise<XOpts<T>> {
     if (addresses === undefined) {
-      addresses = Deployments.buidler;
+      addresses = Deployments.hardhat;
     }
 
     if (provider instanceof Signer) {

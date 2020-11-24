@@ -69,9 +69,9 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
     if (provider instanceof Signer) {
       // type checker does not seem to understand that in this branch
       // OptionActions<T> === OptionsReadWriteActions, hence the need for casting
-      const contracts = await ReadWriteContracts.load(addresses, provider);
+      const rwContracts = await ReadWriteContracts.load(addresses, provider);
       const optionActions: OptionsReadWriteActions = new ContractsOptionsReadWriteActions(
-        contracts
+        rwContracts
       );
       return new DefaultXOpts(
         addresses,
@@ -95,7 +95,11 @@ export async function createXOpts<T extends SignerOrProvider>(
   provider: T,
   addresses?: Addresses
 ): Promise<XOpts<T>> {
-  if (addresses && addresses.collateral == Deployments.mock.collateral) {
+  if (
+    addresses &&
+    (addresses.collateral == Deployments.mock.collateral ||
+      addresses.collateral == Deployments.mockRealistic.collateral)
+  ) {
     return MockXOpts.load(provider, addresses);
   }
   return DefaultXOpts.load(provider, addresses);

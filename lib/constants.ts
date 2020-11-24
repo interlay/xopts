@@ -38,6 +38,8 @@ export const ErrorCode = {
   ERR_POSITION_INVALID_EXPIRY: 'Invalid position expiry',
   ERR_POSITION_NOT_SET: 'Position not set',
   ERR_POSITION_NOT_EXPIRED: 'Position not expired',
+  ERR_POSITION_STRIKE_RANGE_INVALID:
+    'Invalid strike range: minimum greater than maximum',
   ERR_NOT_AUTHORIZED: 'Caller not authorized',
   ERR_MARKET_HAS_EXPIRED: 'Market has expired',
   ERR_MARKET_NOT_EXPIRED: 'Market not expired',

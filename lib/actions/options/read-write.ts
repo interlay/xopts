@@ -38,23 +38,19 @@ export class ContractsOptionsReadWriteActions
     option: Option<Underlying, Collateral>,
     amount: MonetaryAmount<Collateral>,
     btcAddress: BtcAddress
-  ) {
+  ): Promise<void> {
     const pair = await this.contracts.getPair(option.address);
     const premium = await this.estimatePremium(option, amount);
-    await pair.write(premium.toString(), amount.toString(), btcAddress);
+    pair.write(premium.toString(), amount.toString(), btcAddress);
   }
 
   async buy<Underlying extends Currency, Collateral extends ERC20>(
     option: Option<Underlying, Collateral>,
     amountOut: MonetaryAmount<Collateral>,
     amountInMax: MonetaryAmount<Collateral>
-  ) {
+  ): Promise<void> {
     const pair = await this.contracts.getPair(option.address);
     const deadline = makeDefaultDeadline();
-    await pair.buyOptions(
-      amountOut.toString(),
-      amountInMax.toString(),
-      deadline
-    );
+    pair.buyOptions(amountOut.toString(), amountInMax.toString(), deadline);
   }
 }

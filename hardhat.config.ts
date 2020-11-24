@@ -50,7 +50,8 @@ const config = {
   },
   networks: {
     hardhat: {
-      gas: 1_000_000
+      gas: 1_000_000,
+      chainId: 31337
     },
     ganache: ganacheConfig,
     ropsten: {

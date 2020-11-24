@@ -6,6 +6,7 @@ import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
 import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
 import {BtcRefereeFactory} from '../typechain/BtcRefereeFactory';
 import {OptionLibFactory} from '../typechain/OptionLibFactory';
+import {TreasuryFactory} from '../typechain/TreasuryFactory';
 import {deployUniswapFactory} from '../lib/uniswap';
 import {MockRelayFactory} from '../typechain/MockRelayFactory';
 import {constants} from 'ethers';
@@ -26,14 +27,24 @@ async function main(): Promise<void> {
 
   const collateral = await deploy0(signers[0], MockCollateralFactory);
   await collateral.mint(await signers[0].getAddress(), newBigNum(100_000, 18));
-  const optionFactory = await deploy0(signers[0], OptionPairFactoryFactory);
-  // TODO: make conditional
+  // TODO: make conditional?
   const uniswapFactory = await deployUniswapFactory(signers[0], account);
+  const optionFactory = await deploy1(
+    signers[0],
+    OptionPairFactoryFactory,
+    uniswapFactory.address
+  );
   const optionLib = await deploy2(
     signers[0],
     OptionLibFactory,
     uniswapFactory.address,
     constants.AddressZero
+  );
+  const treasury = await deploy2(
+    signers[0],
+    TreasuryFactory,
+    collateral.address,
+    optionFactory.address
   );
   const relay = await deploy0(signers[0], MockRelayFactory);
   const referee = await deploy1(signers[0], BtcRefereeFactory, relay.address);
@@ -46,6 +57,9 @@ async function main(): Promise<void> {
   console.log('MockRelay:', relay.address);
   console.log('BTCReferee:', referee.address);
   console.log('WriterRegistry:', writerRegistry.address);
+
+  await optionFactory.enableAsset(collateral.address);
+  await optionFactory.setTreasuryFor(collateral.address, treasury.address);
 
   const date = new Date();
   const currentTime = Math.round(date.getTime() / 1000);

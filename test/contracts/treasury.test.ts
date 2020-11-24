@@ -94,15 +94,28 @@ describe('Treasury.sol', () => {
   };
 
   it('should not set invalid position', async () => {
-    const result = reconnect(treasury, TreasuryFactory, alice).position(
+    const pastExpiry = reconnect(treasury, TreasuryFactory, alice).position(
       0,
       constants.MaxUint256,
       0,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       makeKeyPair().hash!,
       Script.p2pkh
     );
-    await expect(result).to.be.revertedWith(
+    await expect(pastExpiry).to.be.revertedWith(
       ErrorCode.ERR_POSITION_INVALID_EXPIRY
+    );
+
+    const negativeRange = reconnect(treasury, TreasuryFactory, alice).position(
+      1,
+      0,
+      constants.MaxUint256,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      makeKeyPair().hash!,
+      Script.p2pkh
+    );
+    await expect(negativeRange).to.be.revertedWith(
+      ErrorCode.ERR_POSITION_STRIKE_RANGE_INVALID
     );
   });
 

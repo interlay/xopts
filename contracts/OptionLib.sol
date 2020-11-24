@@ -39,6 +39,8 @@ contract OptionLib is UniswapV2Router02 {
         // solhint-disable-previous-line no-empty-blocks
     }
 
+    /// @dev If minStrike and maxStrike are zero, no position is set. (If one exists,
+    /// it's reused, else the transaction will error and revert.)
     function _deposit(
         address obligation,
         address collateral,
@@ -47,13 +49,16 @@ contract OptionLib is UniswapV2Router02 {
     ) internal {
         // lock collateral for exercising
         address treasury = IObligation(obligation).treasury();
+
+        // 1. send funds for deposit
         TransferHelper.safeTransferFrom(
             collateral,
             writer,
             treasury,
             optionsAmount
         );
-        // deposit 'unlocked' balance for writing
+
+        // 2. deposit 'unlocked' balance for writing
         ITreasury(treasury).deposit(writer);
     }
 

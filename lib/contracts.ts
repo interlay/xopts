@@ -452,9 +452,7 @@ export class ReadOnlyContracts implements ReadContracts {
 
   async getPair(optionAddress: string): Promise<ReadOptionPair> {
     const option = OptionFactory.connect(optionAddress, this.signer);
-    const obligationAddress = await this.optionFactory.getObligation(
-      optionAddress
-    );
+    const obligationAddress = await option.owner();
     const obligation = ObligationFactory.connect(
       obligationAddress,
       this.signer

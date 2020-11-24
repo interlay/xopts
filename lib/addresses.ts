@@ -12,17 +12,9 @@ export interface Addresses {
   writerRegistry: string;
 }
 
-type Networks = 'buidler' | 'ganache' | 'mock';
+type Network = 'ganache' | 'hardhat' | 'mockRealistic' | 'mock';
 
-export const Deployments: Record<Networks, Addresses> = {
-  buidler: {
-    collateral: '0x7c2C195CD6D34B8F845992d380aADB2730bB9C6F',
-    optionFactory: '0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7',
-    optionLib: '0xf784709d2317D872237C4bC22f867d1BAe2913AB',
-    relay: '0x3619DbE27d7c1e7E91aA738697Ae7Bc5FC3eACA5',
-    referee: '0x038B86d9d8FAFdd0a02ebd1A476432877b0107C8',
-    writerRegistry: '0x1A1FEe7EeD918BD762173e4dc5EfDB8a78C924A8'
-  },
+export const Deployments: Record<Network, Addresses> = {
   ganache: {
     collateral: '0x151eA753f0aF1634B90e1658054C247eFF1C2464',
     optionFactory: '0xA5f9310631CBEb4B7Ce1065Bd40042Ff5EF533F2',
@@ -31,13 +23,29 @@ export const Deployments: Record<Networks, Addresses> = {
     referee: '0x5429c8fafa53b09386E41F07CbA2479C170faf0b',
     writerRegistry: '0x5Ee87DE59a4701B3d073be6244cdf7ddE32c8D49'
   },
-  mock: {
+  hardhat: {
+    collateral: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    optionFactory: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+    optionLib: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+    relay: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+    referee: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
+    writerRegistry: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6'
+  },
+  mockRealistic: {
     collateral: '0xf980CA9C3A0A586A70A501767679156D88AC61E5',
     optionFactory: '0x1675212F75433bE66A9bcb59a47D4d477346Fbde',
     optionLib: '0x6E294F067dbFA0D61aD57ca3801BDB16646303fC',
     relay: '0x507751554971AC8Ca44e922334913E00Ce2104AA',
     referee: '0x5dbb454Ab7AeDc9eD396E8461F58cA5F76599F8c',
     writerRegistry: '0x731b9aB59DCAE3d59164AC9Fc97cf5C4CC66652b'
+  },
+  mock: {
+    collateral: '0x0000000000000000000000000000000000000001',
+    optionFactory: '0x0000000000000000000000000000000000000002',
+    optionLib: '0x0000000000000000000000000000000000000003',
+    relay: '0x0000000000000000000000000000000000000004',
+    referee: '0x0000000000000000000000000000000000000005',
+    writerRegistry: '0x0000000000000000000000000000000000000006'
   }
 };
 
@@ -103,12 +111,13 @@ export async function resolveAddresses(
   const network = await provider.getNetwork();
 
   switch (network.chainId) {
-    case 31337:
-      // Buidlerevm
-      return Deployments.buidler;
     case 2222:
       // Ganache
       return Deployments.ganache;
+    case 31337:
+    case 1337: // I have no idea why but it's consistent for me locally
+      // Buidlerevm
+      return Deployments.hardhat;
     default:
       return;
   }

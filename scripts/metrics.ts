@@ -5,7 +5,9 @@ import {newBigNum} from '../lib/conversion';
 import {MockCollateralFactory} from '../typechain/MockCollateralFactory';
 import {Script} from '../lib/constants';
 import * as bitcoin from 'bitcoinjs-lib';
-import {deploy0, reconnect} from '../lib/contracts';
+import {deploy0, deploy1, deploy2, reconnect} from '../lib/contracts';
+import {deployUniswapFactory} from '../lib/uniswap';
+import {TreasuryFactory} from '../typechain/TreasuryFactory';
 import {MockBtcRefereeFactory} from '../typechain/MockBtcRefereeFactory';
 import {OptionPairFactoryFactory} from '../typechain/OptionPairFactoryFactory';
 import {OptionFactory} from '../typechain/OptionFactory';
@@ -22,16 +24,34 @@ async function main(): Promise<void> {
   const bob = signers[1];
   const charlie = signers[2];
 
+  const aliceAddress = await alice.getAddress();
+  const bobAddress = await bob.getAddress();
+  const charlieAddress = await charlie.getAddress();
+
   const collateral = await deploy0(alice, MockCollateralFactory);
   const referee = await deploy0(alice, MockBtcRefereeFactory);
 
-  const contract = await deploy0(alice, OptionPairFactoryFactory);
+  const uniswapFactory = await deployUniswapFactory(signers[0], aliceAddress);
+  const contract = await deploy1(
+    alice,
+    OptionPairFactoryFactory,
+    uniswapFactory.address
+  );
+  const treasury = await deploy2(
+    signers[0],
+    TreasuryFactory,
+    collateral.address,
+    contract.address
+  );
 
   let receipt = await contract.deployTransaction.wait(0);
   console.log(`Gas [Deploy]: ${receipt.gasUsed?.toString()}`);
 
   const currentTime = Math.round(new Date().getTime() / 1000);
   const expiry = currentTime + 60;
+
+  await contract.enableAsset(collateral.address);
+  await contract.setTreasuryFor(collateral.address, treasury.address);
 
   let tx = await contract.createPair(
     expiry,
@@ -42,10 +62,6 @@ async function main(): Promise<void> {
   );
   receipt = await tx.wait(0);
   console.log(`Gas [Create]: ${receipt.gasUsed?.toString()}`);
-
-  const aliceAddress = await alice.getAddress();
-  const bobAddress = await bob.getAddress();
-  const charlieAddress = await charlie.getAddress();
 
   const options = await contract.getOptions();
 
