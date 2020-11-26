@@ -271,6 +271,26 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     );
   }
 
+  //TODO: these functions were copied here for development
+  //figure out better way to access them
+  async checkAllowance(): Promise<boolean> {
+    const amount = await this.collateral.allowance(
+      this.account,
+      this.optionLib.address
+    );
+    return amount.eq(ethers.constants.MaxUint256);
+  }
+
+  // in order to limit the number of transactions we need to
+  // pre-approve our contracts to work with the max allowance
+  async approveMax(): Promise<void> {
+    await this.collateral.approve(
+      this.optionLib.address,
+      ethers.constants.MaxUint256
+    );
+  }
+  //ENDTODO
+
   buyOptions(
     amountOut: BigNumberish,
     amountInMax: BigNumberish,
@@ -278,13 +298,37 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
   ): ConfirmationNotifier {
     // buy order (i.e. specify exact number of options)
     return this.waitConfirm(
-      this.optionLib.swapTokensForExactTokens(
-        amountOut,
-        amountInMax,
-        [this.collateral.address, this.option.address],
-        this.account,
-        deadline
-      )
+      this.checkAllowance()
+        .then((allowed) => (allowed ? Promise.resolve() : this.approveMax()))
+        .then(() => {
+          console.log(
+            'Swapping... ',
+            'amount: ',
+            amountOut,
+            '; for amountInMax: ',
+            amountInMax,
+            '; using collateral: ',
+            this.collateral.address,
+            '; and option: ',
+            this.option.address,
+            '; and deadline: ',
+            deadline
+          );
+          return this.optionLib.swapTokensForExactTokens(
+            amountOut,
+            amountInMax,
+            [this.collateral.address, this.option.address],
+            this.account,
+            deadline
+          )
+        })
+        .then((tx) => {
+          console.log('Swapped! ', tx);
+          tx.wait(0).then((tx) => {
+            console.log('Upon confirmation: ', tx);
+          });
+          return tx;
+        })
     );
   }
 
@@ -591,9 +635,7 @@ export class ReadWriteContracts extends ReadOnlyContracts
 
   async getPair(optionAddress: string): Promise<WriteOptionPair> {
     const option = OptionFactory.connect(optionAddress, this.signer);
-    const obligationAddress = await this.optionFactory.getObligation(
-      optionAddress
-    );
+    const obligationAddress = await option.owner();
     const obligation = ObligationFactory.connect(
       obligationAddress,
       this.signer
