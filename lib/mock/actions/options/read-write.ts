@@ -3,6 +3,7 @@ import {BtcAddress} from '../../../contracts';
 import {Currency, ERC20, MonetaryAmount} from '../../../monetary';
 import {Option} from '../../../option';
 import {MockContractsOptionsReadOnlyActions} from './read-only';
+import {Notifier} from '../../../notifier';
 
 export class MockContractsOptionsReadWriteActions
   extends MockContractsOptionsReadOnlyActions
@@ -15,11 +16,11 @@ export class MockContractsOptionsReadWriteActions
     return Promise.resolve();
   }
 
-  buy<Underlying extends Currency, Collateral extends ERC20>(
+  async buy<Underlying extends Currency, Collateral extends ERC20>(
     _option: Option<Underlying, Collateral>,
     _amountOut: MonetaryAmount<Collateral>,
     _amountInMax: MonetaryAmount<Collateral>
-  ): Promise<void> {
-    return Promise.resolve();
+  ): Promise<Notifier<any>> {
+    return new Notifier(Promise.resolve());
   }
 }

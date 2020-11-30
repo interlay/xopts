@@ -297,9 +297,14 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     deadline: BigNumberish
   ): ConfirmationNotifier {
     // buy order (i.e. specify exact number of options)
+    console.log('Checking allowance...');
     return this.waitConfirm(
       this.checkAllowance()
-        .then((allowed) => (allowed ? Promise.resolve() : this.approveMax()))
+        .then((allowed) =>
+          allowed
+            ? (console.log('Approved'), Promise.resolve())
+            : (console.log('Not approved, approving...'), this.approveMax())
+        )
         .then(() => {
           console.log(
             'Swapping... ',
@@ -320,7 +325,7 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
             [this.collateral.address, this.option.address],
             this.account,
             deadline
-          )
+          );
         })
         .then((tx) => {
           console.log('Swapped! ', tx);

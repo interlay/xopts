@@ -1,5 +1,3 @@
-import {USDT} from './lib/constants';
-
 // Plugins
 import '@nomiclabs/hardhat-ganache';
 import '@nomiclabs/hardhat-waffle';

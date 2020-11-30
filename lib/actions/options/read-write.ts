@@ -1,3 +1,4 @@
+import {Big} from 'big.js';
 import {Option} from '../../option';
 import {Currency, MonetaryAmount, ERC20} from '../../monetary';
 import {BtcAddress, ReadWriteContracts} from '../../contracts';
@@ -5,6 +6,7 @@ import {
   OptionsReadOnlyActions,
   ContractsOptionsReadOnlyActions
 } from './read-only';
+import {ConfirmationNotifier} from '../../notifier';
 
 const defaultDeadline: number = 3_600 * 6; // 6 hours max
 
@@ -24,7 +26,7 @@ export interface OptionsReadWriteActions extends OptionsReadOnlyActions {
     option: Option<Underlying, Collateral>,
     amountOut: MonetaryAmount<Collateral>,
     amountInMax: MonetaryAmount<Collateral>
-  ): Promise<void>;
+  ): Promise<ConfirmationNotifier>;
 }
 
 export class ContractsOptionsReadWriteActions
@@ -48,9 +50,14 @@ export class ContractsOptionsReadWriteActions
     option: Option<Underlying, Collateral>,
     amountOut: MonetaryAmount<Collateral>,
     amountInMax: MonetaryAmount<Collateral>
-  ): Promise<void> {
+  ): Promise<ConfirmationNotifier> {
     const pair = await this.contracts.getPair(option.address);
     const deadline = makeDefaultDeadline();
-    pair.buyOptions(amountOut.toString(), amountInMax.toString(), deadline);
+    Big.PE = 40;
+    return pair.buyOptions(
+      amountOut.toString(),
+      amountInMax.toString(),
+      deadline
+    );
   }
 }
