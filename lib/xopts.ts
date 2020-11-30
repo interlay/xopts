@@ -17,7 +17,10 @@ import {
 
 import {Factory} from './actions/factory';
 import {MockXOpts} from './mock/xopts';
-import {DefaultPositionActions, PositionActions} from './actions/positions';
+import {
+  DefaultPositionActions,
+  PositionActions as IPositionActions
+} from './actions/positions';
 
 export type OptionActions<T extends SignerOrProvider> = T extends Signer
   ? OptionsReadWriteActions
@@ -27,10 +30,14 @@ export type FactoryActions<T extends SignerOrProvider> = T extends Signer
   ? Factory
   : null;
 
+export type PositionActions<T extends SignerOrProvider> = T extends Signer
+  ? IPositionActions
+  : null;
+
 export interface XOpts<T extends SignerOrProvider> extends GlobalActions {
   readonly addresses: Addresses;
   readonly options: OptionActions<T>;
-  readonly positions: PositionActions;
+  readonly positions: PositionActions<T>;
 
   totalLiquidity(): Promise<MonetaryAmount<Tether>>;
   optionMarketsCount(): Promise<number>;
@@ -42,7 +49,7 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
     readonly addresses: Addresses,
     private readonly readOnlyContracts: ReadOnlyContracts,
     readonly options: OptionActions<T>,
-    readonly positions: PositionActions
+    readonly positions: PositionActions<T>
   ) {}
 
   async totalLiquidity(): Promise<MonetaryAmount<Tether>> {
@@ -69,7 +76,6 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
     }
 
     const roContracts = await ReadOnlyContracts.load(addresses, provider);
-    const positionActions = new DefaultPositionActions();
     if (provider instanceof Signer) {
       // type checker does not seem to understand that in this branch
       // OptionActions<T> === OptionsReadWriteActions, hence the need for casting
@@ -81,7 +87,7 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
         addresses,
         roContracts,
         optionActions as OptionActions<T>,
-        positionActions
+        new DefaultPositionActions() as PositionActions<T>
       );
     } else {
       const optionActions: OptionsReadOnlyActions = new ContractsOptionsReadOnlyActions(
@@ -91,7 +97,7 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
         addresses,
         roContracts,
         optionActions as OptionActions<T>,
-        positionActions
+        null as PositionActions<T>
       );
     }
   }

@@ -1,10 +1,9 @@
 import {OptionsReadOnlyActions} from '../actions/options/read-only';
 import {OptionsReadWriteActions} from '../actions/options/read-write';
-import {PositionActions} from '../actions/positions';
 import {Addresses, Deployments} from '../addresses';
 import {Signer, SignerOrProvider} from '../core';
 import {BTCAmount, MonetaryAmount, Tether} from '../monetary';
-import {OptionActions, XOpts} from '../xopts';
+import {OptionActions, PositionActions, XOpts} from '../xopts';
 import {MockContractsOptionsReadOnlyActions} from './actions/options/read-only';
 import {MockContractsOptionsReadWriteActions} from './actions/options/read-write';
 import {MockPositionActions} from './actions/positions';
@@ -14,7 +13,7 @@ export class MockXOpts<T extends SignerOrProvider> implements XOpts<T> {
   constructor(
     readonly addresses: Addresses,
     readonly options: OptionActions<T>,
-    readonly positions: PositionActions
+    readonly positions: PositionActions<T>
   ) {}
 
   totalLiquidity(): Promise<MonetaryAmount<Tether>> {
@@ -37,7 +36,6 @@ export class MockXOpts<T extends SignerOrProvider> implements XOpts<T> {
       addresses = Deployments.hardhat;
     }
 
-    const positions = new MockPositionActions();
     if (provider instanceof Signer) {
       // type checker does not seem to understand that in this branch
       // OptionActions<T> === OptionsReadWriteActions, hence the need for casting
@@ -45,14 +43,14 @@ export class MockXOpts<T extends SignerOrProvider> implements XOpts<T> {
       return new MockXOpts(
         addresses,
         optionActions as OptionActions<T>,
-        positions
+        new MockPositionActions() as PositionActions<T>
       );
     } else {
       const optionActions: OptionsReadOnlyActions = new MockContractsOptionsReadOnlyActions();
       return new MockXOpts(
         addresses,
         optionActions as OptionActions<T>,
-        positions
+        null as PositionActions<T>
       );
     }
   }
