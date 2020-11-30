@@ -1,4 +1,4 @@
-import {Option} from '../../option';
+import {Option} from '../../types';
 import {Currency, MonetaryAmount, ERC20} from '../../monetary';
 import {BtcAddress, ReadWriteContracts} from '../../contracts';
 import {

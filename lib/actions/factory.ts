@@ -1,4 +1,4 @@
-import {Option} from '../option';
+import {Option} from '../types';
 import {Currency, ERC20} from '../monetary';
 
 export interface Factory {

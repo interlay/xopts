@@ -1,4 +1,4 @@
-import {ExchangeRate, Currency, ERC20} from './monetary';
+import {Currency, ERC20, ExchangeRate, MonetaryAmount} from './monetary';
 
 export interface Option<Underlying extends Currency, Collateral extends ERC20> {
   /**
@@ -37,4 +37,29 @@ export interface Option<Underlying extends Currency, Collateral extends ERC20> {
    * Collateral used for the option, e.g. USDT
    */
   readonly collateral: Collateral;
+}
+
+export interface Position<
+  Underlying extends Currency,
+  Collateral extends ERC20
+> {
+  /**
+   * The underlying option of this position
+   */
+  option: Option<Underlying, Collateral>;
+
+  /**
+   * Account owning the position
+   */
+  account: string;
+
+  /**
+   * The total amount written for this position in terms of underlying asset
+   */
+  writtenAmount: MonetaryAmount<Underlying>;
+
+  /**
+   * The total amount bought for this position in terms of underlying asset
+   */
+  boughtAmount: MonetaryAmount<Underlying>;
 }

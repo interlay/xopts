@@ -17,6 +17,7 @@ import {
 
 import {Factory} from './actions/factory';
 import {MockXOpts} from './mock/xopts';
+import {DefaultPositionActions, PositionActions} from './actions/positions';
 
 export type OptionActions<T extends SignerOrProvider> = T extends Signer
   ? OptionsReadWriteActions
@@ -29,6 +30,7 @@ export type FactoryActions<T extends SignerOrProvider> = T extends Signer
 export interface XOpts<T extends SignerOrProvider> extends GlobalActions {
   readonly addresses: Addresses;
   readonly options: OptionActions<T>;
+  readonly positions: PositionActions;
 
   totalLiquidity(): Promise<MonetaryAmount<Tether>>;
   optionMarketsCount(): Promise<number>;
@@ -39,7 +41,8 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
   constructor(
     readonly addresses: Addresses,
     private readonly readOnlyContracts: ReadOnlyContracts,
-    readonly options: OptionActions<T> // readonly factory: FactoryActions<T>
+    readonly options: OptionActions<T>,
+    readonly positions: PositionActions
   ) {}
 
   async totalLiquidity(): Promise<MonetaryAmount<Tether>> {
@@ -66,6 +69,7 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
     }
 
     const roContracts = await ReadOnlyContracts.load(addresses, provider);
+    const positionActions = new DefaultPositionActions();
     if (provider instanceof Signer) {
       // type checker does not seem to understand that in this branch
       // OptionActions<T> === OptionsReadWriteActions, hence the need for casting
@@ -76,7 +80,8 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
       return new DefaultXOpts(
         addresses,
         roContracts,
-        optionActions as OptionActions<T>
+        optionActions as OptionActions<T>,
+        positionActions
       );
     } else {
       const optionActions: OptionsReadOnlyActions = new ContractsOptionsReadOnlyActions(
@@ -85,7 +90,8 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
       return new DefaultXOpts(
         addresses,
         roContracts,
-        optionActions as OptionActions<T>
+        optionActions as OptionActions<T>,
+        positionActions
       );
     }
   }
