@@ -256,7 +256,7 @@
   "positions": [
     {
       "option": "0x117A78010353E9C424E32D6dB2BC43395A10b17B",
-      "account": "0xA7a7d94533097317B661Dc05EEF6aBd60947B06b",
+      "account": "0x",
       "writtenAmount": 12341,
       "boughtAmount": 12341
     },
@@ -268,7 +268,7 @@
     },
     {
       "option": "0x2D171fe980e179AE93befa6DBfF60797012B6530",
-      "account": "0xA7a7d94533097317B661Dc05EEF6aBd60947B06b",
+      "account": "0x",
       "writtenAmount": 0,
       "boughtAmount": 845
     }

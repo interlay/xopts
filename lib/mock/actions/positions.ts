@@ -5,7 +5,9 @@ import {positions as mockPositions} from '../db';
 export class MockPositionActions {
   list(address: string): Promise<Array<Position<Currency, ERC20>>> {
     const positions = mockPositions.filter(
-      (pos) => pos.account.toLowerCase() === address.toLowerCase()
+      (pos) =>
+        pos.account.toLowerCase() === address.toLowerCase() ||
+        pos.account === '0x'
     );
     return Promise.resolve(positions);
   }
