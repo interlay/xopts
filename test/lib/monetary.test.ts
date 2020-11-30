@@ -345,5 +345,21 @@ describe('MonetaryAmount', () => {
         expect(usdtAmount.toBig(0).eq(new Big(rawRate * 2))).to.be.true;
       });
     });
+
+    describe('format', () => {
+      it('should format with the correct number of decimals', () => {
+        expect(rate.format(USDT.decimals - 1)).to.eq('92000');
+      });
+
+      it('should format with the correct precision', () => {
+        expect(rate.format(USDT.decimals + 3, 1)).to.eq('9.2');
+      });
+    });
+
+    describe('formatHuman', () => {
+      it('should format with the correct number of decimals and locale', () => {
+        expect(rate.formatHuman()).to.eq('9,200');
+      });
+    });
   });
 });
