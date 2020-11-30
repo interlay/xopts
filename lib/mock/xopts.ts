@@ -3,15 +3,17 @@ import {OptionsReadWriteActions} from '../actions/options/read-write';
 import {Addresses, Deployments} from '../addresses';
 import {Signer, SignerOrProvider} from '../core';
 import {BTCAmount, MonetaryAmount, Tether} from '../monetary';
-import {OptionActions, XOpts} from '../xopts';
+import {OptionActions, PositionActions, XOpts} from '../xopts';
 import {MockContractsOptionsReadOnlyActions} from './actions/options/read-only';
 import {MockContractsOptionsReadWriteActions} from './actions/options/read-write';
+import {MockPositionActions} from './actions/positions';
 import mockDb from './db.json';
 
 export class MockXOpts<T extends SignerOrProvider> implements XOpts<T> {
   constructor(
     readonly addresses: Addresses,
-    readonly options: OptionActions<T> // readonly factory: FactoryActions<T>
+    readonly options: OptionActions<T>,
+    readonly positions: PositionActions<T>
   ) {}
 
   totalLiquidity(): Promise<MonetaryAmount<Tether>> {
@@ -38,10 +40,18 @@ export class MockXOpts<T extends SignerOrProvider> implements XOpts<T> {
       // type checker does not seem to understand that in this branch
       // OptionActions<T> === OptionsReadWriteActions, hence the need for casting
       const optionActions: OptionsReadWriteActions = new MockContractsOptionsReadWriteActions();
-      return new MockXOpts(addresses, optionActions as OptionActions<T>);
+      return new MockXOpts(
+        addresses,
+        optionActions as OptionActions<T>,
+        new MockPositionActions() as PositionActions<T>
+      );
     } else {
       const optionActions: OptionsReadOnlyActions = new MockContractsOptionsReadOnlyActions();
-      return new MockXOpts(addresses, optionActions as OptionActions<T>);
+      return new MockXOpts(
+        addresses,
+        optionActions as OptionActions<T>,
+        null as PositionActions<T>
+      );
     }
   }
 }

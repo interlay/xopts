@@ -8,6 +8,6 @@ export {
   ReadWriteOptionPair
 } from './lib/contracts';
 export {SignerOrProvider} from './lib/core';
-export {Option} from './lib/option';
+export {Option, Position} from './lib/types';
 export * from './lib/monetary';
 export {XOpts, createXOpts} from './lib/xopts';
