@@ -219,4 +219,13 @@ export class ExchangeRate<Base extends Currency, Counter extends Currency> {
     const converted = amount.toBig(0).mul(this.rate);
     return new MonetaryAmount(this.counter, converted);
   }
+
+  format(decimals = 0, precision?: number): string {
+    return this.rate.div(new Big(10).pow(decimals)).toFixed(precision);
+  }
+
+  formatHuman(precision?: number): string {
+    const formatted = this.format(this.counter.decimals, precision);
+    return parseFloat(formatted).toLocaleString();
+  }
 }
