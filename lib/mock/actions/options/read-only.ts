@@ -1,17 +1,8 @@
 import {Big} from 'big.js';
 import {OptionsReadOnlyActions} from '../../../actions/options/read-only';
-import {Option} from '../../../option';
-import {
-  Currency,
-  ERC20,
-  BTC,
-  Tether,
-  ExchangeRate,
-  MonetaryAmount
-} from '../../../monetary';
-import mockDb from '../../db.json';
-import {USDT} from '../../../constants';
-import {MockCollateral} from '../../../../typechain/MockCollateral';
+import {Currency, ERC20, MonetaryAmount} from '../../../monetary';
+import {Option} from '../../../types';
+import {options as mockOptions} from '../../db';
 
 export class MockContractsOptionsReadOnlyActions
   implements OptionsReadOnlyActions {
@@ -24,26 +15,7 @@ export class MockContractsOptionsReadOnlyActions
   }
 
   list(): Promise<Array<Option<Currency, ERC20>>> {
-    return Promise.resolve(
-      mockDb.options.map((rawOption) => {
-        const expiry = new Date(rawOption.expiry);
-        const windowSize = rawOption.windowSize;
-        const collateral = new Tether(USDT.mainnet);
-        const rawStrikePrice = new Big(10)
-          .pow(collateral.decimals)
-          .times(rawOption.strikePrice);
-        const strikePrice = new ExchangeRate(BTC, collateral, rawStrikePrice);
-        return {
-          expiry,
-          windowSize,
-          strikePrice,
-          collateral,
-          obligationAddress: rawOption.obligationAddress,
-          address: rawOption.address,
-          underlying: BTC
-        };
-      })
-    );
+    return Promise.resolve(mockOptions);
   }
 
   async getLiquidity<Underlying extends Currency, Collateral extends ERC20>(

@@ -17,6 +17,7 @@
     "hardhat": "hardhat node",
     "ganache": "hardhat run scripts/ganache.ts",
     "tsc": "tsc && cp typechain/*.d.ts dist/typechain/",
+    "watch::tsc": "tsc --watch",
     "clean": "rm -rf artifacts cache typechain dist",
     "docs": "solidity-docgen --solc-module=./node_modules/solc -t docs -o docs/contracts",
     "lint::typescript": "eslint './**/*.ts' --ext .ts",

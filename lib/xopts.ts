@@ -17,6 +17,10 @@ import {
 
 import {Factory} from './actions/factory';
 import {MockXOpts} from './mock/xopts';
+import {
+  DefaultPositionActions,
+  PositionActions as IPositionActions
+} from './actions/positions';
 
 export type OptionActions<T extends SignerOrProvider> = T extends Signer
   ? OptionsReadWriteActions
@@ -26,9 +30,14 @@ export type FactoryActions<T extends SignerOrProvider> = T extends Signer
   ? Factory
   : null;
 
+export type PositionActions<T extends SignerOrProvider> = T extends Signer
+  ? IPositionActions
+  : null;
+
 export interface XOpts<T extends SignerOrProvider> extends GlobalActions {
   readonly addresses: Addresses;
   readonly options: OptionActions<T>;
+  readonly positions: PositionActions<T>;
 
   totalLiquidity(): Promise<MonetaryAmount<Tether>>;
   optionMarketsCount(): Promise<number>;
@@ -39,7 +48,8 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
   constructor(
     readonly addresses: Addresses,
     private readonly readOnlyContracts: ReadOnlyContracts,
-    readonly options: OptionActions<T> // readonly factory: FactoryActions<T>
+    readonly options: OptionActions<T>,
+    readonly positions: PositionActions<T>
   ) {}
 
   async totalLiquidity(): Promise<MonetaryAmount<Tether>> {
@@ -76,7 +86,8 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
       return new DefaultXOpts(
         addresses,
         roContracts,
-        optionActions as OptionActions<T>
+        optionActions as OptionActions<T>,
+        new DefaultPositionActions() as PositionActions<T>
       );
     } else {
       const optionActions: OptionsReadOnlyActions = new ContractsOptionsReadOnlyActions(
@@ -85,7 +96,8 @@ export class DefaultXOpts<T extends SignerOrProvider> implements GlobalActions {
       return new DefaultXOpts(
         addresses,
         roContracts,
-        optionActions as OptionActions<T>
+        optionActions as OptionActions<T>,
+        null as PositionActions<T>
       );
     }
   }

@@ -1,7 +1,7 @@
 import {OptionsReadWriteActions} from '../../../actions/options/read-write';
 import {BtcAddress} from '../../../contracts';
 import {Currency, ERC20, MonetaryAmount} from '../../../monetary';
-import {Option} from '../../../option';
+import {Option} from '../../../types';
 import {MockContractsOptionsReadOnlyActions} from './read-only';
 import {Notifier} from '../../../notifier';
 

@@ -9,7 +9,7 @@ import {
   ERC20,
   MonetaryAmount
 } from '../../monetary';
-import {Option} from '../../option';
+import {Option} from '../../types';
 import {quote} from '../../uniswap';
 
 export interface OptionsReadOnlyActions {
