@@ -71,6 +71,16 @@ export interface OptionsReadOnlyActions {
     option: Option<Currency, Collateral>,
     amount: MonetaryAmount<Collateral>
   ): Promise<MonetaryAmount<Collateral>>;
+
+  estimatePoolBuyPrice<Collateral extends ERC20>(
+    option: Option<Currency, Collateral>,
+    amount: MonetaryAmount<Collateral>
+  ): Promise<MonetaryAmount<Collateral>>;
+
+  estimatePoolSellPrice<Collateral extends ERC20>(
+    option: Option<Currency, Collateral>,
+    amount: MonetaryAmount<Collateral>
+  ): Promise<MonetaryAmount<Collateral>>;
 }
 
 export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
@@ -186,5 +196,29 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     );
 
     return new MonetaryAmount(option.collateral, result.toString());
+  }
+
+  async estimatePoolBuyPrice<
+    Underlying extends Currency,
+    Collateral extends ERC20
+  >(
+    option: Option<Underlying, Collateral>,
+    amount: MonetaryAmount<Collateral>
+  ): Promise<MonetaryAmount<Collateral>> {
+    const pair = await this.roContracts.getPair(option.address);
+    const quote = await pair.getOptionInPrice(amount.toString());
+    return new MonetaryAmount(option.collateral, quote.toString());
+  }
+
+  async estimatePoolSellPrice<
+    Underlying extends Currency,
+    Collateral extends ERC20
+  >(
+    option: Option<Underlying, Collateral>,
+    amount: MonetaryAmount<Collateral>
+  ): Promise<MonetaryAmount<Collateral>> {
+    const pair = await this.roContracts.getPair(option.address);
+    const quote = await pair.getOptionOutPrice(amount.toString());
+    return new MonetaryAmount(option.collateral, quote.toString());
   }
 }

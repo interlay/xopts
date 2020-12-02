@@ -148,6 +148,9 @@ export interface ReadOptionPair {
   totalSupplied(account: string): Promise<BigNumber>;
   totalWritten(account: string): Promise<BigNumber>;
   optionsBalance(account: string): Promise<BigNumber>;
+
+  getOptionInPrice(amount: BigNumberish): Promise<BigNumber>;
+  getOptionOutPrice(amount: BigNumberish): Promise<BigNumber>;
 }
 
 export interface WriteOptionPair extends ReadOptionPair {
@@ -242,6 +245,24 @@ export class ReadOnlyOptionPair implements ReadOptionPair {
 
   async optionsBalance(account: string): Promise<BigNumber> {
     return this.option.balanceOf(account);
+  }
+
+  async getOptionInPrice(amount: BigNumberish): Promise<BigNumber> {
+    const amounts = await this.optionLib.getAmountsIn(amount, [
+      this.collateral.address,
+      this.option.address
+    ]);
+    console.log(amounts);
+    return amounts[0];
+  }
+
+  async getOptionOutPrice(amount: BigNumberish): Promise<BigNumber> {
+    const amounts = await this.optionLib.getAmountsOut(amount, [
+      this.option.address,
+      this.collateral.address
+    ]);
+    console.log(amounts);
+    return amounts[0];
   }
 }
 

@@ -54,4 +54,24 @@ export class MockContractsOptionsReadOnlyActions
       amount.toBig().div(new Big(5))
     );
   }
+
+  async estimatePoolBuyPrice<
+    Underlying extends Currency,
+    Collateral extends ERC20
+  >(
+    option: Option<Underlying, Collateral>,
+    amount: MonetaryAmount<Collateral>
+  ): Promise<MonetaryAmount<Collateral>> {
+    return new MonetaryAmount(option.collateral, 100, 0);
+  }
+
+  async estimatePoolSellPrice<
+    Underlying extends Currency,
+    Collateral extends ERC20
+  >(
+    option: Option<Underlying, Collateral>,
+    amount: MonetaryAmount<Collateral>
+  ): Promise<MonetaryAmount<Collateral>> {
+    return new MonetaryAmount(option.collateral, 100, 0);
+  }
 }
