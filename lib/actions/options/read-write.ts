@@ -27,6 +27,12 @@ export interface OptionsReadWriteActions extends OptionsReadOnlyActions {
     amountOut: MonetaryAmount<Collateral>,
     amountInMax: MonetaryAmount<Collateral>
   ): Promise<ConfirmationNotifier>;
+
+  sell<Underlying extends Currency, Collateral extends ERC20>(
+    option: Option<Underlying, Collateral>,
+    amountIn: MonetaryAmount<Collateral>,
+    amountOutMin: MonetaryAmount<Collateral>
+  ): Promise<ConfirmationNotifier>;
 }
 
 export class ContractsOptionsReadWriteActions
@@ -51,12 +57,37 @@ export class ContractsOptionsReadWriteActions
     amountOut: MonetaryAmount<Collateral>,
     amountInMax: MonetaryAmount<Collateral>
   ): Promise<ConfirmationNotifier> {
+    const hasApproved = await this.contracts.checkAllowanceCollateral();
+    if (!hasApproved) {
+      await this.contracts.approveMaxCollateral();
+    }
+
     const pair = await this.contracts.getPair(option.address);
     const deadline = makeDefaultDeadline();
     Big.PE = 40;
     return pair.buyOptions(
       amountOut.toString(),
       amountInMax.toString(),
+      deadline
+    );
+  }
+
+  async sell<Underlying extends Currency, Collateral extends ERC20>(
+    option: Option<Underlying, Collateral>,
+    amountIn: MonetaryAmount<Collateral>,
+    amountOutMin: MonetaryAmount<Collateral>
+  ): Promise<ConfirmationNotifier> {
+    const pair = await this.contracts.getPair(option.address);
+    const hasApproved = await pair.checkAllowanceOption();
+    if (!hasApproved) {
+      await pair.approveMaxOption();
+    }
+
+    const deadline = makeDefaultDeadline();
+    Big.PE = 40;
+    return pair.sellOptions(
+      amountIn.toString(),
+      amountOutMin.toString(),
       deadline
     );
   }

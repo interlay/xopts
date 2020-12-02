@@ -11,6 +11,7 @@ import {
 } from '../../../monetary';
 import mockDb from '../../db.json';
 import {USDT} from '../../../constants';
+import {MockCollateral} from '../../../../typechain/MockCollateral';
 
 export class MockContractsOptionsReadOnlyActions
   implements OptionsReadOnlyActions {
@@ -63,6 +64,13 @@ export class MockContractsOptionsReadOnlyActions
     option: Option<Underlying, Collateral>
   ): Promise<MonetaryAmount<Collateral>> {
     return new MonetaryAmount(option.collateral, 30, 0);
+  }
+
+  async getUserBalance<Underlying extends Currency, Collateral extends ERC20>(
+    user: string,
+    option: Option<Underlying, Collateral>
+  ): Promise<MonetaryAmount<Collateral>> {
+    return new MonetaryAmount(option.collateral, 200, 0);
   }
 
   async estimatePremium<Collateral extends ERC20>(

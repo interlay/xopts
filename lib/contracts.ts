@@ -147,9 +147,13 @@ export interface ReadOptionPair {
 
   totalSupplied(account: string): Promise<BigNumber>;
   totalWritten(account: string): Promise<BigNumber>;
+  optionsBalance(account: string): Promise<BigNumber>;
 }
 
 export interface WriteOptionPair extends ReadOptionPair {
+  approveMaxOption(): Promise<void>;
+  checkAllowanceOption(): Promise<boolean>;
+
   write(
     premium: BigNumberish,
     amount: BigNumberish,
@@ -159,6 +163,12 @@ export interface WriteOptionPair extends ReadOptionPair {
   buyOptions(
     amountOut: BigNumberish,
     amountInMax: BigNumberish,
+    deadline: BigNumberish
+  ): ConfirmationNotifier;
+
+  sellOptions(
+    amountIn: BigNumberish,
+    amountOutMin: BigNumberish,
     deadline: BigNumberish
   ): ConfirmationNotifier;
 
@@ -229,6 +239,10 @@ export class ReadOnlyOptionPair implements ReadOptionPair {
   async totalWritten(account: string): Promise<BigNumber> {
     return this.obligation.obligations(account);
   }
+
+  async optionsBalance(account: string): Promise<BigNumber> {
+    return this.option.balanceOf(account);
+  }
 }
 
 export class ReadWriteOptionPair extends ReadOnlyOptionPair
@@ -250,12 +264,29 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     this.confirmations = confirmations;
   }
 
+  async approveMaxOption(): Promise<void> {
+    (
+      await this.option.approve(
+        this.optionLib.address,
+        ethers.constants.MaxUint256
+      )
+    ).wait();
+  }
+
+  async checkAllowanceOption(): Promise<boolean> {
+    const amount = await this.option.allowance(
+      this.account,
+      this.optionLib.address
+    );
+    return amount.eq(ethers.constants.MaxUint256);
+  }
+
   // back options with the default collateral
   // this also adds liquidity to the uniswap pool
   write(
     premium: BigNumberish,
     amount: BigNumberish,
-    btcAddress: BtcAddress
+    _btcAddress: BtcAddress
   ): ConfirmationNotifier {
     // TODO: write position
     return this.waitConfirm(
@@ -271,69 +302,36 @@ export class ReadWriteOptionPair extends ReadOnlyOptionPair
     );
   }
 
-  //TODO: these functions were copied here for development
-  //figure out better way to access them
-  async checkAllowance(): Promise<boolean> {
-    const amount = await this.collateral.allowance(
-      this.account,
-      this.optionLib.address
-    );
-    return amount.eq(ethers.constants.MaxUint256);
-  }
-
-  // in order to limit the number of transactions we need to
-  // pre-approve our contracts to work with the max allowance
-  async approveMax(): Promise<void> {
-    await this.collateral.approve(
-      this.optionLib.address,
-      ethers.constants.MaxUint256
-    );
-  }
-  //ENDTODO
-
   buyOptions(
     amountOut: BigNumberish,
     amountInMax: BigNumberish,
     deadline: BigNumberish
   ): ConfirmationNotifier {
     // buy order (i.e. specify exact number of options)
-    console.log('Checking allowance...');
     return this.waitConfirm(
-      this.checkAllowance()
-        .then((allowed) =>
-          allowed
-            ? (console.log('Approved'), Promise.resolve())
-            : (console.log('Not approved, approving...'), this.approveMax())
-        )
-        .then(() => {
-          console.log(
-            'Swapping... ',
-            'amount: ',
-            amountOut,
-            '; for amountInMax: ',
-            amountInMax,
-            '; using collateral: ',
-            this.collateral.address,
-            '; and option: ',
-            this.option.address,
-            '; and deadline: ',
-            deadline
-          );
-          return this.optionLib.swapTokensForExactTokens(
-            amountOut,
-            amountInMax,
-            [this.collateral.address, this.option.address],
-            this.account,
-            deadline
-          );
-        })
-        .then((tx) => {
-          console.log('Swapped! ', tx);
-          tx.wait(0).then((tx) => {
-            console.log('Upon confirmation: ', tx);
-          });
-          return tx;
-        })
+      this.optionLib.swapTokensForExactTokens(
+        amountOut,
+        amountInMax,
+        [this.collateral.address, this.option.address],
+        this.account,
+        deadline
+      )
+    );
+  }
+
+  sellOptions(
+    amountIn: BigNumberish,
+    amountOutMin: BigNumberish,
+    deadline: BigNumberish
+  ): ConfirmationNotifier {
+    return this.waitConfirm(
+      this.optionLib.swapExactTokensForTokens(
+        amountIn,
+        amountOutMin,
+        [this.option.address, this.collateral.address],
+        this.account,
+        deadline
+      )
     );
   }
 
@@ -419,9 +417,9 @@ export interface ReadContracts {
 }
 
 export interface WriteContracts extends ReadContracts {
-  checkAllowance(): Promise<boolean>;
+  checkAllowanceCollateral(): Promise<boolean>;
 
-  approveMax(): Promise<void>;
+  approveMaxCollateral(): Promise<void>;
 
   createPair(
     expiryTime: BigNumberish,
@@ -603,7 +601,7 @@ export class ReadWriteContracts extends ReadOnlyContracts
   }
 
   // if this returns false we should call `approveMax`
-  async checkAllowance(): Promise<boolean> {
+  async checkAllowanceCollateral(): Promise<boolean> {
     const amount = await this.collateral.allowance(
       this.account,
       this.optionLib.address
@@ -613,11 +611,13 @@ export class ReadWriteContracts extends ReadOnlyContracts
 
   // in order to limit the number of transactions we need to
   // pre-approve our contracts to work with the max allowance
-  async approveMax(): Promise<void> {
-    await this.collateral.approve(
-      this.optionLib.address,
-      ethers.constants.MaxUint256
-    );
+  async approveMaxCollateral(): Promise<void> {
+    (
+      await this.collateral.approve(
+        this.optionLib.address,
+        ethers.constants.MaxUint256
+      )
+    ).wait();
   }
 
   // creates a european put option

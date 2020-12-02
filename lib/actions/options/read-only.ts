@@ -50,6 +50,17 @@ export interface OptionsReadOnlyActions {
   ): Promise<MonetaryAmount<Collateral>>;
 
   /**
+   * Returns the total amount of `option` currently held by `user`
+   *
+   * @param user The user whose balance to check
+   * @param option Option for which to check balance
+   */
+  getUserBalance<Underlying extends Currency, Collateral extends ERC20>(
+    user: string,
+    option: Option<Underlying, Collateral>
+  ): Promise<MonetaryAmount<Collateral>>;
+
+  /**
    * Returns the premium for `option` in unit of collateral when writing `amount` of underlying
    *
    * @param option the option for which to compute premium
@@ -146,6 +157,15 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     const pair = await this.roContracts.getPair(option.obligationAddress);
     const obligations = await pair.totalWritten(user);
     return new MonetaryAmount(option.collateral, obligations.toString());
+  }
+
+  async getUserBalance<Underlying extends Currency, Collateral extends ERC20>(
+    user: string,
+    option: Option<Underlying, Collateral>
+  ): Promise<MonetaryAmount<Collateral>> {
+    const pair = await this.roContracts.getPair(option.address);
+    const balance = await pair.optionsBalance(user);
+    return new MonetaryAmount(option.collateral, balance.toString());
   }
 
   async estimatePremium<Collateral extends ERC20>(

@@ -23,4 +23,11 @@ export class MockContractsOptionsReadWriteActions
   ): Promise<Notifier<any>> {
     return new Notifier(Promise.resolve());
   }
+  async sell<Underlying extends Currency, Collateral extends ERC20>(
+    _option: Option<Underlying, Collateral>,
+    _amountIn: MonetaryAmount<Collateral>,
+    _amountOutMin: MonetaryAmount<Collateral>
+  ): Promise<Notifier<any>> {
+    return new Notifier(Promise.resolve());
+  }
 }
