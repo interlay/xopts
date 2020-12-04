@@ -42,7 +42,17 @@ export class MockContractsOptionsReadOnlyActions
     user: string,
     option: Option<Underlying, Collateral>
   ): Promise<MonetaryAmount<Collateral>> {
-    return new MonetaryAmount(option.collateral, 200, 0);
+    return new MonetaryAmount(option.collateral, Math.random() * 200, 0);
+  }
+
+  async getUserPosition<Underlying extends Currency, Collateral extends ERC20>(
+    user: string,
+    option: Option<Underlying, Collateral>
+  ): Promise<MonetaryAmount<Collateral>> {
+    return new MonetaryAmount(
+      option.collateral,
+      Math.random() * 200 - Math.random() * 200
+    );
   }
 
   async estimatePremium<Collateral extends ERC20>(

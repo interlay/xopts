@@ -54,8 +54,21 @@ export interface OptionsReadOnlyActions {
    *
    * @param user The user whose balance to check
    * @param option Option for which to check balance
+   * @returns The user's balance of option tokens
    */
   getUserBalance<Underlying extends Currency, Collateral extends ERC20>(
+    user: string,
+    option: Option<Underlying, Collateral>
+  ): Promise<MonetaryAmount<Collateral>>;
+
+  /**
+   * Gets the net position of the user (negative for obligations -
+   * short position; positive for put options - long position)
+   * @param user User whose position to calculate
+   * @param option Option whose pair's position to check
+   * @returns Net position, equal to (options held - obligations held)
+   */
+  getUserPosition<Underlying extends Currency, Collateral extends ERC20>(
     user: string,
     option: Option<Underlying, Collateral>
   ): Promise<MonetaryAmount<Collateral>>;
@@ -72,11 +85,27 @@ export interface OptionsReadOnlyActions {
     amount: MonetaryAmount<Collateral>
   ): Promise<MonetaryAmount<Collateral>>;
 
+  /**
+   * Returns the amount of collateral necessary for a uniswap swap
+   * for the given option.
+   *
+   * @param option Option whose pool to check
+   * @param amount Amount of option desired to be bought
+   * @returns Amount of collateral currently necessary to perform the swap
+   */
   estimatePoolBuyPrice<Collateral extends ERC20>(
     option: Option<Currency, Collateral>,
     amount: MonetaryAmount<Collateral>
   ): Promise<MonetaryAmount<Collateral>>;
 
+  /**
+   * Returns the amount of collateral that will be obtained from
+   * a uniswap swap with the given option.
+   *
+   * @param option Option whose pool to check
+   * @param amount Amount of option desired to be sold
+   * @returns Amount of collateral currently obtainable from such a swap
+   */
   estimatePoolSellPrice<Collateral extends ERC20>(
     option: Option<Currency, Collateral>,
     amount: MonetaryAmount<Collateral>
@@ -178,6 +207,19 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     return new MonetaryAmount(option.collateral, balance.toString());
   }
 
+  async getUserPosition<Underlying extends Currency, Collateral extends ERC20>(
+    user: string,
+    option: Option<Underlying, Collateral>
+  ): Promise<MonetaryAmount<Collateral>> {
+    const pair = await this.roContracts.getPair(option.address);
+    const optionBalance = await pair.optionsBalance(user);
+    const obligationBalance = await pair.totalWritten(user);
+    return new MonetaryAmount(
+      option.collateral,
+      optionBalance.sub(obligationBalance).toString()
+    );
+  }
+
   async estimatePremium<Collateral extends ERC20>(
     option: Option<Currency, Collateral>,
     amount: MonetaryAmount<Collateral>
@@ -205,6 +247,7 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     option: Option<Underlying, Collateral>,
     amount: MonetaryAmount<Collateral>
   ): Promise<MonetaryAmount<Collateral>> {
+    Big.PE = 40;
     const pair = await this.roContracts.getPair(option.address);
     const quote = await pair.getOptionInPrice(amount.toString());
     return new MonetaryAmount(option.collateral, quote.toString());
@@ -217,6 +260,7 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     option: Option<Underlying, Collateral>,
     amount: MonetaryAmount<Collateral>
   ): Promise<MonetaryAmount<Collateral>> {
+    Big.PE = 40;
     const pair = await this.roContracts.getPair(option.address);
     const quote = await pair.getOptionOutPrice(amount.toString());
     return new MonetaryAmount(option.collateral, quote.toString());
