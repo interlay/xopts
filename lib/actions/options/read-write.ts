@@ -10,6 +10,8 @@ import {ConfirmationNotifier} from '../../notifier';
 
 const defaultDeadline: number = 3_600 * 6; // 6 hours max
 
+Big.PE = 40;
+
 function makeDefaultDeadline(): number {
   const nowSeconds = Math.floor(new Date().getTime() / 1000);
   return nowSeconds + defaultDeadline;
@@ -64,7 +66,6 @@ export class ContractsOptionsReadWriteActions
 
     const pair = await this.contracts.getPair(option.address);
     const deadline = makeDefaultDeadline();
-    Big.PE = 40;
     return pair.buyOptions(
       amountOut.toString(),
       amountInMax.toString(),
@@ -84,7 +85,6 @@ export class ContractsOptionsReadWriteActions
     }
 
     const deadline = makeDefaultDeadline();
-    Big.PE = 40;
     return pair.sellOptions(
       amountIn.toString(),
       amountOutMin.toString(),

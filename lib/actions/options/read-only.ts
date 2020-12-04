@@ -12,6 +12,8 @@ import {
 import {Option} from '../../types';
 import {quote} from '../../uniswap';
 
+Big.PE = 40;
+
 export interface OptionsReadOnlyActions {
   /**
    * Lists all the options currently available
@@ -247,7 +249,6 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     option: Option<Underlying, Collateral>,
     amount: MonetaryAmount<Collateral>
   ): Promise<MonetaryAmount<Collateral>> {
-    Big.PE = 40;
     const pair = await this.roContracts.getPair(option.address);
     const quote = await pair.getOptionInPrice(amount.toString());
     return new MonetaryAmount(option.collateral, quote.toString());
@@ -260,7 +261,6 @@ export class ContractsOptionsReadOnlyActions implements OptionsReadOnlyActions {
     option: Option<Underlying, Collateral>,
     amount: MonetaryAmount<Collateral>
   ): Promise<MonetaryAmount<Collateral>> {
-    Big.PE = 40;
     const pair = await this.roContracts.getPair(option.address);
     const quote = await pair.getOptionOutPrice(amount.toString());
     return new MonetaryAmount(option.collateral, quote.toString());

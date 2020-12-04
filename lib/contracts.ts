@@ -252,14 +252,6 @@ export class ReadOnlyOptionPair implements ReadOptionPair {
       this.collateral.address,
       this.option.address
     ]);
-    console.log(
-      'Buy price! Address: ',
-      this.option.address,
-      '; amounts:',
-      amounts[0].toString(),
-      '; ',
-      amounts[1].toString()
-    );
     return amounts[0];
   }
 
@@ -268,14 +260,6 @@ export class ReadOnlyOptionPair implements ReadOptionPair {
       this.option.address,
       this.collateral.address
     ]);
-    console.log(
-      'Sell price! Address: ',
-      this.option.address,
-      '; amounts:',
-      amounts[0].toString(),
-      '; ',
-      amounts[1].toString()
-    );
     return amounts[1];
   }
 }
